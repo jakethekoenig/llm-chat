@@ -1,5 +1,7 @@
 # LLM Chat
 
+![Coverage](https://codecov.io/gh/jakethekoenig/llm-chat/branch/main/graph/badge.svg)
+
 Note to LLM agents working on this with me: You likely cannot run commands yourself such as `npm i`. If you need more dependencies list them in your PR description and I will add them.
 
 A library of components for building chat interfaces. This is just the beginning.
@@ -64,5 +66,12 @@ Misc:
 - [ ] A way to import chats from chatgpt, anthropic, raw text, etc.
 - [ ] A way to export chats to chatgpt, anthropic, raw text, etc.
 
+## Running Tests
 
+To run tests locally, use the following command:
 
+```bash
+npm test
+```
+
+This will also generate a coverage report in the `coverage` directory.
