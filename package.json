@@ -1,0 +1,37 @@
+{
+  "name": "llm-chat",
+  "version": "0.0.1",
+  "description": "Utility to make llm chat experiences",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jakethekoenig/llm-chat.git"
+  },
+  "keywords": [
+    "llm",
+    "chat",
+    "react"
+  ],
+  "author": "Jake Koenig",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jakethekoenig/llm-chat/issues"
+  },
+  "homepage": "https://github.com/jakethekoenig/llm-chat#readme",
+  "dependencies": {
+    "@emotion/react": "^11.13.0",
+    "@emotion/styled": "^11.13.0",
+    "@fontsource/roboto": "^5.0.14",
+    "@mui/icons-material": "^5.16.7",
+    "@mui/material": "^5.16.7",
+    "@mui/styled-engine-sc": "^6.0.0-alpha.18",
+    "jest": "^29.7.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "styled-components": "^6.1.12",
+    "vite": "^5.4.0"
+  }
+}
