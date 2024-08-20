@@ -6,7 +6,7 @@ export default {
   component: Message,
 };
 
-const Template = (args) => <Message {...args} />;
+const Template = (args: any) => <Message {...args} />;
 
 export const Default = Template.bind({});
 Default.args = {

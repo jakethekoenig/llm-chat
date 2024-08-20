@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import Message from '../src/components/Message';
 
 test('renders message content', () => {
@@ -11,7 +11,7 @@ test('renders message content', () => {
 test('renders author and timestamp', () => {
   render(<Message content="Test message" author="Test Author" timestamp="2023-01-01T00:00:00Z" />);
   expect(screen.getByText('Test Author')).toBeInTheDocument();
-  expect(screen.getByText('1/1/2023, 12:00:00 AM')).toBeInTheDocument();
+  expect(screen.getByText(new Date('2023-01-01T00:00:00Z').toLocaleString())).toBeInTheDocument();
 });
 
 test('renders control buttons based on props', () => {

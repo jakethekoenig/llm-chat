@@ -1,8 +1,23 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { Button } from '@mui/material';
-import { Copy as CopyIcon, Share as ShareIcon, Delete as DeleteIcon, Edit as EditIcon } from '@mui/icons-material';
+import { ContentCopy as CopyIcon, Share as ShareIcon, Delete as DeleteIcon, Edit as EditIcon } from '@mui/icons-material';
+
+interface MessageProps {
+  content: string;
+  author?: string;
+  timestamp?: string;
+  buttons?: {
+    copy?: boolean;
+    share?: boolean;
+    delete?: boolean;
+    edit?: boolean;
+  };
+  onCopy?: () => void;
+  onShare?: () => void;
+  onDelete?: () => void;
+  onEdit?: () => void;
+}
 
 const MessageContainer = styled.div`
   border: 1px solid #ccc;
@@ -30,7 +45,7 @@ const ButtonContainer = styled.div`
   gap: 8px;
 `;
 
-const Message = ({ content, author, timestamp, buttons, onCopy, onShare, onDelete, onEdit }) => {
+const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons = {}, onCopy, onShare, onDelete, onEdit }) => {
   return (
     <MessageContainer>
       <MessageContent>{content}</MessageContent>
@@ -44,31 +59,6 @@ const Message = ({ content, author, timestamp, buttons, onCopy, onShare, onDelet
       </ButtonContainer>
     </MessageContainer>
   );
-};
-
-Message.propTypes = {
-  content: PropTypes.string.isRequired,
-  author: PropTypes.string,
-  timestamp: PropTypes.string,
-  buttons: PropTypes.shape({
-    copy: PropTypes.bool,
-    share: PropTypes.bool,
-    delete: PropTypes.bool,
-    edit: PropTypes.bool,
-  }),
-  onCopy: PropTypes.func,
-  onShare: PropTypes.func,
-  onDelete: PropTypes.func,
-  onEdit: PropTypes.func,
-};
-
-Message.defaultProps = {
-  buttons: {
-    copy: false,
-    share: false,
-    delete: false,
-    edit: false,
-  },
 };
 
 export default Message;

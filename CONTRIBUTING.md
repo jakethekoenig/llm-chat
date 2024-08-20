@@ -4,7 +4,7 @@
 
 - Use Jest for writing tests.
 - Place test files in the `__tests__` directory.
-- Follow the naming convention `*.test.js` or `*.spec.js`.
+- Follow the naming convention `*.test.ts` or `*.spec.ts`.
 - Ensure tests cover both functionality and edge cases.
 - Aim for high test coverage (95% or above).
 
