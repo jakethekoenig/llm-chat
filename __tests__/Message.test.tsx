@@ -20,3 +20,24 @@ test('renders control buttons based on props', () => {
   fireEvent.click(screen.getByText('Copy'));
   expect(onCopy).toHaveBeenCalled();
 });
+
+test('renders share button and triggers onShare', () => {
+  const onShare = jest.fn();
+  render(<Message content="Test message" buttons={{ share: true }} onShare={onShare} />);
+  fireEvent.click(screen.getByText('Share'));
+  expect(onShare).toHaveBeenCalled();
+});
+
+test('renders delete button and triggers onDelete', () => {
+  const onDelete = jest.fn();
+  render(<Message content="Test message" buttons={{ delete: true }} onDelete={onDelete} />);
+  fireEvent.click(screen.getByText('Delete'));
+  expect(onDelete).toHaveBeenCalled();
+});
+
+test('renders edit button and triggers onEdit', () => {
+  const onEdit = jest.fn();
+  render(<Message content="Test message" buttons={{ edit: true }} onEdit={onEdit} />);
+  fireEvent.click(screen.getByText('Edit'));
+  expect(onEdit).toHaveBeenCalled();
+});

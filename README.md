@@ -79,3 +79,13 @@ npm test
 ```
 
 This will also generate a coverage report in the `coverage` directory.
+
+## Running the Test Website
+
+To run the test website, follow these steps:
+
+1. Install dependencies: `npm install`
+2. Start the dev server: `npm run dev`
+3. Open the provided localhost URL in your browser
+
+This test website serves as a living documentation of our components, making it easier to visualize and interact with them as we develop.
