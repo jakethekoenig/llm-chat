@@ -1,5 +1,7 @@
-module.exports = {
-  testEnvironment: 'node',
+export default {
+  preset: 'ts-jest',
+  testEnvironment: 'jsdom',
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   collectCoverage: true,
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov'],
@@ -11,5 +13,7 @@ module.exports = {
       lines: 95,
       statements: 95,
     },
+  },
+};
   },
 };

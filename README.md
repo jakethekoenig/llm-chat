@@ -10,6 +10,10 @@ Goals:
 * A general library of open source components for building llm chat interfaces.
 * A hosted LLM chat site that is "better chatgpt". The features that will make it competitive are:
     * Ability to select any model. (this is the one killer feature that the actual top labs will never offer)
+
+## TypeScript
+
+This project uses TypeScript for type safety and better developer experience. Ensure all new files use the `.ts` or `.tsx` extension as appropriate.
     * Power user features around Tree views of conversation and shareability.
 
 ## Roadmap

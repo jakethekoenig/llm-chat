@@ -4,6 +4,9 @@
   "description": "Utility to make llm chat experiences",
   "main": "index.js",
   "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
     "test": "jest"
   },
   "repository": {
