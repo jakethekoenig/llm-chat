@@ -1,7 +1,5 @@
 // src/renderers/LatexRenderer.tsx
-import React from 'react';
 import { Renderer } from './Renderer';
-import { MathJaxContext, MathJax } from 'better-react-mathjax';
 import DOMPurify from 'dompurify';
 
 export class LatexRenderer implements Renderer {

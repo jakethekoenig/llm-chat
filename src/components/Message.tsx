@@ -29,9 +29,6 @@ const MessageTimestamp = styled.span`
   color: #666;
 `;
 
-const renderers: Renderer[] = []; // Define renderers array
-const content: string = ''; // Define content string
-
 const ButtonContainer = styled.div`
   margin-top: 8px;
   display: flex;
@@ -43,17 +40,16 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
   const [displayedContent, setDisplayedContent] = useState<string>('');
   const isMountedRef = useRef(true);
 
-useEffect(() => {
-  const latexRenderer = renderers.find(renderer => renderer instanceof LatexRenderer) as LatexRenderer;
-  if (latexRenderer) {
-    latexRenderer.initializeMathJax();
-  }
-}, [content, renderers]);
+  useEffect(() => {
+    const latexRenderer = renderers.find(renderer => renderer instanceof LatexRenderer) as LatexRenderer;
+    if (latexRenderer) {
+      latexRenderer.initializeMathJax();
+    }
+  }, [content, renderers]);
 
   useEffect(() => {
     isMountedRef.current = true;
     setDisplayedContent(''); // Reset content when prop changes
-
     const processContent = async () => {
       if (typeof content === 'string') {
         setDisplayedContent(content);
