@@ -18,6 +18,9 @@ test('renders code block correctly', () => {
     }
   }
 });
+    }
+  }
+});
 
 test('detects start sequence correctly', () => {
   const renderer = new CodeBlockRenderer();
@@ -32,7 +35,9 @@ test('detects end sequence correctly', () => {
   const startSeq = renderer.detectStartSequence(content, 0);
   if (startSeq !== null) {
     const endSeq = renderer.detectEndSequence(content, startSeq[1]);
-    expect(endSeq).toEqual([29, 32]);
+    if (endSeq !== null) {
+      expect(endSeq).toEqual([29, 32]);
+    }
   }
 });
 

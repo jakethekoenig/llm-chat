@@ -31,6 +31,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
   const handleSelectMessage = (messageId: string) => {
     setSelectedMessageId(messageId);
     setChildIndex({});
+    setSelectedChildId(null);
   };
 
   const renderMessages = (messages: MessageType[], parentId: string | null = null): JSX.Element[] => {
