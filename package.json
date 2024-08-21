@@ -40,7 +40,8 @@
     "styled-components": "^6.1.12",
     "ts-jest": "^29.2.4",
     "vite": "^5.4.0",
-    "@innodoc/react-mathjax-node": "^0.1.0"
+    "@innodoc/react-mathjax-node": "^0.1.0",
+    "dompurify": "^2.3.4"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.4.8",
