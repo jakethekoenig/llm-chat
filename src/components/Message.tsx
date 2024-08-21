@@ -57,16 +57,22 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
     const processContent = async (content: string | AsyncIterable<string>) => {
       let accumulatedContent = '';
       const renderContent = (content: string) => {
-        for (const renderer of renderers) {
-          const start = renderer.detectStartSequence(content, 0);
-          if (typeof start === 'number') continue;
-          const end = renderer.detectEndSequence(content, start[1]);
-          if (typeof end === 'number') continue;
-          return renderer.render(content, start[0], end[1]);
+        let start = 0;
+        while (start < content.length) {
+          const startSeq = renderer.detectStartSequence(content, start);
+          if (typeof startSeq === 'number') {
+            start = startSeq;
+            continue;
+          }
+          const endSeq = renderer.detectEndSequence(content, startSeq[1]);
+          if (typeof endSeq === 'number') {
+            start = endSeq;
+            continue;
+          }
+          return renderer.render(content, startSeq[0], endSeq[1]);
         }
         return content;
       };
-
       if (typeof content === 'string') {
         setDisplayedContent(renderContent(content));
       } else {

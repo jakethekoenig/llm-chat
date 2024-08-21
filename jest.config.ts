@@ -14,4 +14,7 @@ export default {
       statements: 93,
     },
   },
+  moduleNameMapper: {
+    '\\.(css|less)$': 'identity-obj-proxy',
+  },
 };
