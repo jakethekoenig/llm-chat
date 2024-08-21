@@ -41,3 +41,32 @@ test('renders edit button and triggers onEdit', () => {
   fireEvent.click(screen.getByText('Edit'));
   expect(onEdit).toHaveBeenCalled();
 });
+
+// Test for async iterator content
+test('renders async iterator content', async () => {
+  const asyncIterable = {
+    async *[Symbol.asyncIterator]() {
+      yield 'Hello, ';
+      yield 'world!';
+    },
+  };
+
+  render(<Message content={asyncIterable} />);
+  expect(await screen.findByText('Hello, ')).toBeInTheDocument();
+  expect(await screen.findByText('Hello, world!')).toBeInTheDocument();
+});
+
+// Test for async iterator content with delay
+test('renders async iterator content with delay', async () => {
+  const asyncIterable = {
+    async *[Symbol.asyncIterator]() {
+      yield 'Loading';
+      await new Promise(resolve => setTimeout(resolve, 100));
+      yield '...';
+    },
+  };
+
+  render(<Message content={asyncIterable} />);
+  expect(await screen.findByText('Loading')).toBeInTheDocument();
+  expect(await screen.findByText('Loading...')).toBeInTheDocument();
+});
