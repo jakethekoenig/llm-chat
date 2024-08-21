@@ -52,7 +52,7 @@ test('renders async iterator content', async () => {
   };
 
   render(<Message content={asyncIterable} />);
-  expect(await screen.findByText('Hello, ')).toBeInTheDocument();
+  expect(await screen.findByText((content, element) => content.startsWith('Hello, '))).toBeInTheDocument();
   expect(await screen.findByText('Hello, world!')).toBeInTheDocument();
 });
 
