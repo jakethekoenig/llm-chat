@@ -4,7 +4,7 @@ import MathJax from '@innodoc/react-mathjax-node';
 import DOMPurify from 'dompurify';
 
 export class LatexRenderer implements Renderer {
-  detectStartSequence(content: string, startIndex: number): number | [number, number] {
+  detectStartSequence(content: string, startIndex: number): [number, number] | null {
     const startSequences = ['$$', '\\(', '\\['];
     for (const seq of startSequences) {
       const start = content.indexOf(seq, startIndex);
@@ -15,7 +15,7 @@ export class LatexRenderer implements Renderer {
     return null;
   }
 
-  detectEndSequence(content: string, startIndex: number): number | [number, number] {
+  detectEndSequence(content: string, startIndex: number): [number, number] | null {
     const endSequences = ['$$', '\\)', '\\]'];
     for (const seq of endSequences) {
       const end = content.indexOf(seq, startIndex);

@@ -7,8 +7,8 @@ test('renders code block correctly', () => {
   const renderer = new CodeBlockRenderer();
   const content = "```javascript\nconsole.log('Hello, World!');\n```";
   const startSeq = renderer.detectStartSequence(content, 0);
-  const endSeq = renderer.detectEndSequence(content, startSeq[1]);
-  const renderedContent = renderer.render(content, startSeq[0], endSeq[1]);
+  const endSeq = renderer.detectEndSequence(content, startSeq![1]) as [number, number];
+  const renderedContent = renderer.render(content, startSeq![0], endSeq[1]);
 
   render(<div dangerouslySetInnerHTML={{ __html: renderedContent }} />);
   expect(screen.getByText("console")).toBeInTheDocument();
@@ -26,7 +26,7 @@ test('detects end sequence correctly', () => {
   const renderer = new CodeBlockRenderer();
   const content = "```javascript\nconsole.log('Hello, World!');\n```";
   const startSeq = renderer.detectStartSequence(content, 0);
-  const endSeq = renderer.detectEndSequence(content, startSeq[1]);
+  const endSeq = renderer.detectEndSequence(content, startSeq![1]) as [number, number];
   expect(endSeq).toEqual(43);
 });
 
@@ -41,6 +41,6 @@ test('handles no end sequence', () => {
   const renderer = new CodeBlockRenderer();
   const content = "```javascript\nconsole.log('Hello, World!');";
   const startSeq = renderer.detectStartSequence(content, 0);
-  const endSeq = renderer.detectEndSequence(content, startSeq[1]);
+  const endSeq = renderer.detectEndSequence(content, startSeq![1]) as [number, number];
   expect(endSeq).toBeNull();
 });
