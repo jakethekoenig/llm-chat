@@ -12,7 +12,7 @@ export class LatexRenderer implements Renderer {
         return [start, start + seq.length];
       }
     }
-    return null;
+    return content.length;
   }
 
   detectEndSequence(content: string, startIndex: number): number | [number, number] {
@@ -23,7 +23,7 @@ export class LatexRenderer implements Renderer {
         return [end, end + seq.length];
       }
     }
-    return null;
+    return content.length;
   }
 
   render(content: string, startIndex: number, endIndex: number): string {

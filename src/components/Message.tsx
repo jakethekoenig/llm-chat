@@ -4,7 +4,6 @@ import { Button } from '@mui/material';
 import { ContentCopy as CopyIcon, Share as ShareIcon, Delete as DeleteIcon, Edit as EditIcon } from '@mui/icons-material';
 import { useMessageConfig } from './MessageConfigContext';
 import { Renderer } from '../renderers/Renderer';
-import { useEffect } from 'react';
 
 interface MessageProps {
   content: string | AsyncIterable<string>;
@@ -43,11 +42,17 @@ const MessageTimestamp = styled.span`
   color: #666;
 `;
 
-useEffect(() => {
-  const latexRenderer = renderers.find(renderer => renderer instanceof LatexRenderer) as LatexRenderer;
-  if (latexRenderer) {
-    latexRenderer.initializeMathJax();
-  }
+const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons = {}, onCopy, onShare, onDelete, onEdit, renderers = [] }) => {
+  const globalConfig = useMessageConfig();
+  const [displayedContent, setDisplayedContent] = useState<string>('');
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    const latexRenderer = renderers.find(renderer => renderer instanceof LatexRenderer) as LatexRenderer;
+    if (latexRenderer) {
+      latexRenderer.initializeMathJax();
+    }
+  }, [content]);
 }, [content]);
 
 const ButtonContainer = styled.div`
