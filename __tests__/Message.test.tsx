@@ -114,3 +114,6 @@ test('selects the first child by default', () => {
   render(<Conversation messages={messages} />);
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
 });
+  render(<Conversation messages={messages} />);
+  expect(screen.getByText('Hi there!')).toBeInTheDocument();
+});

@@ -10,6 +10,7 @@ interface ConversationProps {
 const Conversation: React.FC<ConversationProps> = ({ messages }) => {
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [childIndex, setChildIndex] = useState<{ [key: string]: number }>({});
+  const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
 
   useEffect(() => {
     const rootChildren = messages.filter(message => message.parentId === null);
@@ -17,6 +18,15 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
       setSelectedMessageId(rootChildren[0].id);
     }
   }, [messages]);
+
+  useEffect(() => {
+    if (selectedMessageId) {
+      const children = messages.filter(message => message.parentId === selectedMessageId);
+      if (children.length > 0) {
+        setSelectedChildId(children[0].id);
+      }
+    }
+  }, [selectedMessageId, messages]);
 
   const handleSelectMessage = (messageId: string) => {
     setSelectedMessageId(messageId);
