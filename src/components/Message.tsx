@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { Button } from '@mui/material';
 import { ContentCopy as CopyIcon, Share as ShareIcon, Delete as DeleteIcon, Edit as EditIcon } from '@mui/icons-material';
+import { useMessageConfig } from './MessageConfigContext';
 
 interface MessageProps {
   content: string;
@@ -46,16 +47,20 @@ const ButtonContainer = styled.div`
 `;
 
 const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons = {}, onCopy, onShare, onDelete, onEdit }) => {
+  const globalConfig = useMessageConfig();
+
+  const mergedButtons = { ...globalConfig.buttons, ...buttons };
+
   return (
     <MessageContainer>
       <MessageContent>{content}</MessageContent>
       {author && <MessageAuthor>{author}</MessageAuthor>}
       {timestamp && <MessageTimestamp>{new Date(timestamp).toLocaleString()}</MessageTimestamp>}
       <ButtonContainer>
-        {buttons.copy && <Button onClick={onCopy} startIcon={<CopyIcon />}>Copy</Button>}
-        {buttons.share && <Button onClick={onShare} startIcon={<ShareIcon />}>Share</Button>}
-        {buttons.delete && <Button onClick={onDelete} startIcon={<DeleteIcon />}>Delete</Button>}
-        {buttons.edit && <Button onClick={onEdit} startIcon={<EditIcon />}>Edit</Button>}
+        {mergedButtons.copy && <Button onClick={onCopy} startIcon={<CopyIcon />}>Copy</Button>}
+        {mergedButtons.share && <Button onClick={onShare} startIcon={<ShareIcon />}>Share</Button>}
+        {mergedButtons.delete && <Button onClick={onDelete} startIcon={<DeleteIcon />}>Delete</Button>}
+        {mergedButtons.edit && <Button onClick={onEdit} startIcon={<EditIcon />}>Edit</Button>}
       </ButtonContainer>
     </MessageContainer>
   );
