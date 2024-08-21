@@ -4,12 +4,12 @@ import hljs from 'highlight.js';
 import 'highlight.js/styles/default.css';
 
 export class CodeBlockRenderer implements Renderer {
-  detectStartSequence(content: string, startIndex: number): number | [number, number] {
+  detectStartSequence(content: string, startIndex: number): [number, number] | null {
     const start = content.indexOf('```', startIndex);
     return start === -1 ? null : [start, start + 3];
   }
 
-  detectEndSequence(content: string, startIndex: number): number | [number, number] {
+  detectEndSequence(content: string, startIndex: number): [number, number] | null {
     const end = content.indexOf('```', startIndex);
     return end === -1 ? null : [end, end + 3];
   }
