@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --max-old-space-size=4096 node_modules/.bin/jest"
+    "test": "node --max-old-space-size=8192 node_modules/.bin/jest"
   },
   "repository": {
     "type": "git",
