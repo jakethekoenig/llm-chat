@@ -30,6 +30,50 @@ A variety of react components that are necessary to build a chat interface. All 
         - [ ] \(, $, $$ all detected and supported.
     - [ ] Support images
 
+### Global Configuration
+```tsx
+import React from 'react';
+import ReactDOM from 'react-dom';
+import App from './App';
+import { MessageConfigProvider } from './components/MessageConfigContext';
+
+const globalConfig = {
+  buttons: {
+    copy: true,
+    share: false,
+    delete: true,
+    edit: true,
+  },
+  // Add other global configuration options here
+};
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <MessageConfigProvider config={globalConfig}>
+      <App />
+    </MessageConfigProvider>
+  </React.StrictMode>
+);
+```
+
+### Local Configuration
+```tsx
+<Message
+  content="Hello, world!"
+  author="User"
+  timestamp={new Date().toISOString()}
+  buttons={{
+    copy: true,
+    share: true,
+    delete: false,
+    edit: true
+  }}
+  onCopy={() => console.log('Copy clicked')}
+  onShare={() => console.log('Share clicked')}
+  onEdit={() => console.log('Edit clicked')}
+/>
+```
+
 LLM chats are unique from human chats in a number of fundamental ways:
 * The LLM responds immediately whereas a human may take time to respond. In general time is an important component to understand human chats largely absent in LLM chats.
 * It makes sense for the human to be able to edit both their own messages and the LLM's messages.
