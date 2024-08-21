@@ -83,7 +83,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
       let startSeq = null;
       for (const renderer of renderers) {
         startSeq = renderer.detectStartSequence(content, start);
-        if (typeof startSeq !== 'number') {
+        if (typeof startSeq === 'number') {
           matchedRenderer = renderer;
           break;
         }
@@ -97,14 +97,14 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
         elements.push(<span key={`plain-${start}`}>{content.slice(start)}</span>);
         break;
       }
-      const endSeq = matchedRenderer.detectEndSequence(content, startSeq[1]);
+      const endSeq = matchedRenderer.detectEndSequence(content, startSeq);
       if (typeof endSeq === 'number') {
         elements.push(<span key={`plain-${start}`}>{content.slice(start, endSeq)}</span>);
         start = endSeq;
         continue;
       }
-      elements.push(<span key={`rendered-${start}`} dangerouslySetInnerHTML={{ __html: matchedRenderer.render(content, startSeq[0], endSeq[1]) }} />);
-      start = endSeq[1];
+      elements.push(<span key={`rendered-${start}`} dangerouslySetInnerHTML={{ __html: matchedRenderer.render(content, startSeq, endSeq) }} />);
+      start = endSeq;
     }
     return elements;
   };
