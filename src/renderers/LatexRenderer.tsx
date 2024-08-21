@@ -12,7 +12,7 @@ export class LatexRenderer implements Renderer {
         return [start, start + seq.length];
       }
     }
-    return content.length;
+    return null; // or throw new Error('No start sequence found');
   }
 
   detectEndSequence(content: string, startIndex: number): number | [number, number] {
@@ -23,11 +23,11 @@ export class LatexRenderer implements Renderer {
         return [end, end + seq.length];
       }
     }
-    return content.length;
+    return null; // or throw new Error('No end sequence found');
   }
 
   render(content: string, startIndex: number, endIndex: number): string {
-    const latexContent = DOMPurify.sanitize(content.slice(startIndex, endIndex));
+    const latexContent = DOMPurify.sanitize(content.slice(startIndex + 2, endIndex - 2)); // Remove delimiters
     return `<span class="mathjax-latex">${latexContent}</span>`;
   }
 

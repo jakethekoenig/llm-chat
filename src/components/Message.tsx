@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import styled from 'styled-components';
 import { Button } from '@mui/material';
 import { ContentCopy as CopyIcon, Share as ShareIcon, Delete as DeleteIcon, Edit as EditIcon } from '@mui/icons-material';
@@ -73,7 +73,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
     return () => {
       isMountedRef.current = false;
     };
-  }, [content]);
+  }, [content, renderers]);
 
   const renderContent = (content: string) => {
     let start = 0;
