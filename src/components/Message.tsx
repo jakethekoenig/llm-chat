@@ -32,13 +32,6 @@ const MessageTimestamp = styled.span`
 const renderers: Renderer[] = []; // Define renderers array
 const content: string = ''; // Define content string
 
-useEffect(() => {
-  const latexRenderer = renderers.find(renderer => renderer instanceof LatexRenderer) as LatexRenderer;
-  if (latexRenderer) {
-    latexRenderer.initializeMathJax();
-  }
-}, [content, renderers]);
-
 const ButtonContainer = styled.div`
   margin-top: 8px;
   display: flex;
@@ -49,6 +42,13 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
   const globalConfig = useMessageConfig();
   const [displayedContent, setDisplayedContent] = useState<string>('');
   const isMountedRef = useRef(true);
+
+useEffect(() => {
+  const latexRenderer = renderers.find(renderer => renderer instanceof LatexRenderer) as LatexRenderer;
+  if (latexRenderer) {
+    latexRenderer.initializeMathJax();
+  }
+}, [content, renderers]);
 
   useEffect(() => {
     isMountedRef.current = true;
