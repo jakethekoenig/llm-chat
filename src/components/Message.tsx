@@ -4,6 +4,7 @@ import { Button } from '@mui/material';
 import { ContentCopy as CopyIcon, Share as ShareIcon, Delete as DeleteIcon, Edit as EditIcon } from '@mui/icons-material';
 import { useMessageConfig } from './MessageConfigContext';
 import { Renderer } from '../renderers/Renderer';
+import { LatexRenderer } from '../renderers/LatexRenderer';
 import { Message as MessageType } from '../types/Message';
 
 interface MessageProps extends MessageType {}
@@ -94,6 +95,13 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
     }
     return elements;
   };
+
+  useEffect(() => {
+    const latexRenderer = renderers.find(renderer => renderer instanceof LatexRenderer) as LatexRenderer;
+    if (latexRenderer) {
+      latexRenderer.initializeMathJax();
+    }
+  }, [content, renderers]);
 
   const mergedButtons = { ...globalConfig.buttons, ...buttons };
 
