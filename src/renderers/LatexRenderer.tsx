@@ -5,7 +5,7 @@ import { MathJaxContext, MathJax } from 'better-react-mathjax';
 import DOMPurify from 'dompurify';
 
 export class LatexRenderer implements Renderer {
-  detectStartSequence(content: string, startIndex: number): [number, number] | null {
+  detectStartSequence(content: string, startIndex: number): number | [number, number] {
     const startSequences = ['$$', '\\(', '\\['];
     for (const seq of startSequences) {
       const start = content.indexOf(seq, startIndex);
@@ -13,10 +13,10 @@ export class LatexRenderer implements Renderer {
         return [start, start + seq.length];
       }
     }
-    return null;
+    return -1;
   }
 
-  detectEndSequence(content: string, startIndex: number): [number, number] | null {
+  detectEndSequence(content: string, startIndex: number): number | [number, number] {
     const endSequences = ['$$', '\\)', '\\]'];
     for (const seq of endSequences) {
       const end = content.indexOf(seq, startIndex);
@@ -24,7 +24,7 @@ export class LatexRenderer implements Renderer {
         return [end, end + seq.length];
       }
     }
-    return null;
+    return -1;
   }
 
   render(content: string, startIndex: number, endIndex: number): string {

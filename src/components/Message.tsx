@@ -29,6 +29,9 @@ const MessageTimestamp = styled.span`
   color: #666;
 `;
 
+const renderers: Renderer[] = []; // Define renderers array
+const content: string = ''; // Define content string
+
 useEffect(() => {
   const latexRenderer = renderers.find(renderer => renderer instanceof LatexRenderer) as LatexRenderer;
   if (latexRenderer) {
