@@ -32,6 +32,8 @@ const MessageDemo = () => {
 
   const exampleMessage = `Here's an example with inline math \\(E=mc^2\\), display math $$\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}$$, and bracketed math \\[\\sum_{n=1}^\\infty \\frac{1}{n^2} = \\frac{\\pi^2}{6}\\].`;
 
+  const renderers = [new CodeBlockRenderer(), new LatexRenderer()];
+
   const messages: MessageType[] = [
     { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
     { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
@@ -45,7 +47,7 @@ const MessageDemo = () => {
       <button onClick={() => setTab('conversation')}>Conversation</button>
       {tab === 'messages' && (
         <>
-          <Message content={content} author="John Doe" timestamp={new Date().toISOString()} renderers={renderers} />
+          <Message content={exampleMessage} author="John Doe" timestamp={new Date().toISOString()} renderers={renderers} />
           <Message content="No buttons example" author="Jane Doe" timestamp={new Date().toISOString()} buttons={{}} />
           <button onClick={() => setStreamingContent(startStreaming())}>Start Streaming</button>
           {streamingContent && <Message content={streamingContent} author="Streamer" timestamp={new Date().toISOString()} renderers={renderers} />}
