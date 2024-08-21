@@ -104,3 +104,13 @@ test('renders conversation with navigation and selection', () => {
   fireEvent.click(screen.getByText('>'));
   expect(screen.getByText('How are you?')).toBeInTheDocument();
 });
+
+test('selects the first child by default', () => {
+  const messages = [
+    { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
+    { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
+    { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
+  ];
+  render(<Conversation messages={messages} />);
+  expect(screen.getByText('Hi there!')).toBeInTheDocument();
+});

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Message from './Message';
 import { Message as MessageType } from '../types/Message';
 import { Button } from '@mui/material';
@@ -10,6 +10,13 @@ interface ConversationProps {
 const Conversation: React.FC<ConversationProps> = ({ messages }) => {
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [childIndex, setChildIndex] = useState<{ [key: string]: number }>({});
+
+  useEffect(() => {
+    const rootChildren = messages.filter(message => message.parentId === null);
+    if (rootChildren.length > 0) {
+      setSelectedMessageId(rootChildren[0].id);
+    }
+  }, [messages]);
 
   const handleSelectMessage = (messageId: string) => {
     setSelectedMessageId(messageId);
