@@ -58,6 +58,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
       let accumulatedContent = '';
       const renderContent = (content: string) => {
         let start = 0;
+        const elements: JSX.Element[] = [];
         while (start < content.length) {
           let matchedRenderer = null;
           let startSeq = null;
@@ -69,29 +70,32 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
             }
           }
           if (typeof startSeq === 'number') {
-            start = startSeq || content.length;
+            elements.push(<span key={start}>{content.slice(start, startSeq)}</span>);
+            start = startSeq;
             continue;
           }
           if (!startSeq || !matchedRenderer) {
-            start = content.length;
-            continue;
+            elements.push(<span key={start}>{content.slice(start)}</span>);
+            break;
           }
           const endSeq = matchedRenderer.detectEndSequence(content, startSeq[1]);
           if (typeof endSeq === 'number') {
+            elements.push(<span key={start}>{content.slice(start, endSeq)}</span>);
             start = endSeq;
             continue;
           }
-          return matchedRenderer.render(content, startSeq[0], endSeq[1]);
+          elements.push(<span key={start} dangerouslySetInnerHTML={{ __html: matchedRenderer.render(content, startSeq[0], endSeq[1]) }} />);
+          start = endSeq[1];
         }
-        return content;
+        return elements;
       };
       if (typeof content === 'string') {
-        setDisplayedContent(renderContent(content));
+        setDisplayedContent(<>{renderContent(content)}</>);
       } else {
         for await (const chunk of content) {
           if (!isMounted) break;
           accumulatedContent += chunk;
-          setDisplayedContent(renderContent(accumulatedContent));
+          setDisplayedContent(<>{renderContent(accumulatedContent)}</>);
         }
       }
     };
@@ -107,7 +111,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
 
   return (
     <MessageContainer>
-      <MessageContent dangerouslySetInnerHTML={{ __html: displayedContent }} />
+      <MessageContent>{displayedContent}</MessageContent>
       {author && <MessageAuthor>{author}</MessageAuthor>}
       {timestamp && <MessageTimestamp>{new Date(timestamp).toLocaleString()}</MessageTimestamp>}
       <ButtonContainer>

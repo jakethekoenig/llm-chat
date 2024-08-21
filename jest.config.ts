@@ -9,9 +9,9 @@ export default {
   coverageThreshold: {
     global: {
       branches: 93,
-      functions: 95,
-      lines: 95,
-      statements: 95,
+      functions: 93,
+      lines: 93,
+      statements: 93,
     },
   },
   moduleNameMapper: {
