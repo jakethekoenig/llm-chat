@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import * as React from 'react';
+import { useState } from 'react';
 import Message from './Message';
 
 const MessageDemo = () => {
   const [streamingContent, setStreamingContent] = useState<AsyncIterable<string> | null>(null);
 
-  const startStreaming = async function* () {
+  const startStreaming = async function* (): AsyncIterable<string> {
     const text = 'Streaming content...';
     for (let i = 0; i < text.length; i++) {
       yield text[i];
