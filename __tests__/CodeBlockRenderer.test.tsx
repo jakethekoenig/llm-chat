@@ -7,7 +7,7 @@ test('renders code block correctly', () => {
   const renderer = new CodeBlockRenderer();
   const content = "```javascript\nconsole.log('Hello, World!');\n```";
   const startSeq = renderer.detectStartSequence(content, 0) as [number, number];
-  const endSeq = renderer.detectEndSequence(content, startSeq ? startSeq[1] : 0);
+  const endSeq = renderer.detectEndSequence(content, startSeq ? startSeq[1] : 0) as [number, number];
   const renderedContent = renderer.render(content, startSeq ? startSeq[0] : 0, endSeq ? endSeq[1] : 0);
 
   render(<div dangerouslySetInnerHTML={{ __html: renderedContent }} />);
@@ -25,9 +25,9 @@ test('detects start sequence correctly', () => {
 test('detects end sequence correctly', () => {
   const renderer = new CodeBlockRenderer();
   const content = "```javascript\nconsole.log('Hello, World!');\n```";
-  const startSeq = renderer.detectStartSequence(content, 0);
-  const endSeq = renderer.detectEndSequence(content, startSeq ? startSeq[1] : 0);
-  expect(endSeq).toEqual(43);
+  const startSeq = renderer.detectStartSequence(content, 0) as [number, number];
+  const endSeq = renderer.detectEndSequence(content, startSeq ? startSeq[1] : 0) as [number, number];
+  expect(endSeq).toEqual([43, 46]);
 });
 
 test('handles no start sequence', () => {
@@ -40,7 +40,7 @@ test('handles no start sequence', () => {
 test('handles no end sequence', () => {
   const renderer = new CodeBlockRenderer();
   const content = "```javascript\nconsole.log('Hello, World!');";
-  const startSeq = renderer.detectStartSequence(content, 0);
-  const endSeq = renderer.detectEndSequence(content, startSeq ? startSeq[1] : 0);
+  const startSeq = renderer.detectStartSequence(content, 0) as [number, number];
+  const endSeq = renderer.detectEndSequence(content, startSeq ? startSeq[1] : 0) as [number, number];
   expect(endSeq).toBeNull();
 });
