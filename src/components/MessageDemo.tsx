@@ -26,12 +26,14 @@ const MessageDemo = () => {
     }
   };
 
+  const content = "Here is some text before the code block.\n```javascript\nconsole.log('Hello, World!');\nconsole.log('This is a second line.');\n```\nHere is some text between the code blocks.\n```python\nprint('Hello, World!')\nprint('This is a second line.')\n```\nHere is some text after the code block.";
+
   const renderers = [new CodeBlockRenderer()];
 
   return (
     <div>
       <h2>Message Component Demo</h2>
-      <Message content="Here is some text before the code block.\n```javascript\nconsole.log('Hello, World!');\nconsole.log('This is a second line.');\n```\nHere is some text between the code blocks.\n```python\nprint('Hello, World!')\nprint('This is a second line.')\n```\nHere is some text after the code block." author="John Doe" timestamp={new Date().toISOString()} renderers={renderers} />
+      <Message content={content} author="John Doe" timestamp={new Date().toISOString()} renderers={renderers} />
       <Message content="No buttons example" author="Jane Doe" timestamp={new Date().toISOString()} buttons={{}} />
       <button onClick={() => setStreamingContent(startStreaming())}>Start Streaming</button>
       {streamingContent && <Message content={streamingContent} author="Streamer" timestamp={new Date().toISOString()} renderers={renderers} />}

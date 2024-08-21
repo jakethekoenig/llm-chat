@@ -75,13 +75,15 @@ test('renders async iterator content with delay', async () => {
 // Test for code block rendering
 test('renders code block content', () => {
   const renderers = [new CodeBlockRenderer()];
-  render(<Message content="```javascript\nconsole.log('Hello, World!');\n```" renderers={renderers} />);
+  const content = "```javascript\nconsole.log('Hello, World!');\n```";
+  render(<Message content={content} renderers={renderers} />);
   expect(screen.getByText("console.log('Hello, World!');")).toBeInTheDocument();
 });
 
 test('renders multiple code blocks and text', () => {
   const renderers = [new CodeBlockRenderer()];
-  render(<Message content="Here is some text before the code block.\n```javascript\nconsole.log('Hello, World!');\nconsole.log('This is a second line.');\n```\nHere is some text between the code blocks.\n```python\nprint('Hello, World!')\nprint('This is a second line.')\n```\nHere is some text after the code block." renderers={renderers} />);
+  const content = "Here is some text before the code block.\n```javascript\nconsole.log('Hello, World!');\nconsole.log('This is a second line.');\n```\nHere is some text between the code blocks.\n```python\nprint('Hello, World!')\nprint('This is a second line.')\n```\nHere is some text after the code block."
+  render(<Message content={content} renderers={renderers} />);
   expect(screen.getByText("console.log('Hello, World!');")).toBeInTheDocument();
   expect(screen.getByText("print('Hello, World!')")).toBeInTheDocument();
 });

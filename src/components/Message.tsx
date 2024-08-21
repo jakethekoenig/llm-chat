@@ -68,8 +68,12 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
               break;
             }
           }
-          if (!matchedRenderer || typeof startSeq === 'number') {
+          if (typeof startSeq === 'number') {
             start = startSeq || content.length;
+            continue;
+          }
+          if (!startSeq || !matchedRenderer) {
+            start = content.length;
             continue;
           }
           const endSeq = matchedRenderer.detectEndSequence(content, startSeq[1]);

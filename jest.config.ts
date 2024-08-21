@@ -15,6 +15,6 @@ export default {
     },
   },
   moduleNameMapper: {
-    '\\.(css|less)$': 'identity-obj-proxy',
+    '\\.(css|less)$': '<rootDir>/__mocks__/styleMock.ts',
   },
 };
