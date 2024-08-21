@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import styled from 'styled-components';
 import { Button } from '@mui/material';
 import { ContentCopy as CopyIcon, Share as ShareIcon, Delete as DeleteIcon, Edit as EditIcon } from '@mui/icons-material';
@@ -50,68 +50,70 @@ const ButtonContainer = styled.div`
 
 const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons = {}, onCopy, onShare, onDelete, onEdit, renderers = [] }) => {
   const globalConfig = useMessageConfig();
-  const [displayedContent, setDisplayedContent] = useState<JSX.Element | string>('');
+  const [displayedContent, setDisplayedContent] = useState<string>('');
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
-    let isMounted = true;
-    const processContent = async (content: string | AsyncIterable<string>) => {
-      let accumulatedContent = '';
-      const renderContent = (content: string) => {
-        let start = 0;
-        const elements: JSX.Element[] = [];
-        while (start < content.length) {
-          let matchedRenderer = null;
-          let startSeq = null;
-          for (const renderer of renderers) {
-            startSeq = renderer.detectStartSequence(content, start);
-            if (typeof startSeq !== 'number') {
-              matchedRenderer = renderer;
-              break;
-            }
-          }
-          if (typeof startSeq === 'number') {
-            elements.push(<span key={start}>{content.slice(start, startSeq)}</span>);
-            start = startSeq;
-            continue;
-          }
-          if (!startSeq || !matchedRenderer) {
-            elements.push(<span key={start}>{content.slice(start)}</span>);
-            break;
-          }
-          const endSeq = matchedRenderer.detectEndSequence(content, startSeq[1]);
-          if (typeof endSeq === 'number') {
-            elements.push(<span key={start}>{content.slice(start, endSeq)}</span>);
-            start = endSeq;
-            continue;
-          }
-          elements.push(<span key={start} dangerouslySetInnerHTML={{ __html: matchedRenderer.render(content, startSeq[0], endSeq[1]) }} />);
-          start = endSeq[1];
-        }
-        return elements;
-      };
+    isMountedRef.current = true;
+    setDisplayedContent(''); // Reset content when prop changes
+
+    const processContent = async () => {
       if (typeof content === 'string') {
-        setDisplayedContent(<>{renderContent(content)}</>);
+        setDisplayedContent(content);
       } else {
         for await (const chunk of content) {
-          if (!isMounted) break;
-          accumulatedContent += chunk;
-          setDisplayedContent(<>{renderContent(accumulatedContent)}</>);
+          if (!isMountedRef.current) break;
+          setDisplayedContent(prev => prev + chunk);
         }
       }
     };
 
-    processContent(content);
+    processContent();
 
     return () => {
-      isMounted = false;
+      isMountedRef.current = false;
     };
-  }, [content, renderers]);
+  }, [content]);
+
+  const renderContent = (content: string) => {
+    let start = 0;
+    const elements: JSX.Element[] = [];
+    while (start < content.length) {
+      let matchedRenderer = null;
+      let startSeq = null;
+      for (const renderer of renderers) {
+        startSeq = renderer.detectStartSequence(content, start);
+        if (typeof startSeq !== 'number') {
+          matchedRenderer = renderer;
+          break;
+        }
+      }
+      if (typeof startSeq === 'number') {
+        elements.push(<span key={`plain-${start}`}>{content.slice(start, startSeq)}</span>);
+        start = startSeq;
+        continue;
+      }
+      if (!startSeq || !matchedRenderer) {
+        elements.push(<span key={`plain-${start}`}>{content.slice(start)}</span>);
+        break;
+      }
+      const endSeq = matchedRenderer.detectEndSequence(content, startSeq[1]);
+      if (typeof endSeq === 'number') {
+        elements.push(<span key={`plain-${start}`}>{content.slice(start, endSeq)}</span>);
+        start = endSeq;
+        continue;
+      }
+      elements.push(<span key={`rendered-${start}`} dangerouslySetInnerHTML={{ __html: matchedRenderer.render(content, startSeq[0], endSeq[1]) }} />);
+      start = endSeq[1];
+    }
+    return elements;
+  };
 
   const mergedButtons = { ...globalConfig.buttons, ...buttons };
 
   return (
     <MessageContainer>
-      <MessageContent>{displayedContent}</MessageContent>
+      <MessageContent>{renderContent(displayedContent)}</MessageContent>
       {author && <MessageAuthor>{author}</MessageAuthor>}
       {timestamp && <MessageTimestamp>{new Date(timestamp).toLocaleString()}</MessageTimestamp>}
       <ButtonContainer>
