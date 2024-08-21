@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { Button } from '@mui/material';
 import { ContentCopy as CopyIcon, Share as ShareIcon, Delete as DeleteIcon, Edit as EditIcon } from '@mui/icons-material';
 import { useMessageConfig } from './MessageConfigContext';
+import { Renderer } from '../renderers/Renderer';
 
 interface MessageProps {
   content: string | AsyncIterable<string>;
@@ -18,6 +19,7 @@ interface MessageProps {
   onShare?: () => void;
   onDelete?: () => void;
   onEdit?: () => void;
+  renderers?: Renderer[];
 }
 
 const MessageContainer = styled.div`
@@ -46,29 +48,40 @@ const ButtonContainer = styled.div`
   gap: 8px;
 `;
 
-const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons = {}, onCopy, onShare, onDelete, onEdit }) => {
+const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons = {}, onCopy, onShare, onDelete, onEdit, renderers = [] }) => {
   const globalConfig = useMessageConfig();
-  const [displayedContent, setDisplayedContent] = useState<string>('');
+  const [displayedContent, setDisplayedContent] = useState<JSX.Element | string>('');
 
   useEffect(() => {
     let isMounted = true;
-    if (typeof content === 'string') {
-      setDisplayedContent(content);
-    } else {
-      const iterateContent = async () => {
-        let accumulatedContent = '';
+    const processContent = async (content: string | AsyncIterable<string>) => {
+      let accumulatedContent = '';
+      const renderContent = (content: string) => {
+        for (const renderer of renderers) {
+          if (renderer.detectStartSequence(content) && renderer.detectEndSequence(content)) {
+            return renderer.render(content);
+          }
+        }
+        return content;
+      };
+
+      if (typeof content === 'string') {
+        setDisplayedContent(renderContent(content));
+      } else {
         for await (const chunk of content) {
           if (!isMounted) break;
           accumulatedContent += chunk;
-          setDisplayedContent(accumulatedContent);
+          setDisplayedContent(renderContent(accumulatedContent));
         }
-      };
-      iterateContent();
-    }
+      }
+    };
+
+    processContent(content);
+
     return () => {
       isMounted = false;
     };
-  }, [content]);
+  }, [content, renderers]);
 
   const mergedButtons = { ...globalConfig.buttons, ...buttons };
 

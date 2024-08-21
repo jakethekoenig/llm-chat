@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useState } from 'react';
 import Message from './Message';
+import { CodeBlockRenderer } from '../renderers/CodeBlockRenderer';
 
 const MessageDemo = () => {
   const [streamingContent, setStreamingContent] = useState<AsyncIterable<string> | null>(null);
@@ -13,13 +14,15 @@ const MessageDemo = () => {
     }
   };
 
+  const renderers = [new CodeBlockRenderer()];
+
   return (
     <div>
       <h2>Message Component Demo</h2>
-      <Message content="Hello, World!" author="John Doe" timestamp={new Date().toISOString()} />
+      <Message content="```javascript\nconsole.log('Hello, World!');\n```" author="John Doe" timestamp={new Date().toISOString()} renderers={renderers} />
       <Message content="No buttons example" author="Jane Doe" timestamp={new Date().toISOString()} buttons={{}} />
       <button onClick={() => setStreamingContent(startStreaming())}>Start Streaming</button>
-      {streamingContent && <Message content={streamingContent} author="Streamer" timestamp={new Date().toISOString()} />}
+      {streamingContent && <Message content={streamingContent} author="Streamer" timestamp={new Date().toISOString()} renderers={renderers} />}
     </div>
   );
 };
