@@ -73,14 +73,15 @@ test('renders async iterator content with delay', async () => {
 });
 
 // Test for code block rendering
-test('renders code block content', () => {
+test('renders code block content with syntax highlighting', () => {
   const renderers = [new CodeBlockRenderer()];
   const content = "```javascript\nconsole.log('Hello, World!');\n```";
   render(<Message content={content} renderers={renderers} />);
   expect(screen.getByText("console.log('Hello, World!');")).toBeInTheDocument();
+  expect(screen.getByText("console.log('Hello, World!');").closest('pre')).toHaveClass('hljs');
 });
 
-test('renders multiple code blocks and text', () => {
+test('renders multiple code blocks and text with syntax highlighting', () => {
   const renderers = [new CodeBlockRenderer()];
   const content = "Here is some text before the code block.\n```javascript\nconsole.log('Hello, World!');\nconsole.log('This is a second line.');\n```\nHere is some text between the code blocks.\n```python\nprint('Hello, World!')\nprint('This is a second line.')\n```\nHere is some text after the code block."
   render(<Message content={content} renderers={renderers} />);
@@ -88,4 +89,6 @@ test('renders multiple code blocks and text', () => {
   expect(screen.getByText("console.log('This is a second line.');")).toBeInTheDocument();
   expect(screen.getByText("print('Hello, World!')")).toBeInTheDocument();
   expect(screen.getByText("print('This is a second line.')")).toBeInTheDocument();
+  expect(screen.getByText("console.log('Hello, World!');").closest('pre')).toHaveClass('hljs');
+  expect(screen.getByText("print('Hello, World!')").closest('pre')).toHaveClass('hljs');
 });
