@@ -83,32 +83,31 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
       let startSeq = null;
       for (const renderer of renderers) {
         startSeq = renderer.detectStartSequence(content, start);
-        if (typeof startSeq === 'number') {
+        if (typeof startSeq === 'number' || Array.isArray(startSeq)) {
           matchedRenderer = renderer;
           break;
         }
       }
-      if (typeof startSeq === 'number') {
-        elements.push(<span key={`plain-${start}`}>{content.slice(start, startSeq)}</span>);
-        start = startSeq;
+      if (typeof startSeq === 'number' || Array.isArray(startSeq)) {
+        elements.push(<span key={`plain-${start}`}>{content.slice(start, Array.isArray(startSeq) ? startSeq[0] : startSeq)}</span>);
+        start = Array.isArray(startSeq) ? startSeq[1] : startSeq;
         continue;
       }
       if (!startSeq || !matchedRenderer) {
         elements.push(<span key={`plain-${start}`}>{content.slice(start)}</span>);
         break;
       }
-      const endSeq = matchedRenderer.detectEndSequence(content, startSeq);
-      if (typeof endSeq === 'number') {
-        elements.push(<span key={`plain-${start}`}>{content.slice(start, endSeq)}</span>);
-        start = endSeq;
+      const endSeq = matchedRenderer.detectEndSequence(content, Array.isArray(startSeq) ? startSeq[1] : startSeq);
+      if (typeof endSeq === 'number' || Array.isArray(endSeq)) {
+        elements.push(<span key={`plain-${start}`}>{content.slice(start, Array.isArray(endSeq) ? endSeq[0] : endSeq)}</span>);
+        start = Array.isArray(endSeq) ? endSeq[1] : endSeq;
         continue;
       }
-      elements.push(<span key={`rendered-${start}`} dangerouslySetInnerHTML={{ __html: matchedRenderer.render(content, startSeq, endSeq) }} />);
-      start = endSeq;
+      elements.push(<span key={`rendered-${start}`} dangerouslySetInnerHTML={{ __html: matchedRenderer.render(content, Array.isArray(startSeq) ? startSeq[0] : startSeq, Array.isArray(endSeq) ? endSeq[0] : endSeq) }} />);
+      start = Array.isArray(endSeq) ? endSeq[1] : endSeq;
     }
     return elements;
   };
-
   const mergedButtons = { ...globalConfig.buttons, ...buttons };
 
   return (
