@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Message from '../src/components/Message';
+import { CodeBlockRenderer } from '../src/renderers/CodeBlockRenderer';
 
 test('renders message content', () => {
   render(<Message content="Test message" />);
@@ -69,4 +70,11 @@ test('renders async iterator content with delay', async () => {
   render(<Message content={asyncIterable} />);
   expect(await screen.findByText('Loading')).toBeInTheDocument();
   expect(await screen.findByText('Loading...')).toBeInTheDocument();
+});
+
+// Test for code block rendering
+test('renders code block content', () => {
+  const renderers = [new CodeBlockRenderer()];
+  render(<Message content="```javascript\nconsole.log('Hello, World!');\n```" renderers={renderers} />);
+  expect(screen.getByText("console.log('Hello, World!');")).toBeInTheDocument();
 });

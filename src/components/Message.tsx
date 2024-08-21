@@ -58,9 +58,11 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
       let accumulatedContent = '';
       const renderContent = (content: string) => {
         for (const renderer of renderers) {
-          if (renderer.detectStartSequence(content) && renderer.detectEndSequence(content)) {
-            return renderer.render(content);
-          }
+          const start = renderer.detectStartSequence(content, 0);
+          if (typeof start === 'number') continue;
+          const end = renderer.detectEndSequence(content, start[1]);
+          if (typeof end === 'number') continue;
+          return renderer.render(content, start[0], end[1]);
         }
         return content;
       };
@@ -87,7 +89,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
 
   return (
     <MessageContainer>
-      <MessageContent>{displayedContent}</MessageContent>
+      <MessageContent dangerouslySetInnerHTML={{ __html: displayedContent }} />
       {author && <MessageAuthor>{author}</MessageAuthor>}
       {timestamp && <MessageTimestamp>{new Date(timestamp).toLocaleString()}</MessageTimestamp>}
       <ButtonContainer>
