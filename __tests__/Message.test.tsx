@@ -89,3 +89,17 @@ test('renders multiple code blocks and text', () => {
   expect(screen.getAllByText("'This is a second line.'")).toHaveLength(2)
   expect(screen.getAllByText("print")).toHaveLength(2)
 });
+
+test('renders conversation with navigation and selection', () => {
+  const messages = [
+    { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
+    { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
+    { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
+  ];
+  render(<Conversation messages={messages} />);
+  expect(screen.getByText('Hello, world!')).toBeInTheDocument();
+  fireEvent.click(screen.getByText('Hello, world!'));
+  expect(screen.getByText('Hi there!')).toBeInTheDocument();
+  fireEvent.click(screen.getByText('>'));
+  expect(screen.getByText('How are you?')).toBeInTheDocument();
+});
