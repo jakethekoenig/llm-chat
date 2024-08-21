@@ -5,44 +5,43 @@ import Message from '../src/components/Message';
 import { CodeBlockRenderer } from '../src/renderers/CodeBlockRenderer';
 
 test('renders message content', () => {
-  render(<Message content="Test message" />);
+  render(<Message id="test-id-1" content="Test message" />);
   expect(screen.getByText('Test message')).toBeInTheDocument();
 });
 
 test('renders author and timestamp', () => {
-  render(<Message content="Test message" author="Test Author" timestamp="2023-01-01T00:00:00Z" />);
+  render(<Message id="test-id-2" content="Test message" author="Test Author" timestamp="2023-01-01T00:00:00Z" />);
   expect(screen.getByText('Test Author')).toBeInTheDocument();
   expect(screen.getByText(new Date('2023-01-01T00:00:00Z').toLocaleString())).toBeInTheDocument();
 });
 
 test('renders control buttons based on props', () => {
   const onCopy = jest.fn();
-  render(<Message content="Test message" buttons={{ copy: true }} onCopy={onCopy} />);
+  render(<Message id="test-id-3" content="Test message" buttons={{ copy: true }} onCopy={onCopy} />);
   fireEvent.click(screen.getByText('Copy'));
   expect(onCopy).toHaveBeenCalled();
 });
 
 test('renders share button and triggers onShare', () => {
   const onShare = jest.fn();
-  render(<Message content="Test message" buttons={{ share: true }} onShare={onShare} />);
+  render(<Message id="test-id-4" content="Test message" buttons={{ share: true }} onShare={onShare} />);
   fireEvent.click(screen.getByText('Share'));
   expect(onShare).toHaveBeenCalled();
 });
 
 test('renders delete button and triggers onDelete', () => {
   const onDelete = jest.fn();
-  render(<Message content="Test message" buttons={{ delete: true }} onDelete={onDelete} />);
+  render(<Message id="test-id-5" content="Test message" buttons={{ delete: true }} onDelete={onDelete} />);
   fireEvent.click(screen.getByText('Delete'));
   expect(onDelete).toHaveBeenCalled();
 });
 
 test('renders edit button and triggers onEdit', () => {
   const onEdit = jest.fn();
-  render(<Message content="Test message" buttons={{ edit: true }} onEdit={onEdit} />);
+  render(<Message id="test-id-6" content="Test message" buttons={{ edit: true }} onEdit={onEdit} />);
   fireEvent.click(screen.getByText('Edit'));
   expect(onEdit).toHaveBeenCalled();
 });
-
 // Test for async iterator content
 test('renders async iterator content', async () => {
   const asyncIterable = {
@@ -52,7 +51,7 @@ test('renders async iterator content', async () => {
     },
   };
 
-  render(<Message content={asyncIterable} />);
+  render(<Message id="test-id-7" content={asyncIterable} />);
   expect(await screen.findByText((content, element) => content.startsWith('Hello, '))).toBeInTheDocument();
   expect(await screen.findByText('Hello, world!')).toBeInTheDocument();
 });
@@ -67,7 +66,7 @@ test('renders async iterator content with delay', async () => {
     },
   };
 
-  render(<Message content={asyncIterable} />);
+  render(<Message id="test-id-8" content={asyncIterable} />);
   expect(await screen.findByText('Loading')).toBeInTheDocument();
   expect(await screen.findByText('Loading...')).toBeInTheDocument();
 });
@@ -76,7 +75,7 @@ test('renders async iterator content with delay', async () => {
 test('renders code block content', () => {
   const renderers = [new CodeBlockRenderer()];
   const content = "```javascript\nconsole.log('Hello, World!');\n```";
-  render(<Message content={content} renderers={renderers} />);
+  render(<Message id="test-id-9" content={content} renderers={renderers} />);
   expect(screen.getByText("console")).toBeInTheDocument();
   expect(screen.getByText("log")).toBeInTheDocument();
 });
@@ -84,7 +83,7 @@ test('renders code block content', () => {
 test('renders multiple code blocks and text', () => {
   const renderers = [new CodeBlockRenderer()];
   const content = "Here is some text before the code block.\n```javascript\nconsole.log('Hello, World!');\nconsole.log('This is a second line.');\n```\nHere is some text between the code blocks.\n```python\nprint('Hello, World!')\nprint('This is a second line.')\n```\nHere is some text after the code block."
-  render(<Message content={content} renderers={renderers} />);
+  render(<Message id="test-id-10" content={content} renderers={renderers} />);
   expect(screen.getAllByText("console")).toHaveLength(2)
   expect(screen.getAllByText("log")).toHaveLength(2)
   expect(screen.getAllByText("'This is a second line.'")).toHaveLength(2)
