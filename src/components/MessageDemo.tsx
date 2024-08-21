@@ -13,25 +13,27 @@ const MessageDemo = () => {
   const startStreaming = async function* (): AsyncIterable<string> {
     const content = [
       'Here is some text before the code block.\n',
+      'Here is some inline math \\(E=mc^2\\).\n',
       '```javascript\n',
       "console.log('Hello, World!');\n",
       "console.log('This is a second line.');\n",
       '```\n',
       'Here is some text between the code blocks.\n',
       '```python\n',
-      "print('Hello, World!')\n",
+      "print('Hello, LaTeX!')\n",
       "print('This is a second line.')\n",
       '```\n',
-      'Here is some text after the code block.'
+      'Here is some text after the code block.\n',
+      'Here is some display math $$\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}$$.\n',
+      'Here is some bracketed math \\[\\sum_{n=1}^\\infty \\frac{1}{n^2} = \\frac{\\pi^2}{6}\\].\n'
     ];
     for (const chunk of content) {
       yield chunk;
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 250));
     }
   };
 
   const content = "Here is some text before the code block.\n```javascript\nconsole.log('Hello, World!');\nconsole.log('This is a second line.');\n```\nHere is some text between the code blocks.\n```python\nprint('Hello, World!')\nprint('This is a second line.')\n```\nHere is some text after the code block.";
-
   const exampleMessage = `Here's an example with inline math \\(E=mc^2\\), display math $$\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}$$, and bracketed math \\[\\sum_{n=1}^\\infty \\frac{1}{n^2} = \\frac{\\pi^2}{6}\\].`;
 
   const renderers = [new CodeBlockRenderer(), new LatexRenderer()];
@@ -53,6 +55,7 @@ const MessageDemo = () => {
           <Message content="No buttons example" author="Jane Doe" timestamp={new Date().toISOString()} buttons={{}} />
           <button onClick={() => setStreamingContent(startStreaming())}>Start Streaming</button>
           {streamingContent && <Message content={streamingContent} author="Streamer" timestamp={new Date().toISOString()} renderers={renderers} />}
+          <Message content={exampleMessage} author="Example Author" timestamp={new Date().toISOString()} renderers={renderers} />
         </>
       )}
       {tab === 'conversation' && <Conversation messages={messages} />}
