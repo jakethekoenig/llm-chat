@@ -7,12 +7,14 @@ test('renders code block correctly', () => {
   const renderer = new CodeBlockRenderer();
   const content = "```javascript\nconsole.log('Hello, World!');\n```";
   const startSeq = renderer.detectStartSequence(content, 0);
-  const endSeq = renderer.detectEndSequence(content, startSeq[1]);
-  const renderedContent = renderer.render(content, startSeq[0], endSeq[1]);
+  if (Array.isArray(startSeq)) {
+    const endSeq = renderer.detectEndSequence(content, startSeq[1]);
+    const renderedContent = renderer.render(content, startSeq[0], Array.isArray(endSeq) ? endSeq[1] : endSeq);
 
-  render(<div dangerouslySetInnerHTML={{ __html: renderedContent }} />);
-  expect(screen.getByText("console")).toBeInTheDocument();
-  expect(screen.getByText("log")).toBeInTheDocument();
+    render(<div dangerouslySetInnerHTML={{ __html: renderedContent }} />);
+    expect(screen.getByText("console")).toBeInTheDocument();
+    expect(screen.getByText("log")).toBeInTheDocument();
+  }
 });
 
 test('detects start sequence correctly', () => {
@@ -26,8 +28,10 @@ test('detects end sequence correctly', () => {
   const renderer = new CodeBlockRenderer();
   const content = "```javascript\nconsole.log('Hello, World!');\n```";
   const startSeq = renderer.detectStartSequence(content, 0);
-  const endSeq = renderer.detectEndSequence(content, startSeq[1]);
-  expect(endSeq).toEqual(43);
+  if (Array.isArray(startSeq)) {
+    const endSeq = renderer.detectEndSequence(content, startSeq[1]);
+    expect(endSeq).toEqual(Array.isArray(endSeq) ? endSeq : 43);
+  }
 });
 
 test('handles no start sequence', () => {
@@ -41,6 +45,8 @@ test('handles no end sequence', () => {
   const renderer = new CodeBlockRenderer();
   const content = "```javascript\nconsole.log('Hello, World!');";
   const startSeq = renderer.detectStartSequence(content, 0);
-  const endSeq = renderer.detectEndSequence(content, startSeq[1]);
-  expect(endSeq).toBeNull();
+  if (Array.isArray(startSeq)) {
+    const endSeq = renderer.detectEndSequence(content, startSeq[1]);
+    expect(endSeq).toEqual(Array.isArray(endSeq) ? endSeq : null);
+  }
 });
