@@ -13,7 +13,7 @@ export class CodeBlockRenderer implements Renderer {
   }
 
   render(content: string): JSX.Element {
-    const code = content.replace(/```/g, '');
+    const code = content.replace(/```[a-z]*\n?/i, '').replace(/```/, '');
     const highlightedCode = hljs.highlightAuto(code).value;
     return <pre dangerouslySetInnerHTML={{ __html: highlightedCode }} />;
   }
