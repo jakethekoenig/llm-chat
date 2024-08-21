@@ -42,19 +42,6 @@ const MessageTimestamp = styled.span`
   color: #666;
 `;
 
-const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons = {}, onCopy, onShare, onDelete, onEdit, renderers = [] }) => {
-  const globalConfig = useMessageConfig();
-  const [displayedContent, setDisplayedContent] = useState<string>('');
-  const isMountedRef = useRef(true);
-
-  useEffect(() => {
-    const latexRenderer = renderers.find(renderer => renderer instanceof LatexRenderer) as LatexRenderer;
-    if (latexRenderer) {
-      latexRenderer.initializeMathJax();
-    }
-  }, [content]);
-}, [content]);
-
 const ButtonContainer = styled.div`
   margin-top: 8px;
   display: flex;
