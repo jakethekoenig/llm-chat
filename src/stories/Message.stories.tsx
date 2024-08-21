@@ -24,3 +24,31 @@ Default.args = {
   onDelete: () => console.log('Delete clicked'),
   onEdit: () => console.log('Edit clicked'),
 };
+
+export const StreamingContent = Template.bind({});
+StreamingContent.args = {
+  content: (async function* () {
+    yield 'Hello, ';
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    yield 'world!';
+  })(),
+  author: 'Streamer',
+  timestamp: new Date().toISOString(),
+  buttons: {
+    copy: true,
+    share: true,
+    delete: false,
+    edit: true,
+  },
+  onCopy: () => console.log('Copy clicked'),
+  onShare: () => console.log('Share clicked'),
+  onEdit: () => console.log('Edit clicked'),
+};
+
+export const NoButtons = Template.bind({});
+NoButtons.args = {
+  content: 'No buttons example',
+  author: 'Jane Doe',
+  timestamp: new Date().toISOString(),
+  buttons: {},
+};

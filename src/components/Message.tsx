@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { Button } from '@mui/material';
 import { ContentCopy as CopyIcon, Share as ShareIcon, Delete as DeleteIcon, Edit as EditIcon } from '@mui/icons-material';
 import { useMessageConfig } from './MessageConfigContext';
 
 interface MessageProps {
-  content: string;
+  content: string | AsyncIterable<string>;
   author?: string;
   timestamp?: string;
   buttons?: {
@@ -48,12 +48,33 @@ const ButtonContainer = styled.div`
 
 const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons = {}, onCopy, onShare, onDelete, onEdit }) => {
   const globalConfig = useMessageConfig();
+  const [displayedContent, setDisplayedContent] = useState<string>('');
+
+  useEffect(() => {
+    let isMounted = true;
+    if (typeof content === 'string') {
+      setDisplayedContent(content);
+    } else {
+      const iterateContent = async () => {
+        let accumulatedContent = '';
+        for await (const chunk of content) {
+          if (!isMounted) break;
+          accumulatedContent += chunk;
+          setDisplayedContent(accumulatedContent);
+        }
+      };
+      iterateContent();
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [content]);
 
   const mergedButtons = { ...globalConfig.buttons, ...buttons };
 
   return (
     <MessageContainer>
-      <MessageContent>{content}</MessageContent>
+      <MessageContent>{displayedContent}</MessageContent>
       {author && <MessageAuthor>{author}</MessageAuthor>}
       {timestamp && <MessageTimestamp>{new Date(timestamp).toLocaleString()}</MessageTimestamp>}
       <ButtonContainer>
