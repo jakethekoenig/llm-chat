@@ -1,6 +1,7 @@
 import React from 'react';
 import { Renderer } from './Renderer';
 import 'mathjax/es5/tex-mml-chtml.js';
+import DOMPurify from 'dompurify';
 
 export class LatexRenderer implements Renderer {
   detectStartSequence(content: string, startIndex: number): number | [number, number] {
@@ -11,7 +12,7 @@ export class LatexRenderer implements Renderer {
         return [start, start + seq.length];
       }
     }
-    return content.length;
+    return null;
   }
 
   detectEndSequence(content: string, startIndex: number): number | [number, number] {
@@ -22,11 +23,17 @@ export class LatexRenderer implements Renderer {
         return [end, end + seq.length];
       }
     }
-    return content.length;
+    return null;
   }
 
   render(content: string, startIndex: number, endIndex: number): string {
-    const latexContent = content.slice(startIndex, endIndex);
+    const latexContent = DOMPurify.sanitize(content.slice(startIndex, endIndex));
     return `<span class="mathjax-latex">${latexContent}</span>`;
+  }
+
+  initializeMathJax() {
+    if (typeof window !== 'undefined' && (window as any).MathJax) {
+      (window as any).MathJax.typeset();
+    }
   }
 }

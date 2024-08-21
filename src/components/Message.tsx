@@ -4,6 +4,7 @@ import { Button } from '@mui/material';
 import { ContentCopy as CopyIcon, Share as ShareIcon, Delete as DeleteIcon, Edit as EditIcon } from '@mui/icons-material';
 import { useMessageConfig } from './MessageConfigContext';
 import { Renderer } from '../renderers/Renderer';
+import { useEffect } from 'react';
 
 interface MessageProps {
   content: string | AsyncIterable<string>;
@@ -41,6 +42,13 @@ const MessageTimestamp = styled.span`
   font-size: 0.8em;
   color: #666;
 `;
+
+useEffect(() => {
+  const latexRenderer = renderers.find(renderer => renderer instanceof LatexRenderer) as LatexRenderer;
+  if (latexRenderer) {
+    latexRenderer.initializeMathJax();
+  }
+}, [content]);
 
 const ButtonContainer = styled.div`
   margin-top: 8px;
