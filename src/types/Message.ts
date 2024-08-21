@@ -16,6 +16,7 @@ export interface Message {
   onShare?: () => void;
   onDelete?: () => void;
   onEdit?: () => void;
+  onClick?: () => void;
   renderers?: Renderer[];
   parentId?: string | null;
 }
