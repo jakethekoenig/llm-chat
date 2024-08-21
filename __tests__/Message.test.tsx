@@ -74,7 +74,7 @@ test('renders async iterator content with delay', async () => {
 
 // Test for code block rendering
 test('renders code block content', () => {
-  const renderers = [new CodeBlockRenderer()];
+  const renderers: Renderer[] = [new CodeBlockRenderer()];
   const content = "```javascript\nconsole.log('Hello, World!');\n```";
   render(<Message id="test-id-9" content={content} renderers={renderers} />);
   expect(screen.getByText("console")).toBeInTheDocument();
@@ -82,7 +82,7 @@ test('renders code block content', () => {
 });
 
 test('renders multiple code blocks and text', () => {
-  const renderers = [new CodeBlockRenderer()];
+  const renderers: Renderer[] = [new CodeBlockRenderer()];
   const content = "Here is some text before the code block.\n```javascript\nconsole.log('Hello, World!');\nconsole.log('This is a second line.');\n```\nHere is some text between the code blocks.\n```python\nprint('Hello, World!')\nprint('This is a second line.')\n```\nHere is some text after the code block."
   render(<Message id="test-id-10" content={content} renderers={renderers} />);
   expect(screen.getAllByText("console")).toHaveLength(2)
