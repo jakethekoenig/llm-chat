@@ -18,6 +18,7 @@ export class CodeBlockRenderer implements Renderer {
     const language = content.slice(startIndex + 3, content.indexOf('\n', startIndex)).trim();
     const code = content.slice(content.indexOf('\n', startIndex) + 1, endIndex - 3).trim();
     const highlightedCode = language ? hljs.highlight(code, { language }).value : hljs.highlightAuto(code).value;
+    const highlightedCode = language ? hljs.highlight(code, { language }).value : hljs.highlightAuto(code).value;
     return `<pre><code class="hljs ${language}">${highlightedCode}</code></pre>`;
   }
 }

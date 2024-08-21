@@ -59,17 +59,25 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
       const renderContent = (content: string) => {
         let start = 0;
         while (start < content.length) {
-          const startSeq = renderer.detectStartSequence(content, start);
-          if (typeof startSeq === 'number') {
-            start = startSeq;
+          let matchedRenderer = null;
+          let startSeq = null;
+          for (const renderer of renderers) {
+            startSeq = renderer.detectStartSequence(content, start);
+            if (typeof startSeq !== 'number') {
+              matchedRenderer = renderer;
+              break;
+            }
+          }
+          if (!matchedRenderer || typeof startSeq === 'number') {
+            start = startSeq || content.length;
             continue;
           }
-          const endSeq = renderer.detectEndSequence(content, startSeq[1]);
+          const endSeq = matchedRenderer.detectEndSequence(content, startSeq[1]);
           if (typeof endSeq === 'number') {
             start = endSeq;
             continue;
           }
-          return renderer.render(content, startSeq[0], endSeq[1]);
+          return matchedRenderer.render(content, startSeq[0], endSeq[1]);
         }
         return content;
       };
