@@ -55,6 +55,7 @@ const MessageDemo = () => {
       )}
       {tab === 'conversation' && <Conversation messages={messages} />}
     </div>
+  </MessageConfigProvider>
   );
 };
 
