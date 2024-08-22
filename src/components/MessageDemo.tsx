@@ -46,7 +46,7 @@ const MessageDemo = () => {
       <button onClick={() => setTab('conversation')}>Conversation</button>
       {tab === 'messages' && (
         <>
-          <Message content={content} author="John Doe" timestamp={new Date().toISOString()} renderers={renderers} />
+          <Message content={content} author="John Doe" timestamp={new Date().toISOString()} renderers={renderers} buttons={{ copy: true, share: true, delete: true, edit: true }} />
           <Message content="No buttons example" author="Jane Doe" timestamp={new Date().toISOString()} buttons={{}} />
           <button onClick={() => setStreamingContent(startStreaming())}>Start Streaming</button>
           {streamingContent && <Message content={streamingContent} author="Streamer" timestamp={new Date().toISOString()} renderers={renderers} />}
