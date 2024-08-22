@@ -25,12 +25,14 @@ test('renders author and timestamp', () => {
 
 test('renders control buttons based on props', async () => {
   const content = 'Test message';
-  render(<Message id="test-id-3" content={content} buttons={{ copy: true }} />);
+  const onCopy = jest.fn();
+  render(<Message id="test-id-3" content={content} buttons={{ copy: true }} onCopy={onCopy} />);
   await navigator.clipboard.writeText(''); // Clear clipboard before test
   const copyButton = screen.getByText('Copy');
   fireEvent.click(copyButton);
   const clipboardContent = await navigator.clipboard.readText();
   expect(clipboardContent).toBe(content);
+  expect(onCopy).toHaveBeenCalled();
 });
 
 test('renders share button and triggers onShare', () => {
