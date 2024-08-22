@@ -105,10 +105,26 @@ test('renders multiple code blocks and text', () => {
 
 test('copies message content to clipboard', async () => {
   const content = 'Test message to copy';
+  await navigator.clipboard.writeText(''); // Clear clipboard before test
   render(<Message id="test-id-11" content={content} buttons={{ copy: true }} />);
   const copyButton = screen.getByText('Copy');
-  await navigator.clipboard.writeText(''); // Clear clipboard before test
   fireEvent.click(copyButton);
   const clipboardContent = await navigator.clipboard.readText();
   expect(clipboardContent).toBe(content);
+});
+
+test('renders message with all buttons', () => {
+  const onCopy = jest.fn();
+  const onShare = jest.fn();
+  const onDelete = jest.fn();
+  const onEdit = jest.fn();
+  render(<Message id="test-id-12" content="Test message" buttons={{ copy: true, share: true, delete: true, edit: true }} onCopy={onCopy} onShare={onShare} onDelete={onDelete} onEdit={onEdit} />);
+  fireEvent.click(screen.getByText('Copy'));
+  expect(onCopy).toHaveBeenCalled();
+  fireEvent.click(screen.getByText('Share'));
+  expect(onShare).toHaveBeenCalled();
+  fireEvent.click(screen.getByText('Delete'));
+  expect(onDelete).toHaveBeenCalled();
+  fireEvent.click(screen.getByText('Edit'));
+  expect(onEdit).toHaveBeenCalled();
 });
