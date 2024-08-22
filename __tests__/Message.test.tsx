@@ -89,3 +89,13 @@ test('renders multiple code blocks and text', () => {
   expect(screen.getAllByText("'This is a second line.'")).toHaveLength(2)
   expect(screen.getAllByText("print")).toHaveLength(2)
 });
+
+test('copies message content to clipboard', async () => {
+  const content = 'Test message to copy';
+  render(<Message id="test-id-11" content={content} buttons={{ copy: true }} />);
+  const copyButton = screen.getByText('Copy');
+  await navigator.clipboard.writeText(''); // Clear clipboard before test
+  fireEvent.click(copyButton);
+  const clipboardContent = await navigator.clipboard.readText();
+  expect(clipboardContent).toBe(content);
+});

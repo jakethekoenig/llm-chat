@@ -61,6 +61,12 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
     };
   }, [content]);
 
+  const handleCopy = () => {
+    navigator.clipboard.writeText(displayedContent).then(() => {
+      if (onCopy) onCopy();
+    });
+  };
+
   const renderContent = (content: string) => {
     let start = 0;
     const elements: JSX.Element[] = [];
@@ -103,7 +109,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
       {author && <MessageAuthor>{author}</MessageAuthor>}
       {timestamp && <MessageTimestamp>{new Date(timestamp).toLocaleString()}</MessageTimestamp>}
       <ButtonContainer>
-        {mergedButtons.copy && <Button onClick={onCopy} startIcon={<CopyIcon />}>Copy</Button>}
+        {mergedButtons.copy && <Button onClick={handleCopy} startIcon={<CopyIcon />}>Copy</Button>}
         {mergedButtons.share && <Button onClick={onShare} startIcon={<ShareIcon />}>Share</Button>}
         {mergedButtons.delete && <Button onClick={onDelete} startIcon={<DeleteIcon />}>Delete</Button>}
         {mergedButtons.edit && <Button onClick={onEdit} startIcon={<EditIcon />}>Edit</Button>}
