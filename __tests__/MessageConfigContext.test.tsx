@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { MessageConfigProvider, useMessageConfig } from '../src/components/MessageConfigContext';
 
@@ -17,7 +17,7 @@ const TestComponent: React.FC = () => {
 
 test('provides default configuration', () => {
   render(
-    <MessageConfigProvider config={{ buttons: { copy: true, share: true, delete: true, edit: true } }}>
+    <MessageConfigProvider config={{ buttons: { copy: 'enabled', share: 'enabled', delete: 'enabled', edit: 'enabled' } }}>
       <TestComponent />
     </MessageConfigProvider>
   );
@@ -29,7 +29,7 @@ test('provides default configuration', () => {
 
 test('overrides default configuration', () => {
   render(
-    <MessageConfigProvider config={{ buttons: { copy: false, share: false, delete: false, edit: false } }}>
+    <MessageConfigProvider config={{ buttons: { copy: 'disabled', share: 'disabled', delete: 'disabled', edit: 'disabled' } }}>
       <TestComponent />
     </MessageConfigProvider>
   );

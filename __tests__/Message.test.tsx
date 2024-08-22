@@ -64,8 +64,6 @@ test('renders menu-ed buttons and triggers respective actions', () => {
   expect(screen.getByText('Delete')).toBeInTheDocument();
   expect(screen.getByText('Edit')).toBeInTheDocument();
 });
-  expect(await screen.findByText('Hello, world!')).toBeInTheDocument();
-});
 
 // Test for async iterator content with delay
 test('renders async iterator content with delay', async () => {
