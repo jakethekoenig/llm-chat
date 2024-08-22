@@ -23,11 +23,14 @@ test('renders author and timestamp', () => {
   expect(screen.getByText(new Date('2023-01-01T00:00:00Z').toLocaleString())).toBeInTheDocument();
 });
 
-test('renders control buttons based on props', () => {
-  const onCopy = jest.fn();
-  render(<Message id="test-id-3" content="Test message" buttons={{ copy: true }} onCopy={onCopy} />);
-  fireEvent.click(screen.getByText('Copy'));
-  expect(onCopy).toHaveBeenCalled();
+test('renders control buttons based on props', async () => {
+  const content = 'Test message';
+  render(<Message id="test-id-3" content={content} buttons={{ copy: true }} />);
+  await navigator.clipboard.writeText(''); // Clear clipboard before test
+  const copyButton = screen.getByText('Copy');
+  fireEvent.click(copyButton);
+  const clipboardContent = await navigator.clipboard.readText();
+  expect(clipboardContent).toBe(content);
 });
 
 test('renders share button and triggers onShare', () => {
@@ -105,5 +108,5 @@ test('copies message content to clipboard', async () => {
   await navigator.clipboard.writeText(''); // Clear clipboard before test
   fireEvent.click(copyButton);
   const clipboardContent = await navigator.clipboard.readText();
-  expect(clipboardContent).toBe(content);
+  expect(clipboardContent).toBe('Test message to copy');
 });
