@@ -88,4 +88,5 @@ test('renders multiple code blocks and text', () => {
   expect(screen.getAllByText("log")).toHaveLength(2)
   expect(screen.getAllByText("'This is a second line.'")).toHaveLength(2)
   expect(screen.getAllByText("print")).toHaveLength(2)
+  expect(screen.getByTestId('message-container')).toBeInTheDocument();
 });

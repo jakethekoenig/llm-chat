@@ -7,7 +7,11 @@ interface MessageConfig {
     delete: boolean;
     edit: boolean;
   };
-  // Add other global configuration options here
+  theme: {
+    primaryColor: string;
+    secondaryColor: string;
+    mode: 'light' | 'dark';
+  };
 }
 
 const defaultConfig: MessageConfig = {
@@ -17,7 +21,11 @@ const defaultConfig: MessageConfig = {
     delete: true,
     edit: true,
   },
-  // Add other default values here
+  theme: {
+    primaryColor: '#000000',
+    secondaryColor: '#FFFFFF',
+    mode: 'light',
+  },
 };
 
 const MessageConfigContext = createContext<MessageConfig>(defaultConfig);

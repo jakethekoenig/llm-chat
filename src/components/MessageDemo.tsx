@@ -40,12 +40,13 @@ const MessageDemo = () => {
   ];
 
   return (
-    <div>
-      <h2>Message Component Demo</h2>
-      <button onClick={() => setTab('messages')}>Messages</button>
-      <button onClick={() => setTab('conversation')}>Conversation</button>
-      {tab === 'messages' && (
-        <>
+    <MessageConfigProvider config={{ buttons: { copy: true, share: true, delete: true, edit: true }, theme: { primaryColor: '#007BFF', secondaryColor: '#6C757D', mode: 'light' } }}>
+      <div>
+        <h2>Message Component Demo</h2>
+        <button onClick={() => setTab('messages')}>Messages</button>
+        <button onClick={() => setTab('conversation')}>Conversation</button>
+        {tab === 'messages' && (
+          <>
           <Message content={content} author="John Doe" timestamp={new Date().toISOString()} renderers={renderers} />
           <Message content="No buttons example" author="Jane Doe" timestamp={new Date().toISOString()} buttons={{}} />
           <button onClick={() => setStreamingContent(startStreaming())}>Start Streaming</button>
