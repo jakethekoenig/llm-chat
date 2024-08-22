@@ -128,3 +128,20 @@ test('renders message with all buttons', () => {
   fireEvent.click(screen.getByText('Edit'));
   expect(onEdit).toHaveBeenCalled();
 });
+
+test('renders message with no buttons', () => {
+  render(<Message id="test-id-13" content="Test message" />);
+  expect(screen.queryByText('Copy')).not.toBeInTheDocument();
+  expect(screen.queryByText('Share')).not.toBeInTheDocument();
+  expect(screen.queryByText('Delete')).not.toBeInTheDocument();
+  expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+});
+
+test('renders message with only copy button', () => {
+  const onCopy = jest.fn();
+  render(<Message id="test-id-14" content="Test message" buttons={{ copy: true }} onCopy={onCopy} />);
+  expect(screen.getByText('Copy')).toBeInTheDocument();
+  expect(screen.queryByText('Share')).not.toBeInTheDocument();
+  expect(screen.queryByText('Delete')).not.toBeInTheDocument();
+  expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+});
