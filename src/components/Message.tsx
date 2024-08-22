@@ -91,7 +91,6 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
     }
     return elements;
   };
-
   const mergedButtons = { ...globalConfig.buttons, ...buttons };
 
   return (
