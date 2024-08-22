@@ -21,4 +21,3 @@ export class CodeBlockRenderer implements Renderer {
     return `<pre><code class="hljs ${language}">${highlightedCode}</code></pre>`;
   }
 }
-}
