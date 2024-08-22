@@ -4,11 +4,19 @@ import '@testing-library/jest-dom';
 import Message from '../src/components/Message';
 import { CodeBlockRenderer } from '../src/renderers/CodeBlockRenderer';
 
+beforeAll(() => {
+  Object.assign(navigator, {
+    clipboard: {
+      writeText: jest.fn().mockResolvedValue(),
+      readText: jest.fn().mockResolvedValue(''),
+    },
+  });
+});
+
 test('renders message content', () => {
   render(<Message id="test-id-1" content="Test message" />);
   expect(screen.getByText('Test message')).toBeInTheDocument();
 });
-
 test('renders author and timestamp', () => {
   render(<Message id="test-id-2" content="Test message" author="Test Author" timestamp="2023-01-01T00:00:00Z" />);
   expect(screen.getByText('Test Author')).toBeInTheDocument();
