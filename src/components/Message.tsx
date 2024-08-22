@@ -15,6 +15,7 @@ const MessageContainer = styled.div<{ theme: { primaryColor: string; secondaryCo
   border-radius: 8px;
   background-color: ${props => props.theme.mode === 'light' ? '#FFFFFF' : '#333333'};
   color: ${props => props.theme.mode === 'light' ? '#000000' : '#FFFFFF'};
+  data-testid: 'message-container';
 `;
 
 const MessageContent = styled.p`
