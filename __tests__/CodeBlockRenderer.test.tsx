@@ -25,6 +25,9 @@ test('detects start sequence correctly', () => {
   const startSeq = renderer.detectStartSequence(content, 0);
   expect(startSeq).toEqual([0, 3]);
 });
+  const startSeq = renderer.detectStartSequence(content, 0);
+  expect(startSeq).toEqual([0, 3]);
+});
 
 test('detects end sequence correctly', () => {
   const renderer = new CodeBlockRenderer();
