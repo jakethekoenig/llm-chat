@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Message from '../src/components/Message';
 import { CodeBlockRenderer } from '../src/renderers/CodeBlockRenderer';
+import { Renderer } from '../src/renderers/Renderer';
 
 test('renders message content', () => {
   render(<Message id="test-id-1" content="Test message" />);
