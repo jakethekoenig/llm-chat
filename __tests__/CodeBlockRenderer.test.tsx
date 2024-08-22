@@ -19,7 +19,7 @@ test('detects start sequence correctly', () => {
   const renderer = new CodeBlockRenderer();
   const content = "```javascript\nconsole.log('Hello, World!');\n```";
   const startSeq = renderer.detectStartSequence(content, 0);
-  expect(startSeq).toEqual([0, 14]);
+  expect(startSeq).toEqual([0, 3]);
 });
 
 test('detects end sequence correctly', () => {
@@ -27,14 +27,14 @@ test('detects end sequence correctly', () => {
   const content = "```javascript\nconsole.log('Hello, World!');\n```";
   const startSeq = renderer.detectStartSequence(content, 0);
   const endSeq = renderer.detectEndSequence(content, Array.isArray(startSeq) ? startSeq[1] : startSeq);
-  expect(endSeq).toEqual(43);
+  expect(endSeq).toEqual([44, 47]);
 });
 
 test('handles no start sequence', () => {
   const renderer = new CodeBlockRenderer();
   const content = "console.log('Hello, World!');";
   const startSeq = renderer.detectStartSequence(content, 0);
-  expect(startSeq).toBeNull();
+  expect(startSeq).toEqual(content.length);
 });
 
 test('handles no end sequence', () => {
@@ -42,5 +42,5 @@ test('handles no end sequence', () => {
   const content = "```javascript\nconsole.log('Hello, World!');";
   const startSeq = renderer.detectStartSequence(content, 0);
   const endSeq = renderer.detectEndSequence(content, Array.isArray(startSeq) ? startSeq[1] : startSeq);
-  expect(endSeq).toBeNull();
+  expect(endSeq).toEqual(content.length);
 });

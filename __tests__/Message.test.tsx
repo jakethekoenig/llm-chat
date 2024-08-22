@@ -7,7 +7,7 @@ import { CodeBlockRenderer } from '../src/renderers/CodeBlockRenderer';
 beforeAll(() => {
   Object.assign(navigator, {
     clipboard: {
-      writeText: jest.fn().mockResolvedValue(),
+      writeText: jest.fn().mockResolvedValue(undefined),
       readText: jest.fn().mockResolvedValue(''),
     },
   });
