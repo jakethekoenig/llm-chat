@@ -89,8 +89,13 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
         start = endSeq;
         continue;
       }
-      elements.push(<span key={`rendered-${start}`} dangerouslySetInnerHTML={{ __html: matchedRenderer.render(content, startSeq[0], endSeq[1]) }} />);
-      start = endSeq[1];
+      if (endSeq !== null) {
+        elements.push(<span key={`rendered-${start}`} dangerouslySetInnerHTML={{ __html: matchedRenderer.render(content, startSeq[0], endSeq[1]) }} />);
+        start = endSeq[1];
+      } else {
+        elements.push(<span key={`plain-${start}`}>{content.slice(start)}</span>);
+        break;
+      }
     }
     return elements;
   };

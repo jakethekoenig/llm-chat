@@ -23,7 +23,7 @@ test('detects start sequence correctly', () => {
   const renderer = new CodeBlockRenderer();
   const content = "```javascript\nconsole.log('Hello, World!');\n```";
   const startSeq = renderer.detectStartSequence(content, 0);
-  expect(startSeq).toEqual([0, 14]);
+  expect(startSeq).toEqual([0, 3]);
 });
 
 test('detects end sequence correctly', () => {
@@ -33,7 +33,7 @@ test('detects end sequence correctly', () => {
   if (startSeq !== null) {
     const endSeq = renderer.detectEndSequence(content, startSeq[1]);
     if (endSeq !== null) {
-      expect(endSeq).toEqual([43, 46]);
+      expect(endSeq).toEqual([44, 47]);
     }
   }
 });
