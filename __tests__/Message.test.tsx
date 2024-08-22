@@ -108,5 +108,5 @@ test('copies message content to clipboard', async () => {
   await navigator.clipboard.writeText(''); // Clear clipboard before test
   fireEvent.click(copyButton);
   const clipboardContent = await navigator.clipboard.readText();
-  expect(clipboardContent).toBe('Test message to copy');
+  expect(clipboardContent).toBe(content);
 });
