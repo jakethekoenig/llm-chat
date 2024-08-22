@@ -2,20 +2,20 @@ import React, { createContext, useContext, ReactNode } from 'react';
 
 interface MessageConfig {
   buttons: {
-    copy: boolean;
-    share: boolean;
-    delete: boolean;
-    edit: boolean;
+    copy: 'enabled' | 'disabled' | 'menu-ed';
+    share: 'enabled' | 'disabled' | 'menu-ed';
+    delete: 'enabled' | 'disabled' | 'menu-ed';
+    edit: 'enabled' | 'disabled' | 'menu-ed';
   };
   // Add other global configuration options here
 }
 
 const defaultConfig: MessageConfig = {
   buttons: {
-    copy: true,
-    share: true,
-    delete: true,
-    edit: true,
+    copy: 'enabled',
+    share: 'enabled',
+    delete: 'enabled',
+    edit: 'enabled',
   },
   // Add other default values here
 };

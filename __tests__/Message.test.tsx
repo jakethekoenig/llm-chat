@@ -53,6 +53,17 @@ test('renders async iterator content', async () => {
 
   render(<Message id="test-id-7" content={asyncIterable} />);
   expect(await screen.findByText((content, element) => content.startsWith('Hello, '))).toBeInTheDocument();
+});
+
+test('renders menu-ed buttons and triggers respective actions', () => {
+  render(<Message id="test-id-11" content="Test message" buttons={{ copy: 'menu-ed', share: 'menu-ed', delete: 'menu-ed', edit: 'menu-ed' }} />);
+  expect(screen.getByText('Menu')).toBeInTheDocument();
+  fireEvent.click(screen.getByText('Menu'));
+  expect(screen.getByText('Copy')).toBeInTheDocument();
+  expect(screen.getByText('Share')).toBeInTheDocument();
+  expect(screen.getByText('Delete')).toBeInTheDocument();
+  expect(screen.getByText('Edit')).toBeInTheDocument();
+});
   expect(await screen.findByText('Hello, world!')).toBeInTheDocument();
 });
 
