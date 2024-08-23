@@ -45,13 +45,6 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
   const isMountedRef = useRef(true);
 
   useEffect(() => {
-    const latexRenderer = renderers.find(renderer => renderer instanceof LatexRenderer) as LatexRenderer;
-    if (latexRenderer) {
-      latexRenderer.initializeMathJax();
-    }
-  }, [renderers]);
-
-  useEffect(() => {
     isMountedRef.current = true;
     setDisplayedContent(''); // Reset content when prop changes
     const processContent = async () => {
@@ -103,11 +96,11 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
       }
       const endSeq = matchedRenderer.detectEndSequence(content, startSeq[1]) as [number, number] | null;
       if (!endSeq) {
-        elements.push(<span key={`rendered-${startSeq[0]}`} dangerouslySetInnerHTML={{ __html: matchedRenderer.render(content, startSeq[0], content.length) }} />);
+        elements.push(<span key={`rendered-${startSeq[0]}`}>{matchedRenderer.render(content, startSeq[0], content.length)}</span>);
         break;
       }
       if (endSeq !== null) {
-        elements.push(<span key={`rendered-${startSeq[0]}`} dangerouslySetInnerHTML={{ __html: matchedRenderer.render(content, startSeq[0], endSeq[1]) }} />);
+        elements.push(<span key={`rendered-${startSeq[0]}`}>{matchedRenderer.render(content, startSeq[0], endSeq[1])}</span>);
         start = endSeq[1];
       } else {
         elements.push(<span key={`plain-${start}`}>{content.slice(start)}</span>);

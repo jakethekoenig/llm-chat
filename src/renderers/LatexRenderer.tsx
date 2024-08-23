@@ -1,6 +1,8 @@
 // src/renderers/LatexRenderer.tsx
+import React from 'react';
 import { Renderer } from './Renderer';
 import DOMPurify from 'dompurify';
+import { MathJax } from 'better-react-mathjax';
 
 export class LatexRenderer implements Renderer {
   detectStartSequence(content: string, startIndex: number): [number, number] | null {
@@ -25,14 +27,8 @@ export class LatexRenderer implements Renderer {
     return null;
   }
 
-  render(content: string, startIndex: number, endIndex: number): string {
+  render(content: string, startIndex: number, endIndex: number): React.ReactNode {
     const latexContent = DOMPurify.sanitize(content.slice(startIndex, endIndex).replace(/^(\$\$|\\\(|\\\[)|(\$\$|\\\)|\\\])$/g, ''));
-    return `<span class="mathjax-latex">${latexContent}</span>`;
-  }
-
-  initializeMathJax() {
-    if (typeof window !== 'undefined' && (window as any).MathJax) {
-      (window as any).MathJax.typeset();
-    }
+    return <MathJax>{latexContent}</MathJax>;
   }
 }

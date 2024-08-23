@@ -1,5 +1,6 @@
 // src/__tests__/LatexRenderer.test.tsx
 import { LatexRenderer } from '../renderers/LatexRenderer';
+import { MathJax } from 'better-react-mathjax';
 
 describe('LatexRenderer', () => {
   let renderer: LatexRenderer;
@@ -40,13 +41,6 @@ describe('LatexRenderer', () => {
 
   test('render wraps content in span', () => {
     const result = renderer.render('E=mc^2', 0, 6);
-    expect(result).toBe('<span class="mathjax-latex">E=mc^2</span>');
-  });
-
-  test('initializeMathJax calls MathJax.typeset', () => {
-    const mockMathJax = { typeset: jest.fn() };
-    (window as any).MathJax = mockMathJax;
-    renderer.initializeMathJax();
-    expect(mockMathJax.typeset).toHaveBeenCalled();
+    expect(result).toEqual(<MathJax>{'E=mc^2'}</MathJax>);
   });
 });

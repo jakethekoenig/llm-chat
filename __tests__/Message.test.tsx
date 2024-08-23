@@ -120,10 +120,10 @@ test('renders multiple code blocks and text without duplication', () => {
   expect(screen.getByText("Here is some text before the code block.")).toBeInTheDocument();
   expect(screen.getByText("Here is some text between the code blocks.")).toBeInTheDocument();
   expect(screen.getByText("Here is some text after the code block.")).toBeInTheDocument();
-  expect(screen.getAllByText("console")).toHaveLength(2)
-  expect(screen.getAllByText("log")).toHaveLength(2)
-  expect(screen.getAllByText("'This is a second line.'")).toHaveLength(2)
-  expect(screen.getAllByText("print")).toHaveLength(2)
+  expect(screen.getAllByText((content, element) => element !== null && element.tagName.toLowerCase() === 'span' && content.includes("console"))).toHaveLength(2);
+  expect(screen.getAllByText((content, element) => element !== null && element.tagName.toLowerCase() === 'span' && content.includes("log"))).toHaveLength(2);
+  expect(screen.getAllByText((content, element) => element !== null && element.tagName.toLowerCase() === 'span' && content.includes("'This is a second line.'"))).toHaveLength(2);
+  expect(screen.getAllByText((content, element) => element !== null && element.tagName.toLowerCase() === 'span' && content.includes("print"))).toHaveLength(2);
   expect(screen.getByTestId('message-container')).toBeInTheDocument();
 });
 
