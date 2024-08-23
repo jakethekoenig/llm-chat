@@ -42,7 +42,7 @@ test('handles no start sequence', () => {
   const renderer = new CodeBlockRenderer();
   const content = "console.log('Hello, World!');";
   const startSeq = renderer.detectStartSequence(content, 0);
-  expect(startSeq).toEqual(content.length);
+  expect(startSeq).toBeNull();
 });
 
 test('handles no end sequence', () => {

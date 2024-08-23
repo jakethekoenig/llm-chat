@@ -61,10 +61,13 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
     };
   }, [content]);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(displayedContent).then(() => {
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(displayedContent);
       if (onCopy) onCopy();
-    });
+    } catch (error) {
+      console.error('Failed to copy text: ', error);
+    }
   };
 
   const renderContent = (content: string) => {
