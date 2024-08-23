@@ -14,6 +14,11 @@ beforeAll(() => {
   });
 });
 
+beforeEach(() => {
+  navigator.clipboard.writeText.mockClear();
+  navigator.clipboard.readText.mockClear();
+});
+
 test('renders message content', () => {
   render(<Message id="test-id-1" content="Test message" />);
   expect(screen.getByText('Test message')).toBeInTheDocument();
@@ -104,6 +109,11 @@ test('renders multiple code blocks and text', () => {
   expect(screen.getAllByText("print")).toHaveLength(2)
 });
 
+beforeEach(() => {
+  navigator.clipboard.writeText.mockClear();
+  navigator.clipboard.readText.mockClear();
+});
+
 test('copies message content to clipboard', async () => {
   const content = 'Test message to copy';
   await navigator.clipboard.writeText(''); // Clear clipboard before test
@@ -143,6 +153,6 @@ test('renders message with only copy button', async () => {
   render(<Message id="test-id-14" content="Test message" buttons={{ copy: true }} onCopy={onCopy} />);
   expect(screen.getByText('Copy')).toBeInTheDocument();
   expect(screen.queryByText('Share')).not.toBeInTheDocument();
-  expect(screen.queryByText('Delete')).not.toBeInTheDocument();
-  expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+  expect(screen.queryByText('Delete')).not toBeInTheDocument();
+  expect(screen.queryByText('Edit')).not toBeInTheDocument();
 });
