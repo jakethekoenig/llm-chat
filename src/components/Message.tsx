@@ -142,5 +142,4 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
     </MessageContainer>
   );
 };
-
 export default Message;
