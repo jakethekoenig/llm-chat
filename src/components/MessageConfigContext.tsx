@@ -1,6 +1,6 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 
-interface MessageConfig {
+export interface MessageConfig {
   buttons: {
     copy: boolean;
     share: boolean;

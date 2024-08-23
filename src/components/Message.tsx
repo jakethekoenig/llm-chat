@@ -61,40 +61,50 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
     };
   }, [content]);
 
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(displayedContent);
+      if (onCopy) await onCopy();
+    } catch (error) {
+      console.error('Failed to copy text: ', error);
+    }
+  };
+
   const renderContent = (content: string) => {
     let start = 0;
     const elements: JSX.Element[] = [];
     while (start < content.length) {
       let matchedRenderer = null;
-      let startSeq = null;
+      let startSeq: [number, number] | null = null;
       for (const renderer of renderers) {
-        startSeq = renderer.detectStartSequence(content, start);
-        if (typeof startSeq !== 'number') {
+        startSeq = renderer.detectStartSequence(content, start) as [number, number] | null;
+        if (startSeq) {
           matchedRenderer = renderer;
           break;
         }
-      }
-      if (typeof startSeq === 'number') {
-        elements.push(<span key={`plain-${start}`}>{content.slice(start, startSeq)}</span>);
-        start = startSeq;
-        continue;
       }
       if (!startSeq || !matchedRenderer) {
         elements.push(<span key={`plain-${start}`}>{content.slice(start)}</span>);
         break;
       }
-      const endSeq = matchedRenderer.detectEndSequence(content, startSeq[1]);
-      if (typeof endSeq === 'number') {
-        elements.push(<span key={`plain-${start}`}>{content.slice(start, endSeq)}</span>);
-        start = endSeq;
-        continue;
+      if (startSeq[0] > start) {
+        elements.push(<span key={`plain-${start}`}>{content.slice(start, startSeq[0])}</span>);
       }
-      elements.push(<span key={`rendered-${start}`} dangerouslySetInnerHTML={{ __html: matchedRenderer.render(content, startSeq[0], endSeq[1]) }} />);
-      start = endSeq[1];
+      const endSeq = matchedRenderer.detectEndSequence(content, startSeq[1]) as [number, number] | null;
+      if (!endSeq) {
+        elements.push(<span key={`rendered-${startSeq[0]}`} dangerouslySetInnerHTML={{ __html: matchedRenderer.render(content, startSeq[0], content.length) }} />);
+        break;
+      }
+      if (endSeq !== null) {
+        elements.push(<span key={`rendered-${startSeq[0]}`} dangerouslySetInnerHTML={{ __html: matchedRenderer.render(content, startSeq[0], endSeq[1]) }} />);
+        start = endSeq[1];
+      } else {
+        elements.push(<span key={`plain-${start}`}>{content.slice(start)}</span>);
+        break;
+      }
     }
     return elements;
   };
-
   const mergedButtons = { ...globalConfig.buttons, ...buttons };
 
   return (
@@ -103,7 +113,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
       {author && <MessageAuthor>{author}</MessageAuthor>}
       {timestamp && <MessageTimestamp>{new Date(timestamp).toLocaleString()}</MessageTimestamp>}
       <ButtonContainer>
-        {mergedButtons.copy && <Button onClick={onCopy} startIcon={<CopyIcon />}>Copy</Button>}
+        {mergedButtons.copy && <Button onClick={handleCopy} startIcon={<CopyIcon />}>Copy</Button>}
         {mergedButtons.share && <Button onClick={onShare} startIcon={<ShareIcon />}>Share</Button>}
         {mergedButtons.delete && <Button onClick={onDelete} startIcon={<DeleteIcon />}>Delete</Button>}
         {mergedButtons.edit && <Button onClick={onEdit} startIcon={<EditIcon />}>Edit</Button>}
