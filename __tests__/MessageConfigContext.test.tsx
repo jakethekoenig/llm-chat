@@ -54,13 +54,6 @@ test('overrides default configuration', () => {
   expect(container).toHaveStyle('background-color: #FFFFFF');
   expect(container).toHaveStyle('color: #000000');
 });
-    </MessageConfigProvider>
-  );
-  expect(screen.queryByText('Copy Button Enabled')).not.toBeInTheDocument();
-  expect(screen.queryByText('Share Button Enabled')).not.toBeInTheDocument();
-  expect(screen.queryByText('Delete Button Enabled')).not.toBeInTheDocument();
-  expect(screen.queryByText('Edit Button Enabled')).not.toBeInTheDocument();
-});
 
 test('overrides default theme configuration', () => {
   render(
