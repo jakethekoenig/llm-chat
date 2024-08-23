@@ -40,7 +40,7 @@ describe('LatexRenderer', () => {
 
   test('render wraps content in span', () => {
     const result = renderer.render('E=mc^2', 0, 6);
-    expect(result).toBe('<span class="mathjax-latex">E=mc^2</span>');
+    expect(result).toEqual(<span className="mathjax-latex" dangerouslySetInnerHTML={{ __html: "E=mc^2" }} />);
   });
 
   test('initializeMathJax calls MathJax.typeset', () => {
