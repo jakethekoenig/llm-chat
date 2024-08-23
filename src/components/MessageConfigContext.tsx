@@ -18,7 +18,7 @@ export const defaultConfig: MessageConfig = {
   buttons: {
     copy: 'enabled',
     share: 'enabled',
-    delete: 'enabled',
+    delete: 'disabled',
     edit: 'enabled',
   },
   theme: {

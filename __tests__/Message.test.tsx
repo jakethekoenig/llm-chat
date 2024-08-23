@@ -129,7 +129,8 @@ test('renders multiple code blocks and text without duplication', () => {
 
 test('copies message content to clipboard', async () => {
   const content = 'Test message to copy';
-  renderWithConfig(<Message id="test-id-11" content={content} buttons={{ copy: true }} />);
+  const onCopy = jest.fn();
+  renderWithConfig(<Message id="test-id-11" content={content} buttons={{ copy: 'enabled' }} onCopy={onCopy} />);
   const copyButton = screen.getByText('Copy');
   await fireEvent.click(copyButton);
   expect(navigator.clipboard.writeText).toHaveBeenCalledWith(content);
