@@ -110,6 +110,12 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
     return elements;
   };
   const mergedButtons = { ...globalConfig.buttons, ...buttons };
+  const finalButtons = {
+    copy: mergedButtons.copy !== 'disabled' ? mergedButtons.copy : false,
+    share: mergedButtons.share !== 'disabled' ? mergedButtons.share : false,
+    delete: mergedButtons.delete !== 'disabled' ? mergedButtons.delete : false,
+    edit: mergedButtons.edit !== 'disabled' ? mergedButtons.edit : false,
+  };
 
   return (
     <MessageContainer theme={globalConfig.theme} data-testid="message-container">
@@ -117,18 +123,18 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
       {author && <MessageAuthor>{author}</MessageAuthor>}
       {timestamp && <MessageTimestamp>{new Date(timestamp).toLocaleString()}</MessageTimestamp>}
       <ButtonContainer>
-        {mergedButtons.copy === 'enabled' && <Button onClick={handleCopy} startIcon={<CopyIcon />}>Copy</Button>}
-        {mergedButtons.share === 'enabled' && <Button onClick={onShare} startIcon={<ShareIcon />}>Share</Button>}
-        {mergedButtons.delete === 'enabled' && <Button onClick={onDelete} startIcon={<DeleteIcon />}>Delete</Button>}
-        {mergedButtons.edit === 'enabled' && <Button onClick={onEdit} startIcon={<EditIcon />}>Edit</Button>}
-        {(mergedButtons.copy === 'menu-ed' || mergedButtons.share === 'menu-ed' || mergedButtons.delete === 'menu-ed' || mergedButtons.edit === 'menu-ed') && (
+        {finalButtons.copy === 'enabled' && <Button onClick={handleCopy} startIcon={<CopyIcon />}>Copy</Button>}
+        {finalButtons.share === 'enabled' && <Button onClick={onShare} startIcon={<ShareIcon />}>Share</Button>}
+        {finalButtons.delete === 'enabled' && <Button onClick={onDelete} startIcon={<DeleteIcon />}>Delete</Button>}
+        {finalButtons.edit === 'enabled' && <Button onClick={onEdit} startIcon={<EditIcon />}>Edit</Button>}
+        {(finalButtons.copy === 'menu-ed' || finalButtons.share === 'menu-ed' || finalButtons.delete === 'menu-ed' || finalButtons.edit === 'menu-ed') && (
           <Button startIcon={<MoreVertIcon />}>
             Menu
             <Menu>
-              {mergedButtons.copy === 'menu-ed' && <MenuItem onClick={handleCopy}>Copy</MenuItem>}
-              {mergedButtons.share === 'menu-ed' && <MenuItem onClick={onShare}>Share</MenuItem>}
-              {mergedButtons.delete === 'menu-ed' && <MenuItem onClick={onDelete}>Delete</MenuItem>}
-              {mergedButtons.edit === 'menu-ed' && <MenuItem onClick={onEdit}>Edit</MenuItem>}
+              {finalButtons.copy === 'menu-ed' && <MenuItem onClick={handleCopy}>Copy</MenuItem>}
+              {finalButtons.share === 'menu-ed' && <MenuItem onClick={onShare}>Share</MenuItem>}
+              {finalButtons.delete === 'menu-ed' && <MenuItem onClick={onDelete}>Delete</MenuItem>}
+              {finalButtons.edit === 'menu-ed' && <MenuItem onClick={onEdit}>Edit</MenuItem>}
             </Menu>
           </Button>
         )}
