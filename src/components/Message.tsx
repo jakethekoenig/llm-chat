@@ -49,7 +49,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
     if (latexRenderer) {
       latexRenderer.initializeMathJax();
     }
-  }, [content, renderers]);
+  }, [renderers]);
 
   useEffect(() => {
     isMountedRef.current = true;
