@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/extend-expect';
 import Message from '../src/components/Message';
 import { CodeBlockRenderer } from '../src/renderers/CodeBlockRenderer';
 import { Renderer } from '../src/renderers/Renderer';
