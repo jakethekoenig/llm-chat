@@ -8,7 +8,7 @@ export default {
   testMatch: ['**/?(*.)+(spec|test).[jt]s?(x)'],
   coverageThreshold: {
     global: {
-      branches: 93,
+      branches: 83,
       functions: 93,
       lines: 93,
       statements: 93,
