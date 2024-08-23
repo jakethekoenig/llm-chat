@@ -18,4 +18,5 @@ export interface Message {
   onEdit?: () => void;
   renderers?: Renderer[];
   parentId?: string | null;
+  conversationId?: string;
 }
