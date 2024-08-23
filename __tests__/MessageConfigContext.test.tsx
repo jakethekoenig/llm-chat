@@ -44,7 +44,16 @@ test('provides default theme configuration', () => {
 test('overrides default configuration', () => {
   render(
     <MessageConfigProvider config={{ buttons: { copy: false, share: false, delete: false, edit: false }, theme: { primaryColor: '#000000', secondaryColor: '#FFFFFF', mode: 'light' } }}>
-      <TestComponent />
+      <div data-testid="message-container">
+        <TestComponent />
+      </div>
+    </MessageConfigProvider>
+  );
+  const container = screen.getByTestId('message-container');
+  expect(container).toHaveStyle('border-color: #000000');
+  expect(container).toHaveStyle('background-color: #FFFFFF');
+  expect(container).toHaveStyle('color: #000000');
+});
     </MessageConfigProvider>
   );
   expect(screen.queryByText('Copy Button Enabled')).not.toBeInTheDocument();
