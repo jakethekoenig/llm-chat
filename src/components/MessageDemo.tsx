@@ -22,11 +22,15 @@ const MessageDemo = () => {
       "print('Hello, World!')\n",
       "print('This is a second line.')\n",
       '```\n',
-      'Here is some text after the code block.'
+      'Here is some text after the code block.\n',
+      'Here is some math: \\(E=mc^2\\).\n',
+      'Here is a display math block:\n',
+      '$$\\int_0^\\infty e^{-x^2} dx = ',
+      '\\frac{\\sqrt{\\pi}}{2}$$\n',
     ];
     for (const chunk of content) {
       yield chunk;
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
   };
 

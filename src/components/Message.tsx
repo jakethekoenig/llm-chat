@@ -45,13 +45,6 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
   const isMountedRef = useRef(true);
 
   useEffect(() => {
-    const latexRenderer = renderers.find(renderer => renderer instanceof LatexRenderer) as LatexRenderer;
-    if (latexRenderer) {
-      latexRenderer.initializeMathJax();
-    }
-  }, [renderers]);
-
-  useEffect(() => {
     isMountedRef.current = true;
     setDisplayedContent(''); // Reset content when prop changes
     const processContent = async () => {
