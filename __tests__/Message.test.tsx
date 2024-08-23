@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Message from '../src/components/Message';
 import { CodeBlockRenderer } from '../src/renderers/CodeBlockRenderer';
+import { LatexRenderer } from '../src/renderers/LatexRenderer';
 import { Renderer } from '../src/renderers/Renderer';
 import { MessageConfigProvider, MessageConfig, defaultConfig } from '../src/components/MessageConfigContext';
 
