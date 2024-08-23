@@ -41,6 +41,6 @@ describe('LatexRenderer', () => {
 
   test('render wraps content in span', () => {
     const result = renderer.render('E=mc^2', 0, 6);
-    expect(result).toEqual(<MathJax>{'E=mc^2'}</MathJax>);
+    expect(result).toEqual(<MathJax dynamic>{'E=mc^2'}</MathJax>);
   });
 });
