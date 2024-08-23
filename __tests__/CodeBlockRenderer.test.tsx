@@ -51,8 +51,6 @@ test('handles no end sequence', () => {
   const startSeq = renderer.detectStartSequence(content, 0);
   if (startSeq !== null) {
     const endSeq = renderer.detectEndSequence(content, startSeq[1]);
-    if (endSeq !== null) {
-      expect(endSeq).toBeNull();
-    }
+    expect(endSeq).toBeNull();
   }
 });
