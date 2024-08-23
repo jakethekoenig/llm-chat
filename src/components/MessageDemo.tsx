@@ -40,17 +40,18 @@ const MessageDemo = () => {
   ];
 
   return (
-    <MessageConfigProvider config={{ buttons: { copy: true, share: true, delete: true, edit: true }, theme: { primaryColor: '#007BFF', secondaryColor: '#6C757D', mode: 'light' } }}>
+    <MessageConfigProvider config={{ buttons: { copy: 'enabled', share: 'enabled', delete: 'enabled', edit: 'enabled' }, theme: { primaryColor: '#007BFF', secondaryColor: '#6C757D', mode: 'light' } }}>
       <div>
         <h2>Message Component Demo</h2>
         <button onClick={() => setTab('messages')}>Messages</button>
         <button onClick={() => setTab('conversation')}>Conversation</button>
         {tab === 'messages' && (
           <>
-          <Message content={content} author="John Doe" timestamp={new Date().toISOString()} renderers={renderers} buttons={{ copy: true, share: true, delete: true, edit: true }} />
-          <Message content="No buttons example" author="Jane Doe" timestamp={new Date().toISOString()} buttons={{ copy: false, share: false, delete: false, edit: false }} />
+          <Message content={content} author="John Doe" timestamp={new Date().toISOString()} renderers={renderers} buttons={{ copy: 'enabled', share: 'enabled', delete: 'enabled', edit: 'enabled' }} />
+          <Message content="No buttons example" author="Jane Doe" timestamp={new Date().toISOString()} buttons={{ copy: 'disabled', share: 'disabled', delete: 'disabled', edit: 'disabled' }} />
+          <Message content="Menu-ed buttons example" author="Jane Doe" timestamp={new Date().toISOString()} buttons={{ copy: 'menu-ed', share: 'menu-ed', delete: 'menu-ed', edit: 'menu-ed' }} />
           <button onClick={() => setStreamingContent(startStreaming())}>Start Streaming</button>
-          {streamingContent && <Message content={streamingContent} author="Streamer" timestamp={new Date().toISOString()} renderers={renderers} buttons={{ copy: true, share: true, delete: true, edit: true }} />}
+          {streamingContent && <Message content={streamingContent} author="Streamer" timestamp={new Date().toISOString()} renderers={renderers} buttons={{ copy: 'enabled', share: 'enabled', delete: 'enabled', edit: 'enabled' }} />}
         </>
       )}
       {tab === 'conversation' && <Conversation messages={messages} />}

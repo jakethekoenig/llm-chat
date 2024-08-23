@@ -51,7 +51,7 @@ test('renders control buttons based on props', async () => {
 
 test('renders share button and triggers onShare', async () => {
   const onShare = jest.fn();
-  renderWithConfig(<Message id="test-id-4" content="Test message" buttons={{ share: true }} onShare={onShare} />);
+  renderWithConfig(<Message id="test-id-4" content="Test message" buttons={{ share: 'enabled' }} onShare={onShare} />);
   await fireEvent.click(screen.getByText('Share'));
   expect(onShare).toHaveBeenCalled();
 });
@@ -173,7 +173,7 @@ test('renders message with no buttons', async () => {
 
 test('renders message with only copy button', async () => {
   const onCopy = jest.fn();
-  renderWithConfig(<Message id="test-id-14" content="Test message" buttons={{ copy: true }} onCopy={onCopy} />, { buttons: { copy: true, share: false, delete: false, edit: false } });
+  renderWithConfig(<Message id="test-id-14" content="Test message" buttons={{ copy: 'enabled' }} onCopy={onCopy} />, { buttons: { copy: 'enabled', share: 'disabled', delete: 'disabled', edit: 'disabled' } });
   expect(screen.getByText('Copy')).toBeInTheDocument();
   expect(screen.queryByText('Share')).not.toBeInTheDocument();
   expect(screen.queryByText('Delete')).not.toBeInTheDocument();
