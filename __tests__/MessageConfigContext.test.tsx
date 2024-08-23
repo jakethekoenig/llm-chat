@@ -66,13 +66,6 @@ test('provides menu-ed button configuration', () => {
   expect(screen.getByText('Delete')).toBeInTheDocument();
   expect(screen.getByText('Edit')).toBeInTheDocument();
 });
-  expect(screen.getByText('Menu')).toBeInTheDocument();
-  fireEvent.click(screen.getByText('Menu'));
-  expect(screen.getByText('Copy')).toBeInTheDocument();
-  expect(screen.getByText('Share')).toBeInTheDocument();
-  expect(screen.getByText('Delete')).toBeInTheDocument();
-  expect(screen.getByText('Edit')).toBeInTheDocument();
-});
 
 test('overrides default theme configuration', () => {
   render(

@@ -82,5 +82,4 @@ MenuEdButtons.args = {
   onShare: () => console.log('Share clicked'),
   onDelete: () => console.log('Delete clicked'),
   onEdit: () => console.log('Edit clicked'),
-}
 };
