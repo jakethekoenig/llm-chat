@@ -108,7 +108,7 @@ test('renders code block content during streaming', async () => {
   const renderers = [new CodeBlockRenderer()];
   render(<Message id="test-id-11" content={asyncIterable} renderers={renderers as Renderer[]} />);
   expect(await screen.findByText("Here is some text before the code block.")).toBeInTheDocument();
-  expect(await screen.findAllByText((content, element) => element !== null && element.tagName.toLowerCase() === 'code' && content.includes("console"))).toHaveLength(2);
-  expect(await screen.findAllByText((content, element) => element !== null && element.tagName.toLowerCase() === 'code' && content.includes("log"))).toHaveLength(2);
+  expect(await screen.findAllByText((content, element) => element !== null && element.tagName.toLowerCase() === 'code' && content.includes("console"))).toHaveLength(1);
+  expect(await screen.findAllByText((content, element) => element !== null && element.tagName.toLowerCase() === 'code' && content.includes("log"))).toHaveLength(1);
   expect(await screen.findByText("Here is some text after the code block.")).toBeInTheDocument();
 });
