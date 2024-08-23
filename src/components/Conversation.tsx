@@ -24,6 +24,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
       const children = messages.filter(message => message.parentId === selectedMessageId);
       if (children.length > 0) {
         setSelectedChildId(children[0].id);
+        setChildIndex(prev => ({ ...prev, [selectedMessageId]: 0 }));
       }
     }
   }, [selectedMessageId, messages]);
@@ -69,5 +70,4 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
 
   return <div>{renderMessages(messages)}</div>;
 };
-
 export default Conversation;
