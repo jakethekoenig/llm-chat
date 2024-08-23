@@ -194,3 +194,17 @@ test('renders code block content during streaming', async () => {
     expect(screen.getByText("Here is some text after the code block.")).toBeInTheDocument();
   });
 });
+
+test('renders inline math after code block', async () => {
+  const renderers = [new CodeBlockRenderer(), new LatexRenderer()];
+  const content = "```javascript\nconsole.log('Hello, World!');\n```\nHere is some inline math: \\(a^2 + b^2 = c^2\\)";
+  renderWithConfig(<Message id="test-id-15" content={content} renderers={renderers as Renderer[]} />);
+  expect(screen.getByText("console")).toBeInTheDocument();
+  expect(screen.getByText("log")).toBeInTheDocument();
+  await waitFor(() => {
+    expect(screen.getByText((content, element) => element !== null && element.tagName.toLowerCase() === 'span' && content.includes("Here is some inline math:"))).toBeInTheDocument();
+  });
+  await waitFor(() => {
+    expect(screen.getByText((content, element) => element !== null && element.tagName.toLowerCase() === 'span' && content.includes("a^2 + b^2 = c^2"))).toBeInTheDocument();
+  });
+});
