@@ -3,12 +3,12 @@ import { useState } from 'react';
 import Message from './Message';
 import Conversation from './Conversation';
 import { CodeBlockRenderer } from '../renderers/CodeBlockRenderer';
+import { MessageConfigProvider } from './MessageConfigContext';
 import { Message as MessageType } from '../types/Message';
 
 const MessageDemo = () => {
   const [streamingContent, setStreamingContent] = useState<AsyncIterable<string> | null>(null);
   const [tab, setTab] = useState<'messages' | 'conversation'>('messages');
-
   const startStreaming = async function* (): AsyncIterable<string> {
     const content = [
       'Here is some text before the code block.\n',

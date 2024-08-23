@@ -30,7 +30,9 @@ test('provides default configuration', () => {
 test('provides default theme configuration', () => {
   render(
     <MessageConfigProvider config={{ buttons: { copy: true, share: true, delete: true, edit: true }, theme: { primaryColor: '#000000', secondaryColor: '#FFFFFF', mode: 'light' } }}>
-      <TestComponent />
+      <MessageContainer data-testid="message-container">
+        <TestComponent />
+      </MessageContainer>
     </MessageConfigProvider>
   );
   const container = screen.getByTestId('message-container');
