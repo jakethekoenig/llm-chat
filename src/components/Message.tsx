@@ -8,11 +8,15 @@ import { Message as MessageType } from '../types/Message';
 
 interface MessageProps extends MessageType {}
 
-const MessageContainer = styled.div`
-  border: 1px solid #ccc;
+const MessageContainer = styled.div.attrs<{ 'data-testid': string }>(props => ({
+  'data-testid': props['data-testid'],
+}))<{ theme: { primaryColor: string; secondaryColor: string; mode: 'light' | 'dark' } }>`
+  border: 1px solid ${props => props.theme.primaryColor};
   padding: 16px;
   margin: 8px 0;
   border-radius: 8px;
+  background-color: ${props => props.theme.mode === 'light' ? '#FFFFFF' : '#333333'};
+  color: ${props => props.theme.mode === 'light' ? '#000000' : '#FFFFFF'};
 `;
 
 const MessageContent = styled.p`
@@ -108,7 +112,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
   const mergedButtons = { ...globalConfig.buttons, ...buttons };
 
   return (
-    <MessageContainer>
+    <MessageContainer theme={globalConfig.theme} data-testid="message-container">
       <MessageContent>{renderContent(displayedContent)}</MessageContent>
       {author && <MessageAuthor>{author}</MessageAuthor>}
       {timestamp && <MessageTimestamp>{new Date(timestamp).toLocaleString()}</MessageTimestamp>}

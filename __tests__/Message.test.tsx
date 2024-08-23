@@ -4,16 +4,7 @@ import '@testing-library/jest-dom';
 import Message from '../src/components/Message';
 import { CodeBlockRenderer } from '../src/renderers/CodeBlockRenderer';
 import { Renderer } from '../src/renderers/Renderer';
-import { MessageConfigProvider, MessageConfig } from '../src/components/MessageConfigContext';
-
-const defaultConfig: MessageConfig = {
-  buttons: {
-    copy: true,
-    share: true,
-    delete: true,
-    edit: true,
-  },
-};
+import { MessageConfigProvider, MessageConfig, defaultConfig } from '../src/components/MessageConfigContext';
 
 beforeAll(() => {
   Object.assign(navigator, {
@@ -133,6 +124,7 @@ test('renders multiple code blocks and text without duplication', () => {
   expect(screen.getAllByText("log")).toHaveLength(2)
   expect(screen.getAllByText("'This is a second line.'")).toHaveLength(2)
   expect(screen.getAllByText("print")).toHaveLength(2)
+  expect(screen.getByTestId('message-container')).toBeInTheDocument();
 });
 
 test('copies message content to clipboard', async () => {
