@@ -113,7 +113,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
   return (
     <MessageContainer theme={globalConfig.theme} data-testid="message-container">
       <MessageContent>{renderContent(displayedContent)}</MessageContent>
-      {author && <MessageAuthor>{author}</MessageAuthor>}
+      {author && <><br></br><MessageAuthor>{author}</MessageAuthor></>}
       {timestamp && <MessageTimestamp>{new Date(timestamp).toLocaleString()}</MessageTimestamp>}
       <ButtonContainer>
         {mergedButtons.copy && <Button onClick={handleCopy} startIcon={<CopyIcon />}>Copy</Button>}
