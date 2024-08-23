@@ -6,6 +6,7 @@ import { CodeBlockRenderer } from '../src/renderers/CodeBlockRenderer';
 import { LatexRenderer } from '../src/renderers/LatexRenderer';
 import { Renderer } from '../src/renderers/Renderer';
 import { MessageConfigProvider, MessageConfig, defaultConfig } from '../src/components/MessageConfigContext';
+import { MathJaxContext } from 'better-react-mathjax';
 
 beforeAll(() => {
   Object.assign(navigator, {
@@ -24,7 +25,9 @@ const renderWithConfig = (ui: React.ReactElement, config: Partial<MessageConfig>
   const fullConfig: MessageConfig = { ...defaultConfig, ...config };
   return render(
     <MessageConfigProvider config={fullConfig}>
-      {ui}
+      <MathJaxContext>
+        {ui}
+      </MathJaxContext>
     </MessageConfigProvider>
   );
 };
