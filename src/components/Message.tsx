@@ -83,11 +83,11 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
       }
       const endSeq = matchedRenderer.detectEndSequence(content, startSeq[1]) as [number, number] | null;
       if (!endSeq) {
-        elements.push(<span key={`plain-${start}`}>{content.slice(start)}</span>);
+        elements.push(<span key={`rendered-${startSeq[0]}`} dangerouslySetInnerHTML={{ __html: matchedRenderer.render(content, startSeq[0], content.length) }} />);
         break;
       }
       if (endSeq !== null) {
-        elements.push(<span key={`rendered-${start}`} dangerouslySetInnerHTML={{ __html: matchedRenderer.render(content, startSeq[0], endSeq[1]) }} />);
+        elements.push(<span key={`rendered-${startSeq[0]}`} dangerouslySetInnerHTML={{ __html: matchedRenderer.render(content, startSeq[0], endSeq[1]) }} />);
         start = endSeq[1];
       } else {
         elements.push(<span key={`plain-${start}`}>{content.slice(start)}</span>);
