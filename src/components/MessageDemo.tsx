@@ -3,12 +3,12 @@ import { useState } from 'react';
 import Message from './Message';
 import Conversation from './Conversation';
 import { CodeBlockRenderer } from '../renderers/CodeBlockRenderer';
+import { MessageConfigProvider } from './MessageConfigContext';
 import { Message as MessageType } from '../types/Message';
 
 const MessageDemo = () => {
   const [streamingContent, setStreamingContent] = useState<AsyncIterable<string> | null>(null);
   const [tab, setTab] = useState<'messages' | 'conversation'>('messages');
-
   const startStreaming = async function* (): AsyncIterable<string> {
     const content = [
       'Here is some text before the code block.\n',
@@ -40,12 +40,13 @@ const MessageDemo = () => {
   ];
 
   return (
-    <div>
-      <h2>Message Component Demo</h2>
-      <button onClick={() => setTab('messages')}>Messages</button>
-      <button onClick={() => setTab('conversation')}>Conversation</button>
-      {tab === 'messages' && (
-        <>
+    <MessageConfigProvider config={{ buttons: { copy: true, share: true, delete: true, edit: true }, theme: { primaryColor: '#007BFF', secondaryColor: '#6C757D', mode: 'light' } }}>
+      <div>
+        <h2>Message Component Demo</h2>
+        <button onClick={() => setTab('messages')}>Messages</button>
+        <button onClick={() => setTab('conversation')}>Conversation</button>
+        {tab === 'messages' && (
+          <>
           <Message content={content} author="John Doe" timestamp={new Date().toISOString()} renderers={renderers} buttons={{ copy: true, share: true, delete: true, edit: true }} />
           <Message content="No buttons example" author="Jane Doe" timestamp={new Date().toISOString()} buttons={{ copy: false, share: false, delete: false, edit: false }} />
           <button onClick={() => setStreamingContent(startStreaming())}>Start Streaming</button>
@@ -54,6 +55,7 @@ const MessageDemo = () => {
       )}
       {tab === 'conversation' && <Conversation messages={messages} />}
     </div>
+  </MessageConfigProvider>
   );
 };
 
