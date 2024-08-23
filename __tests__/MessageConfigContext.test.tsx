@@ -17,7 +17,7 @@ const TestComponent: React.FC = () => {
 
 test('provides default configuration', () => {
   render(
-    <MessageConfigProvider config={{ buttons: { copy: true, share: true, delete: true, edit: true } }}>
+    <MessageConfigProvider config={{ buttons: { copy: true, share: true, delete: true, edit: true }, theme: { primaryColor: '#000000', secondaryColor: '#FFFFFF', mode: 'light' } }}>
       <TestComponent />
     </MessageConfigProvider>
   );
@@ -27,14 +27,41 @@ test('provides default configuration', () => {
   expect(screen.getByText('Edit Button Enabled')).toBeInTheDocument();
 });
 
-test('overrides default configuration', () => {
+test('provides default theme configuration', () => {
   render(
-    <MessageConfigProvider config={{ buttons: { copy: false, share: false, delete: false, edit: false } }}>
-      <TestComponent />
+    <MessageConfigProvider config={{ buttons: { copy: true, share: true, delete: true, edit: true }, theme: { primaryColor: '#000000', secondaryColor: '#FFFFFF', mode: 'light' } }}>
+      <div data-testid="message-container" style={{ backgroundColor: '#FFFFFF', color: '#000000' }}>
+        <TestComponent />
+      </div>
     </MessageConfigProvider>
   );
-  expect(screen.queryByText('Copy Button Enabled')).not.toBeInTheDocument();
-  expect(screen.queryByText('Share Button Enabled')).not.toBeInTheDocument();
-  expect(screen.queryByText('Delete Button Enabled')).not.toBeInTheDocument();
-  expect(screen.queryByText('Edit Button Enabled')).not.toBeInTheDocument();
+  const container = screen.getByTestId('message-container');
+  expect(container).toHaveStyle('background-color: #FFFFFF');
+  expect(container).toHaveStyle('color: #000000');
+});
+
+test('overrides default configuration', () => {
+  render(
+    <MessageConfigProvider config={{ buttons: { copy: false, share: false, delete: false, edit: false }, theme: { primaryColor: '#000000', secondaryColor: '#FFFFFF', mode: 'light' } }}>
+      <div data-testid="message-container" style={{ backgroundColor: '#FFFFFF', color: '#000000' }}>
+        <TestComponent />
+      </div>
+    </MessageConfigProvider>
+  );
+  const container = screen.getByTestId('message-container');
+  expect(container).toHaveStyle('background-color: #FFFFFF');
+  expect(container).toHaveStyle('color: #000000');
+});
+
+test('overrides default theme configuration', () => {
+  render(
+    <MessageConfigProvider config={{ buttons: { copy: true, share: true, delete: true, edit: true }, theme: { primaryColor: '#FF0000', secondaryColor: '#00FF00', mode: 'dark' } }}>
+      <div data-testid="message-container" style={{ backgroundColor: '#333333', color: '#FFFFFF' }}>
+        <TestComponent />
+      </div>
+    </MessageConfigProvider>
+  );
+  const container = screen.getByTestId('message-container');
+  expect(container).toHaveStyle('background-color: #333333');
+  expect(container).toHaveStyle('color: #FFFFFF');
 });

@@ -23,6 +23,13 @@ Default.args = {
   onShare: () => console.log('Share clicked'),
   onDelete: () => console.log('Delete clicked'),
   onEdit: () => console.log('Edit clicked'),
+  config: {
+    theme: {
+      primaryColor: '#007BFF',
+      secondaryColor: '#6C757D',
+      mode: 'light',
+    },
+  },
 };
 
 export const StreamingContent = Template.bind({});
@@ -43,6 +50,13 @@ StreamingContent.args = {
   onCopy: () => console.log('Copy clicked'),
   onShare: () => console.log('Share clicked'),
   onEdit: () => console.log('Edit clicked'),
+  config: {
+    theme: {
+      primaryColor: '#007BFF',
+      secondaryColor: '#6C757D',
+      mode: 'light',
+    },
+  },
 };
 
 export const NoButtons = Template.bind({});
