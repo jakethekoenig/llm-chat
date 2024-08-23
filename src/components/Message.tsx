@@ -117,10 +117,21 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
       {author && <MessageAuthor>{author}</MessageAuthor>}
       {timestamp && <MessageTimestamp>{new Date(timestamp).toLocaleString()}</MessageTimestamp>}
       <ButtonContainer>
-        {mergedButtons.copy && <Button onClick={handleCopy} startIcon={<CopyIcon />}>Copy</Button>}
-        {mergedButtons.share && <Button onClick={onShare} startIcon={<ShareIcon />}>Share</Button>}
-        {mergedButtons.delete && <Button onClick={onDelete} startIcon={<DeleteIcon />}>Delete</Button>}
-        {mergedButtons.edit && <Button onClick={onEdit} startIcon={<EditIcon />}>Edit</Button>}
+        {mergedButtons.copy === 'enabled' && <Button onClick={handleCopy} startIcon={<CopyIcon />}>Copy</Button>}
+        {mergedButtons.share === 'enabled' && <Button onClick={onShare} startIcon={<ShareIcon />}>Share</Button>}
+        {mergedButtons.delete === 'enabled' && <Button onClick={onDelete} startIcon={<DeleteIcon />}>Delete</Button>}
+        {mergedButtons.edit === 'enabled' && <Button onClick={onEdit} startIcon={<EditIcon />}>Edit</Button>}
+        {(mergedButtons.copy === 'menu-ed' || mergedButtons.share === 'menu-ed' || mergedButtons.delete === 'menu-ed' || mergedButtons.edit === 'menu-ed') && (
+          <Button startIcon={<MoreVertIcon />}>
+            Menu
+            <Menu>
+              {mergedButtons.copy === 'menu-ed' && <MenuItem onClick={handleCopy}>Copy</MenuItem>}
+              {mergedButtons.share === 'menu-ed' && <MenuItem onClick={onShare}>Share</MenuItem>}
+              {mergedButtons.delete === 'menu-ed' && <MenuItem onClick={onDelete}>Delete</MenuItem>}
+              {mergedButtons.edit === 'menu-ed' && <MenuItem onClick={onEdit}>Edit</MenuItem>}
+            </Menu>
+          </Button>
+        )}
       </ButtonContainer>
     </MessageContainer>
   );

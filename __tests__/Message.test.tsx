@@ -135,6 +135,16 @@ test('copies message content to clipboard', async () => {
   expect(navigator.clipboard.writeText).toHaveBeenCalledWith(content);
 });
 
+test('renders menu-ed buttons and triggers respective actions', () => {
+  renderWithConfig(<Message id="test-id-11" content="Test message" buttons={{ copy: 'menu-ed', share: 'menu-ed', delete: 'menu-ed', edit: 'menu-ed' }} />);
+  expect(screen.getByText('Menu')).toBeInTheDocument();
+  fireEvent.click(screen.getByText('Menu'));
+  expect(screen.getByText('Copy')).toBeInTheDocument();
+  expect(screen.getByText('Share')).toBeInTheDocument();
+  expect(screen.getByText('Delete')).toBeInTheDocument();
+  expect(screen.getByText('Edit')).toBeInTheDocument();
+});
+
 test('renders message with all buttons', async () => {
   const onCopy = jest.fn();
   const onShare = jest.fn();

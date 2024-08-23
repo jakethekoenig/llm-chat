@@ -53,6 +53,20 @@ test('overrides default configuration', () => {
   expect(container).toHaveStyle('color: #000000');
 });
 
+test('provides menu-ed button configuration', () => {
+  render(
+    <MessageConfigProvider config={{ buttons: { copy: 'menu-ed', share: 'menu-ed', delete: 'menu-ed', edit: 'menu-ed' }, theme: { primaryColor: '#000000', secondaryColor: '#FFFFFF', mode: 'light' } }}>
+      <TestComponent />
+    </MessageConfigProvider>
+  );
+  expect(screen.getByText('Menu')).toBeInTheDocument();
+  fireEvent.click(screen.getByText('Menu'));
+  expect(screen.getByText('Copy')).toBeInTheDocument();
+  expect(screen.getByText('Share')).toBeInTheDocument();
+  expect(screen.getByText('Delete')).toBeInTheDocument();
+  expect(screen.getByText('Edit')).toBeInTheDocument();
+});
+
 test('overrides default theme configuration', () => {
   render(
     <MessageConfigProvider config={{ buttons: { copy: true, share: true, delete: true, edit: true }, theme: { primaryColor: '#FF0000', secondaryColor: '#00FF00', mode: 'dark' } }}>
