@@ -1,11 +1,11 @@
-const express = require('express');
-const jwt = require('jsonwebtoken');
-const bodyParser = require('body-parser');
-const cors = require('cors');
+import express from 'express';
+import jwt from 'jsonwebtoken';
+import bodyParser from 'body-parser';
+import cors from 'cors';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const SECRET_KEY = 'your_secret_key';
+const SECRET_KEY = process.env.SECRET_KEY || 'your_secret_key';
 
 app.use(bodyParser.json());
 app.use(cors());
@@ -30,7 +30,8 @@ app.post('/signin', (req, res) => {
 
 // Middleware to verify token
 const authenticateToken = (req, res, next) => {
-  const token = req.headers['authorization'];
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
   if (!token) return res.sendStatus(401);
 
   jwt.verify(token, SECRET_KEY, (err, user) => {
@@ -46,11 +47,23 @@ app.get('/get_completion', authenticateToken, (req, res) => {
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
 
-  // Example stream data
-  res.write('data: Example stream data\n\n');
+  // Example stream data with delays
+  const messages = [
+    'data: Example stream data part 1\n\n',
+    'data: Example stream data part 2\n\n',
+    'data: Example stream data part 3\n\n'
+  ];
 
-  // End the stream
-  res.end();
+  let index = 0;
+  const interval = setInterval(() => {
+    if (index < messages.length) {
+      res.write(messages[index]);
+      index++;
+    } else {
+      clearInterval(interval);
+      res.end();
+    }
+  }, 1000);
 });
 
 app.listen(PORT, () => {

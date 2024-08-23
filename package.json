@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "jest",
-    "start": "node server/index.js"
+    "start": "ts-node server/index.ts"
   },
   "repository": {
     "type": "git",
