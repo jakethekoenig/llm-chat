@@ -8,7 +8,7 @@ import { LatexRenderer } from '../src/renderers/LatexRenderer';
 test('renders latex content correctly', () => {
   const renderer = new LatexRenderer();
   const content = "$$E=mc^2$$";
-  const renderedContent = renderer.render(content);
+  const renderedContent = renderer.render(content, 0, content.length);
   const { getByText } = render(renderedContent);
   expect(getByText("E=mc^2")).toBeInTheDocument();
 });
