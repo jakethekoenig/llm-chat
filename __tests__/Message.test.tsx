@@ -144,6 +144,7 @@ test('renders menu-ed buttons and triggers respective actions', () => {
   expect(screen.getByText('Delete')).toBeInTheDocument();
   expect(screen.getByText('Edit')).toBeInTheDocument();
   expect(screen.getByText('Edit')).toBeInTheDocument();
+  expect(screen.getByText('Edit')).toBeInTheDocument();
 });
 
 test('renders message with all buttons', async () => {
