@@ -162,7 +162,7 @@ test('renders message with all buttons', async () => {
 });
 
 test('renders message with no buttons', async () => {
-  renderWithConfig(<Message id="test-id-13" content="Test message" />, { buttons: { copy: false, share: false, delete: false, edit: false } });
+  renderWithConfig(<Message id="test-id-13" content="Test message" />, { buttons: { copy: 'disabled', share: 'disabled', delete: 'disabled', edit: 'disabled' } });
   expect(screen.queryByText('Copy')).not.toBeInTheDocument();
   expect(screen.queryByText('Share')).not.toBeInTheDocument();
   expect(screen.queryByText('Delete')).not.toBeInTheDocument();
@@ -171,7 +171,7 @@ test('renders message with no buttons', async () => {
 
 test('renders message with only copy button', async () => {
   const onCopy = jest.fn();
-  renderWithConfig(<Message id="test-id-14" content="Test message" buttons={{ copy: true }} onCopy={onCopy} />, { buttons: { copy: true, share: false, delete: false, edit: false } });
+  renderWithConfig(<Message id="test-id-14" content="Test message" buttons={{ copy: 'enabled' }} onCopy={onCopy} />, { buttons: { copy: 'enabled', share: 'disabled', delete: 'disabled', edit: 'disabled' } });
   expect(screen.getByText('Copy')).toBeInTheDocument();
   expect(screen.queryByText('Share')).not.toBeInTheDocument();
   expect(screen.queryByText('Delete')).not.toBeInTheDocument();
