@@ -17,7 +17,7 @@ const TestComponent: React.FC = () => {
 
 test('provides default configuration', () => {
   render(
-    <MessageConfigProvider config={{ buttons: { copy: true, share: true, delete: true, edit: true } }}>
+    <MessageConfigProvider config={{ buttons: { copy: true, share: true, delete: true, edit: true }, theme: { primaryColor: '#000000', secondaryColor: '#FFFFFF', mode: 'light' } }}>
       <TestComponent />
     </MessageConfigProvider>
   );
@@ -41,7 +41,7 @@ test('provides default theme configuration', () => {
 
 test('overrides default configuration', () => {
   render(
-    <MessageConfigProvider config={{ buttons: { copy: false, share: false, delete: false, edit: false } }}>
+    <MessageConfigProvider config={{ buttons: { copy: false, share: false, delete: false, edit: false }, theme: { primaryColor: '#000000', secondaryColor: '#FFFFFF', mode: 'light' } }}>
       <TestComponent />
     </MessageConfigProvider>
   );
