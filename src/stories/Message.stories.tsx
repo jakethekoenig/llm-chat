@@ -83,5 +83,4 @@ MenuEdButtons.args = {
   onDelete: () => console.log('Delete clicked'),
   onEdit: () => console.log('Edit clicked'),
 }
-}
 };

@@ -133,6 +133,7 @@ test('copies message content to clipboard', async () => {
   const copyButton = screen.getByText('Copy');
   await fireEvent.click(copyButton);
   expect(navigator.clipboard.writeText).toHaveBeenCalledWith(content);
+  expect(onCopy).toHaveBeenCalled();
 });
 
 test('renders menu-ed buttons and triggers respective actions', () => {
@@ -142,8 +143,6 @@ test('renders menu-ed buttons and triggers respective actions', () => {
   expect(screen.getByText('Copy')).toBeInTheDocument();
   expect(screen.getByText('Share')).toBeInTheDocument();
   expect(screen.getByText('Delete')).toBeInTheDocument();
-  expect(screen.getByText('Edit')).toBeInTheDocument();
-  expect(screen.getByText('Edit')).toBeInTheDocument();
   expect(screen.getByText('Edit')).toBeInTheDocument();
 });
 
