@@ -26,15 +26,15 @@ const MessageDemo = () => {
       'Here is some math: \\(E=mc^2\\).\n',
       'Here is a display math block:\n',
       '$$\\int_0^\\infty e^{-x^2} dx = ',
-      '\\frac{\\sqrt{\\pi}}{2}$$\n',
+      '\\frac{\\sqrt{\\pi}}{2}.$$\n',
     ];
     for (const chunk of content) {
       yield chunk;
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
   };
 
-  const exampleMessage = `Here's an example with inline math \\(E=mc^2\\), display math $$\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}$$, and bracketed math \\[\\sum_{n=1}^\\infty \\frac{1}{n^2} = \\frac{\\pi^2}{6}\\].`;
+  const exampleMessage = `\`\`\`python\nprint(1)\nprint(2)\n\`\`\`\nHere's an example with inline math \\(E=mc^2\\), display math $$\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2},$$ and bracketed math \\[\\sum_{n=1}^\\infty \\frac{1}{n^2} = \\frac{\\pi^2}{6}.\\] \nAnd one more final formula: \\(\\frac{d}{dx}\\left(\\int_{0}^{x} f(u) \\, du\\right) = f(x)\\).`;
 
   const renderers = [new CodeBlockRenderer(), new LatexRenderer()];
 

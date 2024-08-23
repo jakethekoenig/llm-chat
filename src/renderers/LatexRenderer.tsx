@@ -28,7 +28,7 @@ export class LatexRenderer implements Renderer {
   }
 
   render(content: string, startIndex: number, endIndex: number): React.ReactNode {
-    const latexContent = DOMPurify.sanitize(content.slice(startIndex, endIndex).replace(/^(\$\$|\\\(|\\\[)|(\$\$|\\\)|\\\])$/g, ''));
-    return <MathJax>{latexContent}</MathJax>;
+    const latexContent = DOMPurify.sanitize(content.slice(startIndex, endIndex));
+    return <MathJax dynamic>{latexContent}</MathJax>;
   }
 }
