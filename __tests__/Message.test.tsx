@@ -114,7 +114,7 @@ test('copies message content to clipboard', async () => {
   expect(clipboardContent).toBe(content);
 });
 
-test('renders message with all buttons', () => {
+test('renders message with all buttons', async () => {
   const onCopy = jest.fn();
   const onShare = jest.fn();
   const onDelete = jest.fn();
@@ -130,7 +130,7 @@ test('renders message with all buttons', () => {
   expect(onEdit).toHaveBeenCalled();
 });
 
-test('renders message with no buttons', () => {
+test('renders message with no buttons', async () => {
   render(<Message id="test-id-13" content="Test message" />);
   expect(screen.queryByText('Copy')).not.toBeInTheDocument();
   expect(screen.queryByText('Share')).not.toBeInTheDocument();
@@ -138,7 +138,7 @@ test('renders message with no buttons', () => {
   expect(screen.queryByText('Edit')).not.toBeInTheDocument();
 });
 
-test('renders message with only copy button', () => {
+test('renders message with only copy button', async () => {
   const onCopy = jest.fn();
   render(<Message id="test-id-14" content="Test message" buttons={{ copy: true }} onCopy={onCopy} />);
   expect(screen.getByText('Copy')).toBeInTheDocument();
