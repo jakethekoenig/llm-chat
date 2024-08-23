@@ -4,7 +4,6 @@ import { Button } from '@mui/material';
 import { ContentCopy as CopyIcon, Share as ShareIcon, Delete as DeleteIcon, Edit as EditIcon } from '@mui/icons-material';
 import { useMessageConfig } from './MessageConfigContext';
 import { Renderer } from '../renderers/Renderer';
-import { LatexRenderer } from '../renderers/LatexRenderer';
 import { Message as MessageType } from '../types/Message';
 
 interface MessageProps extends MessageType {}
@@ -20,7 +19,7 @@ const MessageContainer = styled.div.attrs<{ 'data-testid': string }>(props => ({
   color: ${props => props.theme.mode === 'light' ? '#000000' : '#FFFFFF'};
 `;
 
-const MessageContent = styled.p`
+const MessageContent = styled.span`
   margin: 0;
 `;
 
