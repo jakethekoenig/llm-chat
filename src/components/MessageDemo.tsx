@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Message from './Message';
 import Conversation from './Conversation';
 import { CodeBlockRenderer } from '../renderers/CodeBlockRenderer';
+import { LatexRenderer } from '../renderers/LatexRenderer';
 import { MessageConfigProvider } from './MessageConfigContext';
 import { Message as MessageType } from '../types/Message';
 
@@ -21,17 +22,21 @@ const MessageDemo = () => {
       "print('Hello, World!')\n",
       "print('This is a second line.')\n",
       '```\n',
-      'Here is some text after the code block.'
+      'Here is some text after the code block.\n',
+      'Here is some math: \\(E=mc^2\\).\n',
+      'Here is a display math block:\n',
+      '$$\\int_0^\\infty e^{-x^2} dx = ',
+      '\\frac{\\sqrt{\\pi}}{2}.$$\n',
     ];
     for (const chunk of content) {
       yield chunk;
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
   };
 
-  const content = "Here is some text before the code block.\n```javascript\nconsole.log('Hello, World!');\nconsole.log('This is a second line.');\n```\nHere is some text between the code blocks.\n```python\nprint('Hello, World!')\nprint('This is a second line.')\n```\nHere is some text after the code block.";
+  const exampleMessage = `\`\`\`python\nprint(1)\nprint(2)\n\`\`\`\nHere's an example with inline math \\(E=mc^2\\), display math $$\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2},$$ and bracketed math \\[\\sum_{n=1}^\\infty \\frac{1}{n^2} = \\frac{\\pi^2}{6}.\\] \nAnd one more final formula: \\(\\frac{d}{dx}\\left(\\int_{0}^{x} f(u) \\, du\\right) = f(x)\\).`;
 
-  const renderers = [new CodeBlockRenderer()];
+  const renderers = [new CodeBlockRenderer(), new LatexRenderer()];
 
   const messages: MessageType[] = [
     { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
@@ -47,7 +52,7 @@ const MessageDemo = () => {
         <button onClick={() => setTab('conversation')}>Conversation</button>
         {tab === 'messages' && (
           <>
-          <Message content={content} author="John Doe" timestamp={new Date().toISOString()} renderers={renderers} buttons={{ copy: true, share: true, delete: true, edit: true }} />
+          <Message content={exampleMessage} author="John Doe" timestamp={new Date().toISOString()} renderers={renderers} buttons={{ copy: true, share: true, delete: true, edit: true }} />
           <Message content="No buttons example" author="Jane Doe" timestamp={new Date().toISOString()} buttons={{ copy: false, share: false, delete: false, edit: false }} />
           <button onClick={() => setStreamingContent(startStreaming())}>Start Streaming</button>
           {streamingContent && <Message content={streamingContent} author="Streamer" timestamp={new Date().toISOString()} renderers={renderers} buttons={{ copy: true, share: true, delete: true, edit: true }} />}

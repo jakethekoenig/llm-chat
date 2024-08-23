@@ -12,7 +12,7 @@ test('renders code block correctly', () => {
     if (endSeq !== null) {
       const renderedContent = renderer.render(content, startSeq[0], endSeq[1]);
 
-      render(<div dangerouslySetInnerHTML={{ __html: renderedContent }} />);
+      render(renderedContent);
       expect(screen.getByText("console")).toBeInTheDocument();
       expect(screen.getByText("log")).toBeInTheDocument();
     }
