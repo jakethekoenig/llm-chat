@@ -42,7 +42,7 @@ test('renders author and timestamp', () => {
 test('renders control buttons based on props', async () => {
   const content = 'Test message';
   const onCopy = jest.fn();
-  renderWithConfig(<Message id="test-id-3" content={content} buttons={{ copy: 'enabled' }} onCopy={onCopy} />);
+  renderWithConfig(<Message id="test-id-3" content={content} buttons={{ copy: true }} onCopy={onCopy} />);
   const copyButton = screen.getByText('Copy');
   await fireEvent.click(copyButton);
   expect(navigator.clipboard.writeText).toHaveBeenCalledWith(content);
@@ -51,7 +51,7 @@ test('renders control buttons based on props', async () => {
 
 test('renders share button and triggers onShare', async () => {
   const onShare = jest.fn();
-  renderWithConfig(<Message id="test-id-4" content="Test message" buttons={{ share: 'enabled' }} onShare={onShare} />);
+  renderWithConfig(<Message id="test-id-4" content="Test message" buttons={{ share: true }} onShare={onShare} />);
   await fireEvent.click(screen.getByText('Share'));
   expect(onShare).toHaveBeenCalled();
 });
@@ -130,7 +130,7 @@ test('renders multiple code blocks and text without duplication', () => {
 test('copies message content to clipboard', async () => {
   const content = 'Test message to copy';
   const onCopy = jest.fn();
-  renderWithConfig(<Message id="test-id-11" content={content} buttons={{ copy: 'enabled' }} onCopy={onCopy} />);
+  renderWithConfig(<Message id="test-id-11" content={content} buttons={{ copy: true }} onCopy={onCopy} />);
   const copyButton = screen.getByText('Copy');
   await fireEvent.click(copyButton);
   expect(navigator.clipboard.writeText).toHaveBeenCalledWith(content);
@@ -173,7 +173,7 @@ test('renders message with no buttons', async () => {
 
 test('renders message with only copy button', async () => {
   const onCopy = jest.fn();
-  renderWithConfig(<Message id="test-id-14" content="Test message" buttons={{ copy: 'enabled' }} onCopy={onCopy} />, { buttons: { copy: 'enabled', share: 'disabled', delete: 'disabled', edit: 'disabled' } });
+  renderWithConfig(<Message id="test-id-14" content="Test message" buttons={{ copy: true }} onCopy={onCopy} />, { buttons: { copy: true, share: false, delete: false, edit: false } });
   expect(screen.getByText('Copy')).toBeInTheDocument();
   expect(screen.queryByText('Share')).not.toBeInTheDocument();
   expect(screen.queryByText('Delete')).not.toBeInTheDocument();

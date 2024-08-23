@@ -17,7 +17,7 @@ const TestComponent: React.FC = () => {
 
 test('provides default configuration', () => {
   render(
-    <MessageConfigProvider config={{ buttons: { copy: 'enabled', share: 'enabled', delete: 'enabled', edit: 'enabled' }, theme: { primaryColor: '#000000', secondaryColor: '#FFFFFF', mode: 'light' } }}>
+    <MessageConfigProvider config={{ buttons: { copy: true, share: true, delete: true, edit: true }, theme: { primaryColor: '#000000', secondaryColor: '#FFFFFF', mode: 'light' } }}>
       <TestComponent />
     </MessageConfigProvider>
   );
@@ -29,7 +29,7 @@ test('provides default configuration', () => {
 
 test('provides default theme configuration', () => {
   render(
-    <MessageConfigProvider config={{ buttons: { copy: 'enabled', share: 'enabled', delete: 'enabled', edit: 'enabled' }, theme: { primaryColor: '#000000', secondaryColor: '#FFFFFF', mode: 'light' } }}>
+    <MessageConfigProvider config={{ buttons: { copy: true, share: true, delete: true, edit: true }, theme: { primaryColor: '#000000', secondaryColor: '#FFFFFF', mode: 'light' } }}>
       <div data-testid="message-container" style={{ backgroundColor: '#FFFFFF', color: '#000000' }}>
         <TestComponent />
       </div>
@@ -42,7 +42,7 @@ test('provides default theme configuration', () => {
 
 test('overrides default configuration', () => {
   render(
-    <MessageConfigProvider config={{ buttons: { copy: 'disabled', share: 'disabled', delete: 'disabled', edit: 'disabled' }, theme: { primaryColor: '#000000', secondaryColor: '#FFFFFF', mode: 'light' } }}>
+    <MessageConfigProvider config={{ buttons: { copy: false, share: false, delete: false, edit: false }, theme: { primaryColor: '#000000', secondaryColor: '#FFFFFF', mode: 'light' } }}>
       <div data-testid="message-container" style={{ backgroundColor: '#FFFFFF', color: '#000000' }}>
         <TestComponent />
       </div>
@@ -69,7 +69,7 @@ test('provides menu-ed button configuration', () => {
 
 test('overrides default theme configuration', () => {
   render(
-    <MessageConfigProvider config={{ buttons: { copy: 'enabled', share: 'enabled', delete: 'enabled', edit: 'enabled' }, theme: { primaryColor: '#FF0000', secondaryColor: '#00FF00', mode: 'dark' } }}>
+    <MessageConfigProvider config={{ buttons: { copy: true, share: true, delete: true, edit: true }, theme: { primaryColor: '#FF0000', secondaryColor: '#00FF00', mode: 'dark' } }}>
       <div data-testid="message-container" style={{ backgroundColor: '#333333', color: '#FFFFFF' }}>
         <TestComponent />
       </div>
