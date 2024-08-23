@@ -1,4 +1,5 @@
 // src/renderers/LatexRenderer.tsx
+import React from 'react';
 import { Renderer } from './Renderer';
 import DOMPurify from 'dompurify';
 
@@ -25,9 +26,9 @@ export class LatexRenderer implements Renderer {
     return null;
   }
 
-  render(content: string, startIndex: number, endIndex: number): string {
+  render(content: string, startIndex: number, endIndex: number): React.ReactNode {
     const latexContent = DOMPurify.sanitize(content.slice(startIndex, endIndex).replace(/^(\$\$|\\\(|\\\[)|(\$\$|\\\)|\\\])$/g, ''));
-    return `<span class="mathjax-latex">${latexContent}</span>`;
+    return <span className="mathjax-latex" dangerouslySetInnerHTML={{ __html: latexContent }} />;
   }
 
   initializeMathJax() {
