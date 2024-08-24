@@ -45,7 +45,7 @@ const authenticateToken = (req, res, next) => {
 };
 
 // Streaming endpoint
-app.get('/get_completion', authenticateToken, (req, res) => {
+app.get('/get_completion', authenticateToken, (req: express.Request, res: express.Response) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
