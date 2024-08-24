@@ -20,7 +20,7 @@ const users = [
 ];
 
 // Sign-in route
-app.post('/signin', (req, res) => {
+app.post('/signin', (req: express.Request, res: express.Response) => {
   const { username, password } = req.body;
   const user = users.find(u => u.username === username && u.password === password);
   if (user) {
@@ -32,12 +32,12 @@ app.post('/signin', (req, res) => {
 });
 
 // Middleware to verify token
-const authenticateToken = (req, res, next) => {
+const authenticateToken = (req: express.Request, res: express.Response, next: express.NextFunction) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) return res.sendStatus(401);
 
-  jwt.verify(token, SECRET_KEY, (err, user) => {
+  jwt.verify(token, SECRET_KEY, (err: jwt.VerifyErrors | null, user: object | undefined) => {
     if (err) return res.sendStatus(403);
     req.user = user;
     next();
