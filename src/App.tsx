@@ -20,7 +20,7 @@ const mathjaxConfig = {
 
 const App = () => {
   return (
-    <MathJaxContext config={mathjaxConfig}>
+    <MathJaxContext config={mathjaxConfig as any}>
       <div>
         <h1>LLM Chat Component Showcase</h1>
         <MessageDemo />

@@ -20,11 +20,11 @@ const users = [
 ];
 
 // Sign-in route
-app.post('/signin', (req, res) => {
+app.post('/signin', (req: express.Request, res: express.Response) => {
   const { username, password } = req.body;
   const user = users.find(u => u.username === username && u.password === password);
   if (user) {
-    const token = jwt.sign({ id: user.id }, SECRET_KEY, { expiresIn: '1h' });
+    const token = jwt.sign({ id: user.id }, SECRET_KEY as jwt.Secret, { expiresIn: '1h' });
     res.json({ token });
   } else {
     res.status(401).send('Invalid credentials');
@@ -37,15 +37,15 @@ const authenticateToken = (req: express.Request, res: express.Response, next: ex
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) return res.sendStatus(401);
 
-  jwt.verify(token, SECRET_KEY, (err, user) => {
+  jwt.verify(token, SECRET_KEY as jwt.Secret, (err, user) => {
     if (err) return res.sendStatus(403);
-    req.user = user;
+    (req as any).user = user;
     next();
   });
 };
 
 // Streaming endpoint
-app.get('/get_completion', authenticateToken, (req, res) => {
+app.get('/get_completion', authenticateToken, (req: express.Request, res: express.Response) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
