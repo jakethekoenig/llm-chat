@@ -17,10 +17,4 @@ export default {
   moduleNameMapper: {
     '\\.(css|less)$': '<rootDir>/__mocks__/styleMock.ts',
   },
-  collectCoverageFrom: [
-    'src/**/*.{js,jsx,ts,tsx}',
-    'server/**/*.{js,jsx,ts,tsx}',
-    '!**/node_modules/**',
-    '!**/vendor/**',
-  ],
 };
