@@ -28,5 +28,7 @@ const App = () => {
     </MathJaxContext>
   );
 };
+  );
+};
 
 export default App;
