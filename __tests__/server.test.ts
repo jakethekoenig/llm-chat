@@ -37,9 +37,9 @@ const authenticateToken = (req: express.Request, res: express.Response, next: ex
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) return res.sendStatus(401);
 
-  jwt.verify(token, SECRET_KEY as jwt.Secret, {}, (err: jwt.VerifyErrors | null, user: object | undefined) => {
+  jwt.verify(token, SECRET_KEY as jwt.Secret, (err: jwt.VerifyErrors | null, decoded: jwt.JwtPayload | undefined) => {
     if (err) return res.sendStatus(403);
-    (req as any).user = user;
+    (req as any).user = decoded;
     next();
   });
 };
