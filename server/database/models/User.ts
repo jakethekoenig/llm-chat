@@ -1,6 +1,6 @@
 // server/models/User.ts
 import { DataTypes, Model } from 'sequelize';
-import { sequelize } from '../database';
+import db from '../index';
 
 class User extends Model {}
 User.init({
@@ -21,7 +21,7 @@ User.init({
     type: DataTypes.STRING,
   },
 }, {
-  sequelize,
+  sequelize: db.sequelize,
   modelName: 'User',
 });
 

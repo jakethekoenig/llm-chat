@@ -1,6 +1,6 @@
 // server/models/Message.ts
 import { DataTypes, Model } from 'sequelize';
-import { sequelize } from '../database';
+import db from '../index';
 import { User } from './User';
 import { Conversation } from './Conversation';
 
@@ -41,7 +41,7 @@ Message.init({
     defaultValue: DataTypes.NOW,
   },
 }, {
-  sequelize,
+  sequelize: db.sequelize,
   modelName: 'Message',
 });
 

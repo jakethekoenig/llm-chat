@@ -1,6 +1,6 @@
 // server/models/Conversation.ts
 import { DataTypes, Model } from 'sequelize';
-import { sequelize } from '../database';
+import db from '../index';
 
 class Conversation extends Model {}
 Conversation.init({
@@ -13,7 +13,7 @@ Conversation.init({
     type: DataTypes.STRING,
   },
 }, {
-  sequelize,
+  sequelize: db.sequelize,
   modelName: 'Conversation',
 });
 
