@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import styled from 'styled-components';
 import { Button, Menu, MenuItem } from '@mui/material';
 import { ContentCopy as CopyIcon, Share as ShareIcon, Delete as DeleteIcon, Edit as EditIcon, MoreVert as MoreVertIcon } from '@mui/icons-material';
@@ -128,15 +128,17 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
         {finalButtons.delete === 'enabled' && <Button onClick={onDelete} startIcon={<DeleteIcon />}>Delete</Button>}
         {finalButtons.edit === 'enabled' && <Button onClick={onEdit} startIcon={<EditIcon />}>Edit</Button>}
         {(finalButtons.copy === 'menu-ed' || finalButtons.share === 'menu-ed' || finalButtons.delete === 'menu-ed' || finalButtons.edit === 'menu-ed') && (
-          <Button startIcon={<MoreVertIcon />}>
-            Menu
-            <Menu>
+          <>
+            <Button startIcon={<MoreVertIcon />} onClick={handleMenuOpen}>
+              Menu
+            </Button>
+            <Menu anchorEl={menuAnchorEl} open={Boolean(menuAnchorEl)} onClose={handleMenuClose}>
               {finalButtons.copy === 'menu-ed' && <MenuItem onClick={handleCopy}>Copy</MenuItem>}
               {finalButtons.share === 'menu-ed' && <MenuItem onClick={onShare}>Share</MenuItem>}
               {finalButtons.delete === 'menu-ed' && <MenuItem onClick={onDelete}>Delete</MenuItem>}
               {finalButtons.edit === 'menu-ed' && <MenuItem onClick={onEdit}>Edit</MenuItem>}
             </Menu>
-          </Button>
+          </>
         )}
       </ButtonContainer>
     </MessageContainer>
