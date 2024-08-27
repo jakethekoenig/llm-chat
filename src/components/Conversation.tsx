@@ -27,7 +27,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
         setChildIndex(prev => ({ ...prev, [selectedMessageId]: 0 }));
       }
     }
-  }, [selectedMessageId, messages, childIndex]);
+  }, [selectedMessageId, messages]);
 
   const handleSelectMessage = (messageId: string) => {
     setSelectedMessageId(messageId);

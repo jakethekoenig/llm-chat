@@ -183,6 +183,54 @@ test('renders plain text when no start sequence is found', () => {
   expect(screen.getByText(content)).toBeInTheDocument();
 });
 
+test('renders conversation with navigation and selection', async () => {
+  const onPrev = jest.fn();
+  const onNext = jest.fn();
+  const messages = [
+    { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
+    { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
+    { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
+  ];
+  render(<Conversation messages={messages} />);
+  expect(screen.getByText('Hello, world!')).toBeInTheDocument();
+  fireEvent.click(screen.getByText('Hello, world!'));
+  expect(screen.getByText('Hi there!')).toBeInTheDocument();
+  expect(screen.getAllByText('<')[0]).toBeInTheDocument();
+  expect(screen.getAllByText('>')[0]).toBeInTheDocument();
+  await fireEvent.click(screen.getAllByText('>')[0]);
+  expect(screen.getByText('How are you?')).toBeInTheDocument();
+});
+
+test('selects the first child by default', () => {
+  const messages = [
+    { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
+    { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
+    { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
+  ];
+  render(<Conversation messages={messages} />);
+  expect(screen.getByText('Hi there!')).toBeInTheDocument();
+});
+
+test('renders conversation with recursive navigation and selection', () => {
+  const messages = [
+    { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
+    { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
+    { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
+    { id: '4', content: 'I am good, thanks!', author: 'User2', timestamp: new Date().toISOString(), parentId: '2' },
+    { id: '5', content: 'What about you?', author: 'User2', timestamp: new Date().toISOString(), parentId: '2' },
+    { id: '6', content: 'I am doing well!', author: 'User', timestamp: new Date().toISOString(), parentId: '3' },
+  ];
+  render(<Conversation messages={messages} />);
+  expect(screen.getByText('Hello, world!')).toBeInTheDocument();
+  fireEvent.click(screen.getByText('Hello, world!'));
+  expect(screen.getByText('Hi there!')).toBeInTheDocument();
+  fireEvent.click(screen.getAllByText('>')[0]);
+  expect(screen.getByText('How are you?')).toBeInTheDocument();
+  fireEvent.click(screen.getByText('Hi there!'));
+  expect(screen.getByText('I am good, thanks!')).toBeInTheDocument();
+});
+});
+
 test('renders code block content during streaming', async () => {
   const asyncIterable = {
     async *[Symbol.asyncIterator]() {
