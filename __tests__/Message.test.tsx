@@ -105,6 +105,14 @@ test('renders async iterator content with delay', async () => {
   });
 });
 
+test('renders content without end sequence', () => {
+  const renderers = [new CodeBlockRenderer()];
+  const content = "```javascript\nconsole.log('Hello, World!');";
+  renderWithConfig(<Message id="test-id-15" content={content} renderers={renderers as Renderer[]} />);
+  expect(screen.getByText("console")).toBeInTheDocument();
+  expect(screen.getByText("log")).toBeInTheDocument();
+});
+
 test('renders code block content', () => {
   const renderers = [new CodeBlockRenderer()];
   const content = "```javascript\nconsole.log('Hello, World!');\n```";
@@ -166,6 +174,12 @@ test('renders message with only copy button', async () => {
   expect(screen.queryByText('Share')).not.toBeInTheDocument();
   expect(screen.queryByText('Delete')).not.toBeInTheDocument();
   expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+});
+
+test('renders plain text when no start sequence is found', () => {
+  const content = "This is a plain text without code block.";
+  renderWithConfig(<Message id="test-id-16" content={content} />);
+  expect(screen.getByText(content)).toBeInTheDocument();
 });
 
 test('renders code block content during streaming', async () => {
