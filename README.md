@@ -124,6 +124,15 @@ npm test
 
 This will also generate a coverage report in the `coverage` directory.
 
+## Running the Server
+
+To run the server, follow these steps:
+
+1. Install dependencies: `npm install`
+2. Start the server: `npm run start`
+
+The server will be running on `http://localhost:3000`.
+
 ## Running the Test Website
 
 To run the test website, follow these steps:

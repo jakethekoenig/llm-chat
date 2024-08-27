@@ -6,7 +6,16 @@ import { useMessageConfig } from './MessageConfigContext';
 import { Renderer } from '../renderers/Renderer';
 import { Message as MessageType } from '../types/Message';
 
-interface MessageProps extends MessageType {}
+interface MessageProps extends MessageType {
+  hasSiblings?: boolean;
+}
+
+const NavigationButtons = ({ onPrev, onNext, hasSiblings }: { onPrev: () => void, onNext: () => void, hasSiblings: boolean | undefined }) => (
+  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+    {hasSiblings && <Button onClick={onPrev}>&lt;</Button>}
+    {hasSiblings && <Button onClick={onNext}>&gt;</Button>}
+  </div>
+);
 
 const MessageContainer = styled.div.attrs<{ 'data-testid': string }>(props => ({
   'data-testid': props['data-testid'],
@@ -19,7 +28,7 @@ const MessageContainer = styled.div.attrs<{ 'data-testid': string }>(props => ({
   color: ${props => props.theme.mode === 'light' ? '#000000' : '#FFFFFF'};
 `;
 
-const MessageContent = styled.p`
+const MessageContent = styled.span`
   margin: 0;
 `;
 
@@ -38,7 +47,7 @@ const ButtonContainer = styled.div`
   gap: 8px;
 `;
 
-const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons = {}, onCopy, onShare, onDelete, onEdit, renderers = [] }) => {
+const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons = {}, onCopy, onShare, onDelete, onEdit, renderers = [], onClick, onPrev, onNext, hasSiblings }) => {
   const globalConfig = useMessageConfig();
   const [displayedContent, setDisplayedContent] = useState<string>('');
   const isMountedRef = useRef(true);
@@ -47,7 +56,6 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
   useEffect(() => {
     isMountedRef.current = true;
     setDisplayedContent(''); // Reset content when prop changes
-
     const processContent = async () => {
       if (typeof content === 'string') {
         setDisplayedContent(content);
@@ -105,11 +113,11 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
       }
       const endSeq = matchedRenderer.detectEndSequence(content, startSeq[1]) as [number, number] | null;
       if (!endSeq) {
-        elements.push(<span key={`rendered-${startSeq[0]}`} dangerouslySetInnerHTML={{ __html: matchedRenderer.render(content, startSeq[0], content.length) }} />);
+        elements.push(<span key={`rendered-${startSeq[0]}`}>{matchedRenderer.render(content, startSeq[0], content.length)}</span>);
         break;
       }
       if (endSeq !== null) {
-        elements.push(<span key={`rendered-${startSeq[0]}`} dangerouslySetInnerHTML={{ __html: matchedRenderer.render(content, startSeq[0], endSeq[1]) }} />);
+        elements.push(<span key={`rendered-${startSeq[0]}`}>{matchedRenderer.render(content, startSeq[0], endSeq[1])}</span>);
         start = endSeq[1];
       } else {
         elements.push(<span key={`plain-${start}`}>{content.slice(start)}</span>);
@@ -118,6 +126,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
     }
     return elements;
   };
+
   const mergedButtons = { ...globalConfig.buttons, ...buttons };
   const finalButtons = {
     copy: mergedButtons.copy !== 'disabled' ? mergedButtons.copy : false,
@@ -127,9 +136,9 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
   };
 
   return (
-    <MessageContainer theme={globalConfig.theme} data-testid="message-container">
+    <MessageContainer theme={globalConfig.theme} data-testid="message-container" onClick={onClick}>
       <MessageContent>{renderContent(displayedContent)}</MessageContent>
-      {author && <MessageAuthor>{author}</MessageAuthor>}
+      {author && <><br></br><MessageAuthor>{author}</MessageAuthor></>}
       {timestamp && <MessageTimestamp>{new Date(timestamp).toLocaleString()}</MessageTimestamp>}
       <ButtonContainer>
         {finalButtons.copy === 'enabled' && <Button onClick={handleCopy} startIcon={<CopyIcon />}>Copy</Button>}
@@ -150,6 +159,9 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
           </>
         )}
       </ButtonContainer>
+      {onPrev && onNext && (
+        <NavigationButtons onPrev={onPrev} onNext={onNext} hasSiblings={hasSiblings} />
+      )}
     </MessageContainer>
   );
 };

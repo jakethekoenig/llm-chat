@@ -1,4 +1,6 @@
 node_modules
 coverage
 dist
+dist-server
 todo
+database_development.sqlite

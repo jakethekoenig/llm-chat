@@ -34,7 +34,7 @@ Default.args = {
 
 export const StreamingContent = Template.bind({});
 StreamingContent.args = {
-  content: (async function* () {
+  content: (async function* (): AsyncGenerator<string, void, unknown> {
     yield 'Hello, ';
     await new Promise(resolve => setTimeout(resolve, 1000));
     yield 'world!';

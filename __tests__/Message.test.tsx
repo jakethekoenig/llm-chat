@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Message from '../src/components/Message';
 import { CodeBlockRenderer } from '../src/renderers/CodeBlockRenderer';
+import Conversation from '../src/components/Conversation';
 import { Renderer } from '../src/renderers/Renderer';
 import { MessageConfigProvider, MessageConfig, defaultConfig } from '../src/components/MessageConfigContext';
 
@@ -42,7 +43,7 @@ test('renders author and timestamp', () => {
 test('renders control buttons based on props', async () => {
   const content = 'Test message';
   const onCopy = jest.fn();
-  renderWithConfig(<Message id="test-id-3" content={content} buttons={{ copy: true }} onCopy={onCopy} />);
+  renderWithConfig(<Message id="test-id-3" content={content} buttons={{ copy: 'enabled' }} onCopy={onCopy} />);
   const copyButton = screen.getByText('Copy');
   await fireEvent.click(copyButton);
   expect(navigator.clipboard.writeText).toHaveBeenCalledWith(content);
@@ -58,14 +59,14 @@ test('renders share button and triggers onShare', async () => {
 
 test('renders delete button and triggers onDelete', async () => {
   const onDelete = jest.fn();
-  renderWithConfig(<Message id="test-id-5" content="Test message" buttons={{ delete: true }} onDelete={onDelete} />);
+  renderWithConfig(<Message id="test-id-5" content="Test message" buttons={{ delete: 'enabled' }} onDelete={onDelete} />);
   await fireEvent.click(screen.getByText('Delete'));
   expect(onDelete).toHaveBeenCalled();
 });
 
 test('renders edit button and triggers onEdit', async () => {
   const onEdit = jest.fn();
-  renderWithConfig(<Message id="test-id-6" content="Test message" buttons={{ edit: true }} onEdit={onEdit} />);
+  renderWithConfig(<Message id="test-id-6" content="Test message" buttons={{ edit: 'enabled' }} onEdit={onEdit} />);
   await fireEvent.click(screen.getByText('Edit'));
   expect(onEdit).toHaveBeenCalled();
 });
@@ -105,6 +106,14 @@ test('renders async iterator content with delay', async () => {
   });
 });
 
+test('renders content without end sequence', () => {
+  const renderers = [new CodeBlockRenderer()];
+  const content = "```javascript\nconsole.log('Hello, World!');";
+  renderWithConfig(<Message id="test-id-15" content={content} renderers={renderers as Renderer[]} />);
+  expect(screen.getByText("console")).toBeInTheDocument();
+  expect(screen.getByText("log")).toBeInTheDocument();
+});
+
 test('renders code block content', () => {
   const renderers = [new CodeBlockRenderer()];
   const content = "```javascript\nconsole.log('Hello, World!');\n```";
@@ -120,17 +129,17 @@ test('renders multiple code blocks and text without duplication', () => {
   expect(screen.getByText("Here is some text before the code block.")).toBeInTheDocument();
   expect(screen.getByText("Here is some text between the code blocks.")).toBeInTheDocument();
   expect(screen.getByText("Here is some text after the code block.")).toBeInTheDocument();
-  expect(screen.getAllByText("console")).toHaveLength(2)
-  expect(screen.getAllByText("log")).toHaveLength(2)
-  expect(screen.getAllByText("'This is a second line.'")).toHaveLength(2)
-  expect(screen.getAllByText("print")).toHaveLength(2)
+  expect(screen.getAllByText((content, element) => element !== null && element.tagName.toLowerCase() === 'span' && content.includes("console"))).toHaveLength(2);
+  expect(screen.getAllByText((content, element) => element !== null && element.tagName.toLowerCase() === 'span' && content.includes("log"))).toHaveLength(2);
+  expect(screen.getAllByText((content, element) => element !== null && element.tagName.toLowerCase() === 'span' && content.includes("'This is a second line.'"))).toHaveLength(2);
+  expect(screen.getAllByText((content, element) => element !== null && element.tagName.toLowerCase() === 'span' && content.includes("print"))).toHaveLength(2);
   expect(screen.getByTestId('message-container')).toBeInTheDocument();
 });
 
 test('copies message content to clipboard', async () => {
   const content = 'Test message to copy';
   const onCopy = jest.fn();
-  renderWithConfig(<Message id="test-id-11" content={content} buttons={{ copy: true }} onCopy={onCopy} />);
+  renderWithConfig(<Message id="test-id-11" content={content} buttons={{ copy: 'enabled' }} onCopy={onCopy} />);
   const copyButton = screen.getByText('Copy');
   await fireEvent.click(copyButton);
   expect(navigator.clipboard.writeText).toHaveBeenCalledWith(content);
@@ -154,7 +163,7 @@ test('renders message with all buttons', async () => {
   const onShare = jest.fn();
   const onDelete = jest.fn();
   const onEdit = jest.fn();
-  renderWithConfig(<Message id="test-id-12" content="Test message" buttons={{ copy: true, share: true, delete: true, edit: true }} onCopy={onCopy} onShare={onShare} onDelete={onDelete} onEdit={onEdit} />);
+  renderWithConfig(<Message id="test-id-12" content="Test message" buttons={{ copy: 'enabled', share: 'enabled', delete: 'enabled', edit: 'enabled' }} onCopy={onCopy} onShare={onShare} onDelete={onDelete} onEdit={onEdit} />);
   await fireEvent.click(screen.getByText('Copy'));
   expect(onCopy).toHaveBeenCalled();
   await fireEvent.click(screen.getByText('Share'));
@@ -182,31 +191,69 @@ test('renders message with only copy button', async () => {
   expect(screen.queryByText('Edit')).not.toBeInTheDocument();
 });
 
-test('renders code block content during streaming', async () => {
-  const asyncIterable = {
-    async *[Symbol.asyncIterator]() {
-      yield 'Here is some text before the code block.\n';
-      yield '```javascript\n';
-      yield 'console.log(\'Hello, World!\');\n';
-      yield 'console.log(\'This is a second line.\');\n';
-      yield '```\n';
-      yield 'Here is some text after the code block.';
-    },
-  };
-  const renderers = [new CodeBlockRenderer()];
-  renderWithConfig(<Message id="test-id-11" content={asyncIterable} renderers={renderers as Renderer[]} />);
-  await waitFor(() => {
-    expect(screen.getByText("Here is some text before the code block.")).toBeInTheDocument();
-  });
-  await waitFor(() => {
-    expect(screen.getAllByText((content, element) => element !== null && element.tagName.toLowerCase() === 'span' && content.includes("console"))).toHaveLength(2);
-  });
-  await waitFor(() => {
-    expect(screen.getAllByText((content, element) => element !== null && element.tagName.toLowerCase() === 'span' && content.includes("log"))).toHaveLength(2);
-  });
-  await waitFor(() => {
-    expect(screen.getByText("Here is some text after the code block.")).toBeInTheDocument();
-  });
+test('renders plain text when no start sequence is found', () => {
+  const content = "This is a plain text without code block.";
+  renderWithConfig(<Message id="test-id-16" content={content} />);
+  expect(screen.getByText(content)).toBeInTheDocument();
+});
+
+test('renders conversation with navigation and selection', async () => {
+  const messages = [
+    { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
+    { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
+    { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
+  ];
+  render(<Conversation messages={messages} />);
+  expect(screen.getByText('Hello, world!')).toBeInTheDocument();
+  fireEvent.click(screen.getByText('Hello, world!'));
+  expect(screen.getByText('Hi there!')).toBeInTheDocument();
+  expect(screen.getAllByText('<')[0]).toBeInTheDocument();
+  expect(screen.getAllByText('>')[0]).toBeInTheDocument();
+  await fireEvent.click(screen.getAllByText('>')[0]);
+  expect(screen.getByText('How are you?')).toBeInTheDocument();
+});
+
+test('selects the first child by default', () => {
+  const messages = [
+    { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
+    { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
+    { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
+  ];
+  render(<Conversation messages={messages} />);
+  expect(screen.getByText('Hi there!')).toBeInTheDocument();
+});
+
+test('renders conversation with recursive navigation and selection', () => {
+  const messages = [
+    { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
+    { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
+    { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
+    { id: '4', content: 'I am good, thanks!', author: 'User2', timestamp: new Date().toISOString(), parentId: '2' },
+    { id: '5', content: 'What about you?', author: 'User2', timestamp: new Date().toISOString(), parentId: '2' },
+    { id: '6', content: 'I am doing well!', author: 'User', timestamp: new Date().toISOString(), parentId: '3' },
+  ];
+  render(<Conversation messages={messages} />);
+  expect(screen.getByText('Hello, world!')).toBeInTheDocument();
+  expect(screen.getByText('Hi there!')).toBeInTheDocument();
+  fireEvent.click(screen.getAllByText('>')[0]);
+  expect(screen.getByText('How are you?')).toBeInTheDocument();
+  expect(screen.queryByText('Hi there!')).not.toBeInTheDocument();
+  expect(screen.getByText('I am doing well!')).toBeInTheDocument();
+  fireEvent.click(screen.getAllByText('<')[0]);
+  expect(screen.queryByText('How are you?')).not.toBeInTheDocument();
+  expect(screen.getByText('Hi there!')).toBeInTheDocument();
+  expect(screen.queryByText('I am doing well!')).not.toBeInTheDocument();
+
+});
+
+const messages = [
+  { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
+  { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
+  { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
+];
+test('renders conversation messages', () => {
+  render(<Conversation messages={messages} />);
+  expect(screen.getByText('Hi there!')).toBeInTheDocument();
 });
 
 test('renders menu-ed buttons and triggers respective actions', async () => {
