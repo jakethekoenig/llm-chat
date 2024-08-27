@@ -222,9 +222,9 @@ test('renders conversation with navigation and selection', async () => {
   expect(screen.getByText('Hello, world!')).toBeInTheDocument();
   fireEvent.click(screen.getByText('Hello, world!'));
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
-  expect(screen.getByText('<')).toBeInTheDocument();
-  expect(screen.getByText('>')).toBeInTheDocument();
-  await fireEvent.click(screen.getByText('>'));
+  expect(screen.getAllByText('<')[0]).toBeInTheDocument();
+  expect(screen.getAllByText('>')[0]).toBeInTheDocument();
+  await fireEvent.click(screen.getAllByText('>')[0]);
   expect(screen.getByText('How are you?')).toBeInTheDocument();
 });
 
@@ -253,6 +253,6 @@ test('renders conversation with recursive navigation and selection', () => {
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
   fireEvent.click(screen.getAllByText('>')[0]);
   expect(screen.getByText('How are you?')).toBeInTheDocument();
-  fireEvent.click(screen.getAllByText('Hi there!')[0]);
+  fireEvent.click(screen.getByText('Hi there!'));
   expect(screen.getByText('I am good, thanks!')).toBeInTheDocument();
 });
