@@ -247,8 +247,8 @@ test('renders conversation with recursive navigation and selection', () => {
   expect(screen.getByText('Hello, world!')).toBeInTheDocument();
   fireEvent.click(screen.getByText('Hello, world!'));
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
-  fireEvent.click(screen.getByText('>'));
+  fireEvent.click(screen.getAllByText('>')[0]);
   expect(screen.getByText('How are you?')).toBeInTheDocument();
-  fireEvent.click(screen.getByText('Hi there!'));
+  fireEvent.click(screen.getAllByText('Hi there!')[0]);
   expect(screen.getByText('I am good, thanks!')).toBeInTheDocument();
 });
