@@ -50,24 +50,9 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
             {renderMessages(messages, currentMessage.id)}
           </div>
         )}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
-          <Button
-            onClick={() => setChildIndex(prev => ({ ...prev, [parentId || 'root']: (currentIndex - 1 + filteredMessages.length) % filteredMessages.length }))}
-            disabled={filteredMessages.length <= 1}
-          >
-            &lt;
-          </Button>
-          <Button
-            onClick={() => setChildIndex(prev => ({ ...prev, [parentId || 'root']: (currentIndex + 1) % filteredMessages.length }))}
-            disabled={filteredMessages.length <= 1}
-          >
-            &gt;
-          </Button>
-        </div>
       </div>
     ];
   };
-
   return <div>{renderMessages(messages)}</div>;
 };
 export default Conversation;

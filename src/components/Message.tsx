@@ -128,7 +128,9 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
         {mergedButtons.delete && <Button onClick={onDelete} startIcon={<DeleteIcon />}>Delete</Button>}
         {mergedButtons.edit && <Button onClick={onEdit} startIcon={<EditIcon />}>Edit</Button>}
       </ButtonContainer>
-      <NavigationButtons onPrev={() => {}} onNext={() => {}} disabled={false} />
+      {onPrev && onNext && (
+        <NavigationButtons onPrev={onPrev} onNext={onNext} disabled={false} />
+      )}
     </MessageContainer>
   );
 };

@@ -220,7 +220,7 @@ test('renders conversation with navigation and selection', () => {
   expect(screen.getByText('Hello, world!')).toBeInTheDocument();
   fireEvent.click(screen.getByText('Hello, world!'));
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
-  fireEvent.click(screen.getByText('>'));
+  fireEvent.click(screen.getByText('>')[0]);
   expect(screen.getByText('How are you?')).toBeInTheDocument();
 });
 
