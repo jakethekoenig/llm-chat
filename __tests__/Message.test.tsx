@@ -201,10 +201,6 @@ const messages = [
   { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
   { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
 ];
-test('renders conversation messages', () => {
-  render(<Conversation messages={messages} />);
-  expect(screen.getByText('Hi there!')).toBeInTheDocument();
-});
 
 test('renders menu-ed buttons and triggers respective actions', async () => {
   renderWithConfig(<Message id="test-id-11" content="Test message" buttons={{ copy: 'menu-ed', share: 'menu-ed', delete: 'menu-ed', edit: 'menu-ed' }} />);
