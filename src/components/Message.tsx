@@ -6,7 +6,16 @@ import { useMessageConfig } from './MessageConfigContext';
 import { Renderer } from '../renderers/Renderer';
 import { Message as MessageType } from '../types/Message';
 
-interface MessageProps extends MessageType {}
+interface MessageProps extends MessageType {
+  hasSiblings?: boolean;
+}
+
+const NavigationButtons = ({ onPrev, onNext, hasSiblings }: { onPrev: () => void, onNext: () => void, hasSiblings: boolean | undefined }) => (
+  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+    {hasSiblings && <Button onClick={onPrev}>&lt;</Button>}
+    {hasSiblings && <Button onClick={onNext}>&gt;</Button>}
+  </div>
+);
 
 const MessageContainer = styled.div.attrs<{ 'data-testid': string }>(props => ({
   'data-testid': props['data-testid'],
@@ -38,7 +47,7 @@ const ButtonContainer = styled.div`
   gap: 8px;
 `;
 
-const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons = {}, onCopy, onShare, onDelete, onEdit, renderers = [] }) => {
+const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons = {}, onCopy, onShare, onDelete, onEdit, renderers = [], onClick, onPrev, onNext, hasSiblings }) => {
   const globalConfig = useMessageConfig();
   const [displayedContent, setDisplayedContent] = useState<string>('');
   const isMountedRef = useRef(true);
@@ -108,10 +117,11 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
     }
     return elements;
   };
+
   const mergedButtons = { ...globalConfig.buttons, ...buttons };
 
   return (
-    <MessageContainer theme={globalConfig.theme} data-testid="message-container">
+    <MessageContainer theme={globalConfig.theme} data-testid="message-container" onClick={onClick}>
       <MessageContent>{renderContent(displayedContent)}</MessageContent>
       {author && <><br></br><MessageAuthor>{author}</MessageAuthor></>}
       {timestamp && <MessageTimestamp>{new Date(timestamp).toLocaleString()}</MessageTimestamp>}
@@ -121,6 +131,9 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
         {mergedButtons.delete && <Button onClick={onDelete} startIcon={<DeleteIcon />}>Delete</Button>}
         {mergedButtons.edit && <Button onClick={onEdit} startIcon={<EditIcon />}>Edit</Button>}
       </ButtonContainer>
+      {onPrev && onNext && (
+        <NavigationButtons onPrev={onPrev} onNext={onNext} hasSiblings={hasSiblings} />
+      )}
     </MessageContainer>
   );
 };

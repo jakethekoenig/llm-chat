@@ -5,6 +5,7 @@
     "lib": ["DOM", "ESNext"],
     "jsx": "react-jsx",
     "strict": true,
+    "strictNullChecks": true,
     "moduleResolution": "node",
     "esModuleInterop": true,
     "skipLibCheck": true,
