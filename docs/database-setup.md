@@ -11,16 +11,19 @@ npm install --save-dev sequelize-cli
 
 ```bash
 npx sequelize-cli init
-```
-
 ## Generate Migrations
 
 ```bash
 npx sequelize-cli migration:generate --name create-tables
 ```
 
+Note: Sequelize CLI does not automatically generate migrations from models. You need to manually create migration files using the `sequelize-cli migration:generate` command.
+
 ## Run Migrations
 
+```bash
+npx sequelize-cli db:migrate
+```
 ```bash
 npx sequelize-cli db:migrate
 ```

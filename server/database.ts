@@ -1,4 +1,4 @@
-// src/database.ts
+// server/database.ts
 import { Sequelize } from 'sequelize';
 import { DATABASE_URL } from './config';
 
