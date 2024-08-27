@@ -6,7 +6,9 @@ import { useMessageConfig } from './MessageConfigContext';
 import { Renderer } from '../renderers/Renderer';
 import { Message as MessageType } from '../types/Message';
 
-interface MessageProps extends MessageType {}
+interface MessageProps extends MessageType {
+  hasSiblings?: boolean;
+}
 
 const NavigationButtons = ({ onPrev, onNext, hasSiblings }: { onPrev: () => void, onNext: () => void, hasSiblings: boolean }) => (
   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
@@ -45,7 +47,7 @@ const ButtonContainer = styled.div`
   gap: 8px;
 `;
 
-const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons = {}, onCopy, onShare, onDelete, onEdit, renderers = [], onClick, onPrev, onNext }) => {
+const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons = {}, onCopy, onShare, onDelete, onEdit, renderers = [], onClick, onPrev, onNext, hasSiblings }) => {
   const globalConfig = useMessageConfig();
   const [displayedContent, setDisplayedContent] = useState<string>('');
   const isMountedRef = useRef(true);
@@ -130,7 +132,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
         {mergedButtons.edit && <Button onClick={onEdit} startIcon={<EditIcon />}>Edit</Button>}
       </ButtonContainer>
       {onPrev && onNext && (
-        <NavigationButtons onPrev={onPrev} onNext={onNext} hasSiblings={true} />
+        <NavigationButtons onPrev={onPrev} onNext={onNext} hasSiblings={hasSiblings} />
       )}
     </MessageContainer>
   );
