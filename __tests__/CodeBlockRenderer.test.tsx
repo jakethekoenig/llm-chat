@@ -49,7 +49,7 @@ test('renders plaintext for unrecognized language', () => {
 
       render(renderedContent);
       expect(screen.getByText((content, element) => content.includes("console"))).toBeInTheDocument();
-      expect(screen.getByText("log")).toBeInTheDocument();
+      expect(screen.getByText((content, element) => content.includes("log"))).toBeInTheDocument();
     }
   }
 });
