@@ -273,6 +273,8 @@ test('renders conversation with navigation and selection', async () => {
   expect(screen.getAllByText('>')[0]).toBeInTheDocument();
   await fireEvent.click(screen.getAllByText('>')[0]);
   expect(screen.getByText('How are you?')).toBeInTheDocument();
+  fireEvent.click(screen.getByText('Hi there!'));
+  expect(screen.getByText('I am good, thanks!')).toBeInTheDocument();
 });
 
 test('selects the first child by default', () => {
@@ -302,4 +304,8 @@ test('renders conversation with recursive navigation and selection', () => {
   expect(screen.getByText('How are you?')).toBeInTheDocument();
   fireEvent.click(screen.getByText('Hi there!'));
   expect(screen.getByText('I am good, thanks!')).toBeInTheDocument();
+  fireEvent.click(screen.getAllByText('>')[0]);
+  expect(screen.getByText('What about you?')).toBeInTheDocument();
+  fireEvent.click(screen.getByText('How are you?'));
+  expect(screen.getByText('I am doing well!')).toBeInTheDocument();
 });

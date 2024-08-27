@@ -29,6 +29,15 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
     }
   }, [selectedMessageId, messages]);
 
+  useEffect(() => {
+    if (selectedChildId) {
+      const children = messages.filter(message => message.parentId === selectedChildId);
+      if (children.length > 0) {
+        setChildIndex(prev => ({ ...prev, [selectedChildId]: 0 }));
+      }
+    }
+  }, [selectedChildId, messages]);
+
   const handleSelectMessage = (messageId: string) => {
     setSelectedMessageId(messageId);
     setChildIndex({});
@@ -41,7 +50,6 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
 
     const currentIndex = childIndex[parentId || 'root'] || 0;
     const currentMessage = filteredMessages[currentIndex];
-
     return [
       <div key={currentMessage.id}>
         <Message
