@@ -54,3 +54,10 @@ test('handles no end sequence', () => {
     expect(endSeq).toBeNull();
   }
 });
+
+test('handles content without code block', () => {
+  const renderer = new CodeBlockRenderer();
+  const content = "This is a plain text without code block.";
+  const startSeq = renderer.detectStartSequence(content, 0);
+  expect(startSeq).toBeNull();
+});
