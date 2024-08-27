@@ -8,12 +8,13 @@ import { Message as MessageType } from '../types/Message';
 
 interface MessageProps extends MessageType {}
 
-const NavigationButtons = ({ onPrev, onNext, disabled }: { onPrev: () => void, onNext: () => void, disabled: boolean }) => (
+const NavigationButtons = ({ onPrev, onNext, hasSiblings }: { onPrev: () => void, onNext: () => void, hasSiblings: boolean }) => (
   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
-    <Button onClick={onPrev} disabled={disabled}>&lt;</Button>
-    <Button onClick={onNext} disabled={disabled}>&gt;</Button>
+    {hasSiblings && <Button onClick={onPrev}>&lt;</Button>}
+    {hasSiblings && <Button onClick={onNext}>&gt;</Button>}
   </div>
 );
+
 const MessageContainer = styled.div.attrs<{ 'data-testid': string }>(props => ({
   'data-testid': props['data-testid'],
 }))<{ theme: { primaryColor: string; secondaryColor: string; mode: 'light' | 'dark' } }>`
@@ -114,6 +115,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
     }
     return elements;
   };
+
   const mergedButtons = { ...globalConfig.buttons, ...buttons };
 
   return (
@@ -128,7 +130,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
         {mergedButtons.edit && <Button onClick={onEdit} startIcon={<EditIcon />}>Edit</Button>}
       </ButtonContainer>
       {onPrev && onNext && (
-        <NavigationButtons onPrev={onPrev} onNext={onNext} disabled={false} />
+        <NavigationButtons onPrev={onPrev} onNext={onNext} hasSiblings={true} />
       )}
     </MessageContainer>
   );
