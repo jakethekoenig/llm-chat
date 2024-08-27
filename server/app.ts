@@ -3,7 +3,8 @@ import jwt from 'jsonwebtoken';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
-
+import bcrypt from 'bcrypt';
+import { User } from './database/models/User';
 dotenv.config();
 
 const app = express();
@@ -12,21 +13,31 @@ const SECRET_KEY = process.env.SECRET_KEY || 'fallback-secret-key';
 app.use(bodyParser.json());
 app.use(cors());
 
-// Mock user data
-const users = [
-  { id: 1, username: 'user1', password: 'password1' },
-  { id: 2, username: 'user2', password: 'password2' }
-];
-
 // Sign-in route
-app.post('/signin', (req: express.Request, res: express.Response) => {
+app.post('/signin', async (req: express.Request, res: express.Response) => {
   const { username, password } = req.body;
-  const user = users.find(u => u.username === username && u.password === password);
-  if (user) {
-    const token = jwt.sign({ id: user.id }, SECRET_KEY as jwt.Secret, { expiresIn: '1h' });
-    res.json({ token });
-  } else {
-    res.status(401).send('Invalid credentials');
+  try {
+    const user = await User.findOne({ where: { username } });
+    if (user && await bcrypt.compare(password, user.hashed_password)) {
+      const token = jwt.sign({ id: user.id }, SECRET_KEY as jwt.Secret, { expiresIn: '1h' });
+      res.json({ token });
+    } else {
+      res.status(401).send('Invalid credentials');
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Register route
+app.post('/register', async (req: express.Request, res: express.Response) => {
+  const { username, email, password } = req.body;
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = await User.create({ username, email, hashed_password: hashedPassword });
+    res.status(201).json({ id: newUser.id, username: newUser.username, email: newUser.email });
+  } catch (error) {
+    res.status(400).json({ error: 'Error creating user' });
   }
 });
 
