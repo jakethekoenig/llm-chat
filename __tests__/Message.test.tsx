@@ -43,7 +43,7 @@ test('renders author and timestamp', () => {
 test('renders control buttons based on props', async () => {
   const content = 'Test message';
   const onCopy = jest.fn();
-  renderWithConfig(<Message id="test-id-3" content={content} buttons={{ copy: true }} onCopy={onCopy} />);
+  renderWithConfig(<Message id="test-id-3" content={content} buttons={{ copy: 'enabled' }} onCopy={onCopy} />);
   const copyButton = screen.getByText('Copy');
   await fireEvent.click(copyButton);
   expect(navigator.clipboard.writeText).toHaveBeenCalledWith(content);
@@ -52,21 +52,21 @@ test('renders control buttons based on props', async () => {
 
 test('renders share button and triggers onShare', async () => {
   const onShare = jest.fn();
-  renderWithConfig(<Message id="test-id-4" content="Test message" buttons={{ share: true }} onShare={onShare} />);
+  renderWithConfig(<Message id="test-id-4" content="Test message" buttons={{ share: 'enabled' }} onShare={onShare} />);
   await fireEvent.click(screen.getByText('Share'));
   expect(onShare).toHaveBeenCalled();
 });
 
 test('renders delete button and triggers onDelete', async () => {
   const onDelete = jest.fn();
-  renderWithConfig(<Message id="test-id-5" content="Test message" buttons={{ delete: true }} onDelete={onDelete} />);
+  renderWithConfig(<Message id="test-id-5" content="Test message" buttons={{ delete: 'enabled' }} onDelete={onDelete} />);
   await fireEvent.click(screen.getByText('Delete'));
   expect(onDelete).toHaveBeenCalled();
 });
 
 test('renders edit button and triggers onEdit', async () => {
   const onEdit = jest.fn();
-  renderWithConfig(<Message id="test-id-6" content="Test message" buttons={{ edit: true }} onEdit={onEdit} />);
+  renderWithConfig(<Message id="test-id-6" content="Test message" buttons={{ edit: 'enabled' }} onEdit={onEdit} />);
   await fireEvent.click(screen.getByText('Edit'));
   expect(onEdit).toHaveBeenCalled();
 });
@@ -138,10 +138,24 @@ test('renders multiple code blocks and text without duplication', () => {
 
 test('copies message content to clipboard', async () => {
   const content = 'Test message to copy';
-  renderWithConfig(<Message id="test-id-11" content={content} buttons={{ copy: true }} />);
+  const onCopy = jest.fn();
+  renderWithConfig(<Message id="test-id-11" content={content} buttons={{ copy: 'enabled' }} onCopy={onCopy} />);
   const copyButton = screen.getByText('Copy');
   await fireEvent.click(copyButton);
   expect(navigator.clipboard.writeText).toHaveBeenCalledWith(content);
+  expect(onCopy).toHaveBeenCalled();
+});
+
+test('renders menu-ed buttons and triggers respective actions', async () => {
+  renderWithConfig(<Message id="test-id-11" content="Test message" buttons={{ copy: 'menu-ed', share: 'menu-ed', delete: 'menu-ed', edit: 'menu-ed' }} />);
+  expect(screen.getByText('Menu')).toBeInTheDocument();
+  fireEvent.click(screen.getByText('Menu'));
+  await waitFor(() => {
+    expect(screen.getByText('Copy')).toBeInTheDocument();
+    expect(screen.getByText('Share')).toBeInTheDocument();
+    expect(screen.getByText('Delete')).toBeInTheDocument();
+    expect(screen.getByText('Edit')).toBeInTheDocument();
+  });
 });
 
 test('renders message with all buttons', async () => {
@@ -149,7 +163,7 @@ test('renders message with all buttons', async () => {
   const onShare = jest.fn();
   const onDelete = jest.fn();
   const onEdit = jest.fn();
-  renderWithConfig(<Message id="test-id-12" content="Test message" buttons={{ copy: true, share: true, delete: true, edit: true }} onCopy={onCopy} onShare={onShare} onDelete={onDelete} onEdit={onEdit} />);
+  renderWithConfig(<Message id="test-id-12" content="Test message" buttons={{ copy: 'enabled', share: 'enabled', delete: 'enabled', edit: 'enabled' }} onCopy={onCopy} onShare={onShare} onDelete={onDelete} onEdit={onEdit} />);
   await fireEvent.click(screen.getByText('Copy'));
   expect(onCopy).toHaveBeenCalled();
   await fireEvent.click(screen.getByText('Share'));
@@ -161,7 +175,7 @@ test('renders message with all buttons', async () => {
 });
 
 test('renders message with no buttons', async () => {
-  renderWithConfig(<Message id="test-id-13" content="Test message" />, { buttons: { copy: false, share: false, delete: false, edit: false } });
+  renderWithConfig(<Message id="test-id-13" content="Test message" />, { buttons: { copy: 'disabled', share: 'disabled', delete: 'disabled', edit: 'disabled' } });
   expect(screen.queryByText('Copy')).not.toBeInTheDocument();
   expect(screen.queryByText('Share')).not.toBeInTheDocument();
   expect(screen.queryByText('Delete')).not.toBeInTheDocument();
@@ -170,7 +184,7 @@ test('renders message with no buttons', async () => {
 
 test('renders message with only copy button', async () => {
   const onCopy = jest.fn();
-  renderWithConfig(<Message id="test-id-14" content="Test message" buttons={{ copy: true }} onCopy={onCopy} />, { buttons: { copy: true, share: false, delete: false, edit: false } });
+  renderWithConfig(<Message id="test-id-14" content="Test message" buttons={{ copy: 'enabled' }} onCopy={onCopy} />, { buttons: { copy: 'enabled', share: 'disabled', delete: 'disabled', edit: 'disabled' } });
   expect(screen.getByText('Copy')).toBeInTheDocument();
   expect(screen.queryByText('Share')).not.toBeInTheDocument();
   expect(screen.queryByText('Delete')).not.toBeInTheDocument();
@@ -240,4 +254,16 @@ const messages = [
 test('renders conversation messages', () => {
   render(<Conversation messages={messages} />);
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
+});
+
+test('renders menu-ed buttons and triggers respective actions', async () => {
+  renderWithConfig(<Message id="test-id-11" content="Test message" buttons={{ copy: 'menu-ed', share: 'menu-ed', delete: 'menu-ed', edit: 'menu-ed' }} />);
+  expect(screen.getByText('Menu')).toBeInTheDocument();
+  fireEvent.click(screen.getByText('Menu'));
+  await waitFor(() => {
+    expect(screen.getByText('Copy')).toBeInTheDocument();
+    expect(screen.getByText('Share')).toBeInTheDocument();
+    expect(screen.getByText('Delete')).toBeInTheDocument();
+    expect(screen.getByText('Edit')).toBeInTheDocument();
+  });
 });

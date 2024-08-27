@@ -7,10 +7,10 @@ export interface Message {
   author?: string;
   timestamp?: string;
   buttons?: {
-    copy?: boolean;
-    share?: boolean;
-    delete?: boolean;
-    edit?: boolean;
+    copy?: string | undefined;
+    share?: string | undefined;
+    delete?: string | undefined;
+    edit?: string | undefined;
   };
   onCopy?: () => void;
   onShare?: () => void;

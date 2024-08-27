@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import styled from 'styled-components';
-import { Button } from '@mui/material';
-import { ContentCopy as CopyIcon, Share as ShareIcon, Delete as DeleteIcon, Edit as EditIcon } from '@mui/icons-material';
+import { Button, Menu, MenuItem } from '@mui/material';
+import { ContentCopy as CopyIcon, Share as ShareIcon, Delete as DeleteIcon, Edit as EditIcon, MoreVert as MoreVertIcon } from '@mui/icons-material';
 import { useMessageConfig } from './MessageConfigContext';
 import { Renderer } from '../renderers/Renderer';
 import { Message as MessageType } from '../types/Message';
@@ -51,6 +51,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
   const globalConfig = useMessageConfig();
   const [displayedContent, setDisplayedContent] = useState<string>('');
   const isMountedRef = useRef(true);
+  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -80,6 +81,14 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
     } catch (error) {
       console.error('Failed to copy text: ', error);
     }
+  };
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setMenuAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
   };
 
   const renderContent = (content: string) => {
@@ -119,6 +128,12 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
   };
 
   const mergedButtons = { ...globalConfig.buttons, ...buttons };
+  const finalButtons = {
+    copy: mergedButtons.copy !== 'disabled' ? mergedButtons.copy : false,
+    share: mergedButtons.share !== 'disabled' ? mergedButtons.share : false,
+    delete: mergedButtons.delete !== 'disabled' ? mergedButtons.delete : false,
+    edit: mergedButtons.edit !== 'disabled' ? mergedButtons.edit : false,
+  };
 
   return (
     <MessageContainer theme={globalConfig.theme} data-testid="message-container" onClick={onClick}>
@@ -126,10 +141,23 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
       {author && <><br></br><MessageAuthor>{author}</MessageAuthor></>}
       {timestamp && <MessageTimestamp>{new Date(timestamp).toLocaleString()}</MessageTimestamp>}
       <ButtonContainer>
-        {mergedButtons.copy && <Button onClick={handleCopy} startIcon={<CopyIcon />}>Copy</Button>}
-        {mergedButtons.share && <Button onClick={onShare} startIcon={<ShareIcon />}>Share</Button>}
-        {mergedButtons.delete && <Button onClick={onDelete} startIcon={<DeleteIcon />}>Delete</Button>}
-        {mergedButtons.edit && <Button onClick={onEdit} startIcon={<EditIcon />}>Edit</Button>}
+        {finalButtons.copy === 'enabled' && <Button onClick={handleCopy} startIcon={<CopyIcon />}>Copy</Button>}
+        {finalButtons.share === 'enabled' && <Button onClick={onShare} startIcon={<ShareIcon />}>Share</Button>}
+        {finalButtons.delete === 'enabled' && <Button onClick={onDelete} startIcon={<DeleteIcon />}>Delete</Button>}
+        {finalButtons.edit === 'enabled' && <Button onClick={onEdit} startIcon={<EditIcon />}>Edit</Button>}
+        {(finalButtons.copy === 'menu-ed' || finalButtons.share === 'menu-ed' || finalButtons.delete === 'menu-ed' || finalButtons.edit === 'menu-ed') && (
+          <>
+            <Button startIcon={<MoreVertIcon />} onClick={handleMenuOpen}>
+              Menu
+            </Button>
+            <Menu anchorEl={menuAnchorEl} open={Boolean(menuAnchorEl)} onClose={handleMenuClose}>
+              {finalButtons.copy === 'menu-ed' && <MenuItem onClick={handleCopy}>Copy</MenuItem>}
+              {finalButtons.share === 'menu-ed' && <MenuItem onClick={onShare}>Share</MenuItem>}
+              {finalButtons.delete === 'menu-ed' && <MenuItem onClick={onDelete}>Delete</MenuItem>}
+              {finalButtons.edit === 'menu-ed' && <MenuItem onClick={onEdit}>Edit</MenuItem>}
+            </Menu>
+          </>
+        )}
       </ButtonContainer>
       {onPrev && onNext && (
         <NavigationButtons onPrev={onPrev} onNext={onNext} hasSiblings={hasSiblings} />
@@ -137,5 +165,4 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
     </MessageContainer>
   );
 };
-
 export default Message;

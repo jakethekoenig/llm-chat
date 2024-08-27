@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { MessageConfigProvider, useMessageConfig } from '../src/components/MessageConfigContext';
 
@@ -11,13 +11,17 @@ const TestComponent: React.FC = () => {
       {config.buttons.share && <span>Share Button Enabled</span>}
       {config.buttons.delete && <span>Delete Button Enabled</span>}
       {config.buttons.edit && <span>Edit Button Enabled</span>}
+      <span>{config.buttons.copy}</span> 
+      <span>{config.buttons.share}</span>
+      <span>{config.buttons.delete}</span>
+      <span>{config.buttons.edit}</span>
     </div>
   );
 };
 
 test('provides default configuration', () => {
   render(
-    <MessageConfigProvider config={{ buttons: { copy: true, share: true, delete: true, edit: true }, theme: { primaryColor: '#000000', secondaryColor: '#FFFFFF', mode: 'light' } }}>
+    <MessageConfigProvider config={{ buttons: { copy: 'enabled', share: 'enabled', delete: 'enabled', edit: 'enabled' }, theme: { primaryColor: '#000000', secondaryColor: '#FFFFFF', mode: 'light' } }}>
       <TestComponent />
     </MessageConfigProvider>
   );
@@ -29,7 +33,7 @@ test('provides default configuration', () => {
 
 test('provides default theme configuration', () => {
   render(
-    <MessageConfigProvider config={{ buttons: { copy: true, share: true, delete: true, edit: true }, theme: { primaryColor: '#000000', secondaryColor: '#FFFFFF', mode: 'light' } }}>
+    <MessageConfigProvider config={{ buttons: { copy: 'enabled', share: 'enabled', delete: 'enabled', edit: 'enabled' }, theme: { primaryColor: '#000000', secondaryColor: '#FFFFFF', mode: 'light' } }}>
       <div data-testid="message-container" style={{ backgroundColor: '#FFFFFF', color: '#000000' }}>
         <TestComponent />
       </div>
@@ -42,7 +46,7 @@ test('provides default theme configuration', () => {
 
 test('overrides default configuration', () => {
   render(
-    <MessageConfigProvider config={{ buttons: { copy: false, share: false, delete: false, edit: false }, theme: { primaryColor: '#000000', secondaryColor: '#FFFFFF', mode: 'light' } }}>
+    <MessageConfigProvider config={{ buttons: { copy: 'disabled', share: 'disabled', delete: 'disabled', edit: 'disabled' }, theme: { primaryColor: '#000000', secondaryColor: '#FFFFFF', mode: 'light' } }}>
       <div data-testid="message-container" style={{ backgroundColor: '#FFFFFF', color: '#000000' }}>
         <TestComponent />
       </div>
@@ -53,9 +57,19 @@ test('overrides default configuration', () => {
   expect(container).toHaveStyle('color: #000000');
 });
 
+test('provides menu-ed button configuration', () => {
+  render(
+    <MessageConfigProvider config={{ buttons: { copy: 'menu-ed', share: 'menu-ed', delete: 'menu-ed', edit: 'menu-ed' }, theme: { primaryColor: '#000000', secondaryColor: '#FFFFFF', mode: 'light' } }}>
+      <TestComponent />
+    </MessageConfigProvider>
+  );
+    const menuElements = screen.getAllByText('menu-ed');
+    expect(menuElements).toHaveLength(4);
+});
+
 test('overrides default theme configuration', () => {
   render(
-    <MessageConfigProvider config={{ buttons: { copy: true, share: true, delete: true, edit: true }, theme: { primaryColor: '#FF0000', secondaryColor: '#00FF00', mode: 'dark' } }}>
+    <MessageConfigProvider config={{ buttons: { copy: 'enabled', share: 'enabled', delete: 'enabled', edit: 'enabled' }, theme: { primaryColor: '#FF0000', secondaryColor: '#00FF00', mode: 'dark' } }}>
       <div data-testid="message-container" style={{ backgroundColor: '#333333', color: '#FFFFFF' }}>
         <TestComponent />
       </div>

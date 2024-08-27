@@ -14,10 +14,10 @@ Default.args = {
   author: 'User',
   timestamp: new Date().toISOString(),
   buttons: {
-    copy: true,
-    share: true,
-    delete: false,
-    edit: true,
+    copy: 'enabled',
+    share: 'enabled',
+    delete: 'disabled',
+    edit: 'enabled',
   },
   onCopy: () => console.log('Copy clicked'),
   onShare: () => console.log('Share clicked'),
@@ -65,4 +65,21 @@ NoButtons.args = {
   author: 'Jane Doe',
   timestamp: new Date().toISOString(),
   buttons: {},
+};
+
+export const MenuEdButtons = Template.bind({});
+MenuEdButtons.args = {
+  content: 'Menu-ed buttons example',
+  author: 'Jane Doe',
+  timestamp: new Date().toISOString(),
+  buttons: {
+    copy: 'menu-ed',
+    share: 'menu-ed',
+    delete: 'menu-ed',
+    edit: 'menu-ed',
+  },
+  onCopy: () => console.log('Copy clicked'),
+  onShare: () => console.log('Share clicked'),
+  onDelete: () => console.log('Delete clicked'),
+  onEdit: () => console.log('Edit clicked'),
 };
