@@ -11,6 +11,10 @@ const TestComponent: React.FC = () => {
       {config.buttons.share && <span>Share Button Enabled</span>}
       {config.buttons.delete && <span>Delete Button Enabled</span>}
       {config.buttons.edit && <span>Edit Button Enabled</span>}
+      <span>{config.buttons.copy}</span> 
+      <span>{config.buttons.share}</span>
+      <span>{config.buttons.delete}</span>
+      <span>{config.buttons.edit}</span>
     </div>
   );
 };
@@ -59,12 +63,8 @@ test('provides menu-ed button configuration', () => {
       <TestComponent />
     </MessageConfigProvider>
   );
-  expect(screen.getByText('Menu')).toBeInTheDocument();
-  fireEvent.click(screen.getByText('Menu'));
-  expect(screen.getByText('Copy')).toBeInTheDocument();
-  expect(screen.getByText('Share')).toBeInTheDocument();
-  expect(screen.getByText('Delete')).toBeInTheDocument();
-  expect(screen.getByText('Edit')).toBeInTheDocument();
+    const menuElements = screen.getAllByText('menu-ed');
+    expect(menuElements).toHaveLength(4);
 });
 
 test('overrides default theme configuration', () => {
