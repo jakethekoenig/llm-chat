@@ -208,3 +208,15 @@ test('renders code block content during streaming', async () => {
     expect(screen.getByText("Here is some text after the code block.")).toBeInTheDocument();
   });
 });
+
+test('renders menu-ed buttons and triggers respective actions', async () => {
+  renderWithConfig(<Message id="test-id-11" content="Test message" buttons={{ copy: 'menu-ed', share: 'menu-ed', delete: 'menu-ed', edit: 'menu-ed' }} />);
+  expect(screen.getByText('Menu')).toBeInTheDocument();
+  fireEvent.click(screen.getByText('Menu'));
+  await waitFor(() => {
+    expect(screen.getByText('Copy')).toBeInTheDocument();
+    expect(screen.getByText('Share')).toBeInTheDocument();
+    expect(screen.getByText('Delete')).toBeInTheDocument();
+    expect(screen.getByText('Edit')).toBeInTheDocument();
+  });
+});

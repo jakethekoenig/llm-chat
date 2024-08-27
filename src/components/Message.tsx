@@ -42,6 +42,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
   const globalConfig = useMessageConfig();
   const [displayedContent, setDisplayedContent] = useState<string>('');
   const isMountedRef = useRef(true);
+  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -72,6 +73,14 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
     } catch (error) {
       console.error('Failed to copy text: ', error);
     }
+  };
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setMenuAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
   };
 
   const renderContent = (content: string) => {
