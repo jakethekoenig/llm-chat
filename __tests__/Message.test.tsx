@@ -235,6 +235,7 @@ const messages = [
   { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
   { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
 ];
-render(<Conversation messages={messages} />);
-expect(screen.getByText('Hi there!')).toBeInTheDocument();
+test('renders conversation messages', () => {
+  render(<Conversation messages={messages} />);
+  expect(screen.getByText('Hi there!')).toBeInTheDocument();
 });
