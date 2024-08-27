@@ -18,8 +18,8 @@ app.post('/signin', async (req: express.Request, res: express.Response) => {
   const { username, password } = req.body;
   try {
     const user = await User.findOne({ where: { username } });
-    if (user && await bcrypt.compare(password, user.hashed_password)) {
-      const token = jwt.sign({ id: user.id }, SECRET_KEY as jwt.Secret, { expiresIn: '1h' });
+    if (user && await bcrypt.compare(password, (user as any).hashed_password)) {
+      const token = jwt.sign({ id: (user as any).id }, SECRET_KEY as jwt.Secret, { expiresIn: '1h' });
       res.json({ token });
     } else {
       res.status(401).send('Invalid credentials');
@@ -35,7 +35,7 @@ app.post('/register', async (req: express.Request, res: express.Response) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await User.create({ username, email, hashed_password: hashedPassword });
-    res.status(201).json({ id: newUser.id, username: newUser.username, email: newUser.email });
+    res.status(201).json({ id: (newUser as any).id, username: (newUser as any).username, email: (newUser as any).email });
   } catch (error) {
     res.status(400).json({ error: 'Error creating user' });
   }
