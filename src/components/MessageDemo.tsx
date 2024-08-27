@@ -45,6 +45,7 @@ const MessageDemo = () => {
     { id: '4', content: 'I am good, thanks!', author: 'User2', timestamp: new Date().toISOString(), parentId: '2' },
     { id: '5', content: 'What about you?', author: 'User2', timestamp: new Date().toISOString(), parentId: '2' },
     { id: '6', content: 'I am doing well!', author: 'User', timestamp: new Date().toISOString(), parentId: '3' },
+    { id: '7', content: 'Great to hear!', author: 'User2', timestamp: new Date().toISOString(), parentId: '6' },
   ];
 
   return (
@@ -66,5 +67,4 @@ const MessageDemo = () => {
   </MessageConfigProvider>
   );
 };
-
 export default MessageDemo;

@@ -38,7 +38,14 @@ const ButtonContainer = styled.div`
   gap: 8px;
 `;
 
-const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons = {}, onCopy, onShare, onDelete, onEdit, renderers = [] }) => {
+const NavigationButtons = ({ onPrev, onNext, disabled }: { onPrev: () => void, onNext: () => void, disabled: boolean }) => (
+  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+    <Button onClick={onPrev} disabled={disabled}>&lt;</Button>
+    <Button onClick={onNext} disabled={disabled}>&gt;</Button>
+  </div>
+);
+
+const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons = {}, onCopy, onShare, onDelete, onEdit, renderers = [], onClick }) => {
   const globalConfig = useMessageConfig();
   const [displayedContent, setDisplayedContent] = useState<string>('');
   const isMountedRef = useRef(true);
@@ -111,7 +118,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
   const mergedButtons = { ...globalConfig.buttons, ...buttons };
 
   return (
-    <MessageContainer theme={globalConfig.theme} data-testid="message-container">
+    <MessageContainer theme={globalConfig.theme} data-testid="message-container" onClick={onClick}>
       <MessageContent>{renderContent(displayedContent)}</MessageContent>
       {author && <><br></br><MessageAuthor>{author}</MessageAuthor></>}
       {timestamp && <MessageTimestamp>{new Date(timestamp).toLocaleString()}</MessageTimestamp>}
@@ -121,6 +128,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
         {mergedButtons.delete && <Button onClick={onDelete} startIcon={<DeleteIcon />}>Delete</Button>}
         {mergedButtons.edit && <Button onClick={onEdit} startIcon={<EditIcon />}>Edit</Button>}
       </ButtonContainer>
+      <NavigationButtons onPrev={() => {}} onNext={() => {}} disabled={false} />
     </MessageContainer>
   );
 };
