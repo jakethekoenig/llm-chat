@@ -184,8 +184,6 @@ test('renders plain text when no start sequence is found', () => {
 });
 
 test('renders conversation with navigation and selection', async () => {
-  const onPrev = jest.fn();
-  const onNext = jest.fn();
   const messages = [
     { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
     { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
