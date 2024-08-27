@@ -10,7 +10,7 @@ interface MessageProps extends MessageType {
   hasSiblings?: boolean;
 }
 
-const NavigationButtons = ({ onPrev, onNext, hasSiblings }: { onPrev: () => void, onNext: () => void, hasSiblings: boolean }) => (
+const NavigationButtons = ({ onPrev, onNext, hasSiblings }: { onPrev: () => void, onNext: () => void, hasSiblings: boolean | undefined }) => (
   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
     {hasSiblings && <Button onClick={onPrev}>&lt;</Button>}
     {hasSiblings && <Button onClick={onNext}>&gt;</Button>}

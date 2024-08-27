@@ -220,12 +220,16 @@ test('renders conversation with recursive navigation and selection', () => {
   ];
   render(<Conversation messages={messages} />);
   expect(screen.getByText('Hello, world!')).toBeInTheDocument();
-  fireEvent.click(screen.getByText('Hello, world!'));
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
   fireEvent.click(screen.getAllByText('>')[0]);
   expect(screen.getByText('How are you?')).toBeInTheDocument();
-  fireEvent.click(screen.getByText('Hi there!'));
-  expect(screen.getByText('I am good, thanks!')).toBeInTheDocument();
+  expect(screen.queryByText('Hi there!')).not.toBeInTheDocument();
+  expect(screen.getByText('I am doing well!')).toBeInTheDocument();
+  fireEvent.click(screen.getAllByText('<')[0]);
+  expect(screen.queryByText('How are you?')).not.toBeInTheDocument();
+  expect(screen.getByText('Hi there!')).toBeInTheDocument();
+  expect(screen.queryByText('I am doing well!')).not.toBeInTheDocument();
+
 });
 
 const messages = [
