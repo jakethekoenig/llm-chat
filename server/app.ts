@@ -31,7 +31,7 @@ app.post('/signin', (req: express.Request, res: express.Response) => {
 });
 
 // Middleware to verify token
-const authenticateToken = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+export const authenticateToken = (req: express.Request, res: express.Response, next: express.NextFunction) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) return res.sendStatus(401);
