@@ -44,13 +44,6 @@ const ButtonContainer = styled.div`
   gap: 8px;
 `;
 
-const NavigationButtons = ({ onPrev, onNext, disabled }: { onPrev: () => void, onNext: () => void, disabled: boolean }) => (
-  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
-    <Button onClick={onPrev} disabled={disabled}>&lt;</Button>
-    <Button onClick={onNext} disabled={disabled}>&gt;</Button>
-  </div>
-);
-
 const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons = {}, onCopy, onShare, onDelete, onEdit, renderers = [], onClick, onPrev, onNext }) => {
   const globalConfig = useMessageConfig();
   const [displayedContent, setDisplayedContent] = useState<string>('');
