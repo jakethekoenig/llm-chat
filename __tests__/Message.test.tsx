@@ -229,7 +229,6 @@ test('renders conversation with recursive navigation and selection', () => {
   fireEvent.click(screen.getByText('Hi there!'));
   expect(screen.getByText('I am good, thanks!')).toBeInTheDocument();
 });
-});
 
 test('renders code block content during streaming', async () => {
   const asyncIterable = {
