@@ -23,11 +23,18 @@ Default.args = {
   onShare: () => console.log('Share clicked'),
   onDelete: () => console.log('Delete clicked'),
   onEdit: () => console.log('Edit clicked'),
+  config: {
+    theme: {
+      primaryColor: '#007BFF',
+      secondaryColor: '#6C757D',
+      mode: 'light',
+    },
+  },
 };
 
 export const StreamingContent = Template.bind({});
 StreamingContent.args = {
-  content: (async function* () {
+  content: (async function* (): AsyncGenerator<string, void, unknown> {
     yield 'Hello, ';
     await new Promise(resolve => setTimeout(resolve, 1000));
     yield 'world!';
@@ -43,6 +50,13 @@ StreamingContent.args = {
   onCopy: () => console.log('Copy clicked'),
   onShare: () => console.log('Share clicked'),
   onEdit: () => console.log('Edit clicked'),
+  config: {
+    theme: {
+      primaryColor: '#007BFF',
+      secondaryColor: '#6C757D',
+      mode: 'light',
+    },
+  },
 };
 
 export const NoButtons = Template.bind({});

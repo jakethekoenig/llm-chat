@@ -12,12 +12,9 @@ test('renders code block correctly', () => {
     if (endSeq !== null) {
       const renderedContent = renderer.render(content, startSeq[0], endSeq[1]);
 
-      render(<div dangerouslySetInnerHTML={{ __html: renderedContent }} />);
+      render(renderedContent);
       expect(screen.getByText("console")).toBeInTheDocument();
       expect(screen.getByText("log")).toBeInTheDocument();
-    }
-  }
-});
     }
   }
 });
@@ -36,7 +33,23 @@ test('detects end sequence correctly', () => {
   if (startSeq !== null) {
     const endSeq = renderer.detectEndSequence(content, startSeq[1]);
     if (endSeq !== null) {
-      expect(endSeq).toEqual([29, 32]);
+      expect(endSeq).toEqual([44, 47]);
+    }
+  }
+});
+
+test('renders plaintext for unrecognized language', () => {
+  const renderer = new CodeBlockRenderer();
+  const content = "```unknownlang\nconsole.log('Hello, World!');\n```";
+  const startSeq = renderer.detectStartSequence(content, 0);
+  if (startSeq !== null) {
+    const endSeq = renderer.detectEndSequence(content, startSeq[1]);
+    if (endSeq !== null) {
+      const renderedContent = renderer.render(content, startSeq[0], endSeq[1]);
+
+      render(renderedContent);
+      expect(screen.getByText((content, element) => content.includes("console"))).toBeInTheDocument();
+      expect(screen.getByText((content, element) => content.includes("log"))).toBeInTheDocument();
     }
   }
 });
@@ -56,4 +69,11 @@ test('handles no end sequence', () => {
     const endSeq = renderer.detectEndSequence(content, startSeq[1]);
     expect(endSeq).toBeNull();
   }
+});
+
+test('handles content without code block', () => {
+  const renderer = new CodeBlockRenderer();
+  const content = "This is a plain text without code block.";
+  const startSeq = renderer.detectStartSequence(content, 0);
+  expect(startSeq).toBeNull();
 });

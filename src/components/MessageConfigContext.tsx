@@ -1,23 +1,31 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 
-interface MessageConfig {
+export interface MessageConfig {
   buttons: {
     copy: boolean;
     share: boolean;
     delete: boolean;
     edit: boolean;
   };
-  // Add other global configuration options here
+  theme: {
+    primaryColor: string;
+    secondaryColor: string;
+    mode: 'light' | 'dark';
+  };
 }
 
-const defaultConfig: MessageConfig = {
+export const defaultConfig: MessageConfig = {
   buttons: {
     copy: true,
     share: true,
     delete: true,
     edit: true,
   },
-  // Add other default values here
+  theme: {
+    primaryColor: '#000000',
+    secondaryColor: '#FFFFFF',
+    mode: 'light',
+  },
 };
 
 const MessageConfigContext = createContext<MessageConfig>(defaultConfig);
