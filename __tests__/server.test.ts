@@ -64,4 +64,19 @@ describe('Server Tests', () => {
     const response = await request(app).get('/get_completion');
     expect(response.status).toBe(401);
   });
+
+  it('should return 403 for invalid token', async () => {
+    const signInResponse = await request(app)
+      .post('/signin')
+      .send({ username: 'user1', password: 'password1' });
+    const token = signInResponse.body.token;
+
+    // Tamper the token to make it invalid
+    const invalidToken = token.slice(0, -1) + 'x';
+
+    const response = await request(app)
+      .get('/get_completion')
+      .set('Authorization', `Bearer ${invalidToken}`);
+    expect(response.status).toBe(403);
+  });
 });

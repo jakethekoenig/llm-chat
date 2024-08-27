@@ -38,6 +38,22 @@ test('detects end sequence correctly', () => {
   }
 });
 
+test('renders plaintext for unrecognized language', () => {
+  const renderer = new CodeBlockRenderer();
+  const content = "```unknownlang\nconsole.log('Hello, World!');\n```";
+  const startSeq = renderer.detectStartSequence(content, 0);
+  if (startSeq !== null) {
+    const endSeq = renderer.detectEndSequence(content, startSeq[1]);
+    if (endSeq !== null) {
+      const renderedContent = renderer.render(content, startSeq[0], endSeq[1]);
+
+      render(renderedContent);
+      expect(screen.getByText("console")).toBeInTheDocument();
+      expect(screen.getByText("log")).toBeInTheDocument();
+    }
+  }
+});
+
 test('handles no start sequence', () => {
   const renderer = new CodeBlockRenderer();
   const content = "console.log('Hello, World!');";
