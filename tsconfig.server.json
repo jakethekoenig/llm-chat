@@ -8,7 +8,8 @@
     "esModuleInterop": true,    // Enable ES module interop
     "moduleResolution": "node", // Resolve modules in Node.js style
     "skipLibCheck": true,       // Skip checking types of node_modules
-    "sourceMap": true           // Enable source maps for debugging
+    "sourceMap": true,          // Enable source maps for debugging
+    "types": ["node", "sequelize"] // Add this line to include type declarations
   },
   "include": ["server/**/*.ts"],
   "exclude": ["node_modules", "dist-server"]
