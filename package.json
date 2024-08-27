@@ -13,7 +13,9 @@
     "build:frontend": "vite build",
     "start:server": "node dist-server/index.js",
     "dev:server": "nodemon --exec ts-node server/index.ts",
-    "dev:frontend": "vite"
+    "dev:frontend": "vite",
+    "makemigration": "node ./node_modules/sequelize-auto-migrations/bin/makemigration.js",
+    "runmigration": "node ./node_modules/sequelize-auto-migrations/bin/runmigration.js"
   },
   "repository": {
     "type": "git",
@@ -68,6 +70,7 @@
     "sequelize-cli": "^6.2.0",
     "supertest": "^7.0.0",
     "ts-node": "^10.9.1",
-    "typescript": "^4.9.4"
+    "typescript": "^4.9.4",
+    "sequelize-auto-migrations": "^1.0.0"
   }
 }
