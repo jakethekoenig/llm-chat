@@ -27,7 +27,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
         setChildIndex(prev => ({ ...prev, [selectedMessageId]: 0 }));
       }
     }
-  }, [selectedMessageId, messages]);
+  }, [selectedMessageId, messages, childIndex]);
 
   const handleSelectMessage = (messageId: string) => {
     setSelectedMessageId(messageId);
@@ -44,7 +44,12 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
 
     return [
       <div key={currentMessage.id}>
-        <Message {...currentMessage} onClick={() => handleSelectMessage(currentMessage.id)} />
+        <Message
+          {...currentMessage}
+          onClick={() => handleSelectMessage(currentMessage.id)}
+          onPrev={() => setChildIndex(prev => ({ ...prev, [parentId || 'root']: Math.max(0, currentIndex - 1) }))}
+          onNext={() => setChildIndex(prev => ({ ...prev, [parentId || 'root']: Math.min(filteredMessages.length - 1, currentIndex + 1) }))}
+        />
         {selectedMessageId === currentMessage.id && (
           <div>
             {renderMessages(messages, currentMessage.id)}

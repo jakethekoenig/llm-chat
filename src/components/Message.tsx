@@ -8,6 +8,12 @@ import { Message as MessageType } from '../types/Message';
 
 interface MessageProps extends MessageType {}
 
+const NavigationButtons = ({ onPrev, onNext, disabled }: { onPrev: () => void, onNext: () => void, disabled: boolean }) => (
+  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+    <Button onClick={onPrev} disabled={disabled}>&lt;</Button>
+    <Button onClick={onNext} disabled={disabled}>&gt;</Button>
+  </div>
+);
 const MessageContainer = styled.div.attrs<{ 'data-testid': string }>(props => ({
   'data-testid': props['data-testid'],
 }))<{ theme: { primaryColor: string; secondaryColor: string; mode: 'light' | 'dark' } }>`
@@ -45,7 +51,7 @@ const NavigationButtons = ({ onPrev, onNext, disabled }: { onPrev: () => void, o
   </div>
 );
 
-const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons = {}, onCopy, onShare, onDelete, onEdit, renderers = [], onClick }) => {
+const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons = {}, onCopy, onShare, onDelete, onEdit, renderers = [], onClick, onPrev, onNext }) => {
   const globalConfig = useMessageConfig();
   const [displayedContent, setDisplayedContent] = useState<string>('');
   const isMountedRef = useRef(true);

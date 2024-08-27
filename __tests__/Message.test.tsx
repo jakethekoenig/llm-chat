@@ -210,7 +210,9 @@ test('renders code block content during streaming', async () => {
   });
 });
 
-test('renders conversation with navigation and selection', () => {
+test('renders conversation with navigation and selection', async () => {
+  const onPrev = jest.fn();
+  const onNext = jest.fn();
   const messages = [
     { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
     { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
@@ -220,7 +222,9 @@ test('renders conversation with navigation and selection', () => {
   expect(screen.getByText('Hello, world!')).toBeInTheDocument();
   fireEvent.click(screen.getByText('Hello, world!'));
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
-  fireEvent.click(screen.getByText('>')[0]);
+  expect(screen.getByText('<')).toBeInTheDocument();
+  expect(screen.getByText('>')).toBeInTheDocument();
+  await fireEvent.click(screen.getByText('>'));
   expect(screen.getByText('How are you?')).toBeInTheDocument();
 });
 

@@ -19,4 +19,6 @@ export interface Message {
   onClick?: () => void;
   renderers?: Renderer[];
   parentId?: string | null;
+  onPrev?: () => void;
+  onNext?: () => void;
 }
