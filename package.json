@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "test": "jest",
     "build:server": "tsc -p tsconfig.server.json",
-    "sequelize": "sequelize-cli"
+    "sequelize": "sequelize-cli",
     "build:frontend": "vite build",
     "start:server": "node dist-server/index.js",
     "dev:server": "nodemon --exec ts-node server/index.ts",
