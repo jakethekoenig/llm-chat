@@ -25,7 +25,7 @@ test('renders conversation with navigation and selection', async () => {
   render(<Conversation messages={messages} />);
   expect(screen.getByText('Hello, world!')).toBeInTheDocument();
   fireEvent.click(screen.getByText('Hello, world!'));
-  expect(screen.getByText('Hi there!')).toBeInTheDocument();
+  expect(screen.getByText('How are you?')).toBeInTheDocument();
   expect(screen.getAllByText('<')[0]).toBeInTheDocument();
   expect(screen.getAllByText('>')[0]).toBeInTheDocument();
   await fireEvent.click(screen.getAllByText('>')[0]);
@@ -39,7 +39,7 @@ test('selects the first child by default', () => {
     '3': { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1', children: {} },
   };
   render(<Conversation messages={messages} />);
-  expect(screen.getByText('Hello, world!')).toBeInTheDocument();
+  expect(screen.getByText('How are you?')).toBeInTheDocument();
 });
 
 test('renders conversation with recursive navigation and selection', () => {
