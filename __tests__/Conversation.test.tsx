@@ -3,6 +3,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Conversation from '../src/components/Conversation';
+import ConversationList from '../src/components/ConversationList';
 
 const messages = [
   { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
@@ -61,4 +62,14 @@ test('renders conversation with recursive navigation and selection', () => {
   expect(screen.queryByText('How are you?')).not.toBeInTheDocument();
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
   expect(screen.queryByText('I am doing well!')).not.toBeInTheDocument();
+});
+
+test('renders conversation list', () => {
+  const conversations = [
+    { id: '1', content: 'Conversation 1', author: 'User1', timestamp: new Date().toISOString(), parentId: null },
+    { id: '2', content: 'Conversation 2', author: 'User2', timestamp: new Date().toISOString(), parentId: null },
+  ];
+  render(<ConversationList conversations={conversations} />);
+  expect(screen.getByText('Conversation 1 - User1')).toBeInTheDocument();
+  expect(screen.getByText('Conversation 2 - User2')).toBeInTheDocument();
 });
