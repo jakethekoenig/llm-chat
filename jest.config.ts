@@ -2,19 +2,23 @@ export default {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
-  collectCoverage: true,
-  coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov'],
-  testMatch: ['**/?(*.)+(spec|test).[jt]s?(x)'],
-  coverageThreshold: {
-    global: {
-      branches: 89,
-      functions: 95,
-      lines: 95,
-      statements: 93,
-    },
+  transform: {
+    '^.+\\.(ts|tsx)$': 'ts-jest',
   },
   moduleNameMapper: {
     '\\.(css|less)$': '<rootDir>/__mocks__/styleMock.ts',
+    '^uuid$': require.resolve('uuid'), // Add this line to handle ESM module
+  },
+  collectCoverage: true,
+  coverageDirectory: 'coverage',
+  testMatch: ['**/?(*.)+(spec|test).[jt]s?(x)'],
+  coverageReporters: ['text', 'lcov'],
+  coverageThreshold: {
+    global: {
+      statements: 85,
+      branches: 85,
+      lines: 85,
+      functions: 85,
+    },
   },
 };

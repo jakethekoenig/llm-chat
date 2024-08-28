@@ -38,6 +38,7 @@
     "@mui/styled-engine-sc": "^6.0.0-alpha.18",
     "@sequelize/sqlite3": "^7.0.0-alpha.41",
     "@vitejs/plugin-react": "^4.3.1",
+    "bcrypt": "^5.1.1",
     "better-react-mathjax": "^1.0.0",
     "body-parser": "^1.20.1",
     "cors": "^2.8.5",
@@ -52,12 +53,12 @@
     "react-dom": "^18.3.1",
     "sequelize": "^6.37.3",
     "styled-components": "^6.1.12",
-    "ts-jest": "^29.2.4",
     "vite": "^5.4.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.4.8",
     "@testing-library/react": "^16.0.0",
+    "@types/bcrypt": "^5.0.2",
     "@types/body-parser": "^1.19.2",
     "@types/cors": "^2.8.12",
     "@types/dompurify": "^3.0.5",
@@ -68,6 +69,7 @@
     "@types/supertest": "^2.0.11",
     "sequelize-cli": "^6.6.2",
     "supertest": "^7.0.0",
+    "ts-jest": "^29.2.4",
     "ts-node": "^10.9.1",
     "typescript": "^4.9.4"
   }
