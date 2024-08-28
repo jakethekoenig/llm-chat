@@ -98,5 +98,3 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
 };
 
 export default Conversation;
-
-export default Conversation;
