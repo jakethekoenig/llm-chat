@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build && tsc -p tsconfig.server.json",
     "preview": "vite preview",
-    "test": "jest",
+    "test": "jest --config jest.config.ts",
     "build:server": "tsc -p tsconfig.server.json",
     "build:frontend": "vite build",
     "start:server": "node dist-server/index.js",
