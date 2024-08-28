@@ -106,13 +106,12 @@ const Conversation: React.FC<ConversationProps> = ({ messages: initialMessages }
 
   // TODO: Enforce that there is always at least one parent
   const parentMessages = getChildren(initialMessages, null);
-  const hasSiblings = parentMessages.length > 1;
 
   return (
     <div>
-      {renderMessages(initialMessages, parentMessages[0].id, hasSiblings)}
+      {renderMessages(initialMessages, parentMessages[0].id, parentMessages.length > 1)}
       <MakeMessage onSend={handleSend} />
     </div>
   );
 };
-export default Conversation;
+export { Conversation };
