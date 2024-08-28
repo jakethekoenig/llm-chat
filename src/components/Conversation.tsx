@@ -13,18 +13,28 @@ const Conversation: React.FC<ConversationProps> = ({ messages: initialMessages }
     return messages.filter(message => message.parentId === parentId);
   }
 
-  const getMessage = (messages: MessageType[], id: string): MessageType | null => {
-    return messages.find(message => message.id === id) || null;
+  const getMessage = (initialMessages: MessageType[], id: string): MessageType | null => {
+    return initialMessages.find(message => message.id === id) || null;
   }
   const [selectedChildIndex, setSelectedChildIndex] = useState<{ [key: string]: string }>({});
 
+  const handleSend = (content: string) => {
+    const newMessage: MessageType = {
+      id: (initialMessages.length + 1).toString(),
+      content,
+      author: 'User',
+      timestamp: new Date().toISOString(),
+      parentId: null,
+    };
+    setMessages([...initialMessages, newMessage]);
+  };
 
   const setChildren = () => {
      setSelectedChildIndex(prevState => {
         const newState = { ...prevState };
-        for (const message of messages) {
+        for (const message of initialMessages) {
           if (newState[message.id] === undefined) {
-            const children = getChildren(messages, message.id);
+            const children = getChildren(initialMessages, message.id);
             if (children.length > 0) {
               newState[message.id] = children[0].id;
             }
@@ -36,12 +46,12 @@ const Conversation: React.FC<ConversationProps> = ({ messages: initialMessages }
 
   useEffect(() => {
     setChildren();
-  }, [messages]);
+  }, [initialMessages]);
 
   const incrementSelectedChildIndex = (id: string | null | undefined) => {
       if (id != null && id != undefined)
           setSelectedChildIndex(prevState => {
-            const children = getChildren(messages, id);
+            const children = getChildren(initialMessages, id);
             const currentSelected = prevState[id];
             const currentSelectedIndex = children.findIndex(child => child.id === currentSelected);
             if (currentSelectedIndex < children.length - 1) {
@@ -57,7 +67,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages: initialMessages }
   const decrementSelectedChildIndex = (id: string | null | undefined) => {
       if (id !== null && id !== undefined)
           setSelectedChildIndex(prevState => {
-            const children = getChildren(messages, id);
+            const children = getChildren(initialMessages, id);
             const currentSelected = prevState[id];
             const currentSelectedIndex = children.findIndex(child => child.id === currentSelected);
             if (currentSelectedIndex > 0) {
@@ -93,18 +103,16 @@ const Conversation: React.FC<ConversationProps> = ({ messages: initialMessages }
         />
         {renderMessages(messages, selectedChild, childrenHaveSiblings)}
     </>);
-  };
 
   // TODO: Enforce that there is always at least one parent
-  const parentMessages = getChildren(messages, null);
+  const parentMessages = getChildren(initialMessages, null);
   const hasSiblings = parentMessages.length > 1;
 
   return (
     <div>
-      {renderMessages(messages, parentMessages[0].id, hasSiblings)}
+      {renderMessages(initialMessages, parentMessages[0].id, hasSiblings)}
       <MakeMessage onSend={handleSend} />
     </div>
   );
 };
-
 export default Conversation;
