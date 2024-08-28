@@ -69,7 +69,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
           });
   }
 
-  const renderMessages = (messages: MessageType[], currentId: string | null = null, hasSiblings: boolean = false): JSX.Element => {
+  const renderMessages = (messages: MessageType[], currentId: string | null = null, hasSiblings: boolean = false, siblingIndex: number = 0, totalSiblings: number = 0): JSX.Element => {
     if (currentId === null) {
       return <></>;
     }
@@ -98,7 +98,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
   const parentMessages = getChildren(messages, null);
   const hasSiblings = parentMessages.length > 1;
 
-  return <div>{renderMessages(messages, parentMessages[0].id, hasSiblings)}</div>;
+  return <div>{renderMessages(messages, parentMessages[0].id, hasSiblings, 0, parentMessages.length)}</div>;
 };
 
 export default Conversation;

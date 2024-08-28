@@ -8,12 +8,15 @@ import { Message as MessageType } from '../types/Message';
 
 interface MessageProps extends MessageType {
   hasSiblings?: boolean;
+  currentIndex?: number;
+  totalSiblings?: number;
 }
 
-const NavigationButtons = ({ onPrev, onNext, hasSiblings }: { onPrev: () => void, onNext: () => void, hasSiblings: boolean | undefined }) => (
+const NavigationButtons = ({ onPrev, onNext, hasSiblings, currentIndex, totalSiblings }: { onPrev: () => void, onNext: () => void, hasSiblings: boolean | undefined, currentIndex: number, totalSiblings: number }) => (
   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
-    {hasSiblings && <Button onClick={onPrev}>&lt;</Button>}
-    {hasSiblings && <Button onClick={onNext}>&gt;</Button>}
+    {hasSiblings && <Button onClick={onPrev} disabled={currentIndex === 0}>&lt;</Button>}
+    {hasSiblings && <span>{currentIndex + 1} / {totalSiblings}</span>}
+    {hasSiblings && <Button onClick={onNext} disabled={currentIndex === totalSiblings - 1}>&gt;</Button>}
   </div>
 );
 
@@ -160,7 +163,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
         )}
       </ButtonContainer>
       {onPrev && onNext && (
-        <NavigationButtons onPrev={onPrev} onNext={onNext} hasSiblings={hasSiblings} />
+        <NavigationButtons onPrev={onPrev} onNext={onNext} hasSiblings={hasSiblings} currentIndex={currentIndex || 0} totalSiblings={totalSiblings || 0} />
       )}
     </MessageContainer>
   );
