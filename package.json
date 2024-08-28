@@ -35,7 +35,7 @@
     "@fontsource/roboto": "^5.0.14",
     "@mui/icons-material": "^5.16.7",
     "@mui/material": "^5.16.7",
-    "react-router-dom": "^6.14.1"
+    "react-router-dom": "^6.14.1",
     "@mui/styled-engine-sc": "^6.0.0-alpha.18",
     "@sequelize/sqlite3": "^7.0.0-alpha.41",
     "@vitejs/plugin-react": "^4.3.1",
