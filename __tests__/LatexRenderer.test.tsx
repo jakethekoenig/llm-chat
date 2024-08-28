@@ -1,5 +1,5 @@
 // src/__tests__/LatexRenderer.test.tsx
-import { LatexRenderer } from '../renderers/LatexRenderer';
+import { LatexRenderer } from '../src/renderers/LatexRenderer';
 import { MathJax } from 'better-react-mathjax';
 
 describe('LatexRenderer', () => {

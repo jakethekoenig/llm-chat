@@ -2,6 +2,7 @@ import * as React from 'react';
 import { useState } from 'react';
 import Message from './Message';
 import Conversation from './Conversation';
+import ConversationList from './ConversationList';
 import { CodeBlockRenderer } from '../renderers/CodeBlockRenderer';
 import { LatexRenderer } from '../renderers/LatexRenderer';
 import { MessageConfigProvider } from './MessageConfigContext';
@@ -9,7 +10,7 @@ import { Message as MessageType } from '../types/Message';
 
 const MessageDemo = () => {
   const [streamingContent, setStreamingContent] = useState<AsyncIterable<string> | null>(null);
-  const [tab, setTab] = useState<'messages' | 'conversation'>('messages');
+  const [tab, setTab] = useState<'messages' | 'conversation' | 'conversationList'>('messages');
   const startStreaming = async function* (): AsyncIterable<string> {
     const content = [
       'Here is some text before the code block.\n',
@@ -48,12 +49,18 @@ const MessageDemo = () => {
     { id: '7', content: 'Great to hear!', author: 'User2', timestamp: new Date().toISOString(), parentId: '6' },
   ];
 
+  const conversations: MessageType[] = [
+    { id: '1', content: 'Conversation 1', author: 'User1', timestamp: new Date().toISOString(), parentId: null },
+    { id: '2', content: 'Conversation 2', author: 'User2', timestamp: new Date().toISOString(), parentId: null },
+  ];
+
   return (
     <MessageConfigProvider config={{ buttons: { copy: 'enabled', share: 'enabled', delete: 'enabled', edit: 'enabled' }, theme: { primaryColor: '#007BFF', secondaryColor: '#6C757D', mode: 'light' } }}>
       <div>
         <h2>Message Component Demo</h2>
         <button onClick={() => setTab('messages')}>Messages</button>
         <button onClick={() => setTab('conversation')}>Conversation</button>
+        <button onClick={() => setTab('conversationList')}>Conversation List</button>
         {tab === 'messages' && (
           <>
           <Message id="1" content={exampleMessage} author="John Doe" timestamp={new Date().toISOString()} renderers={renderers} buttons={{ copy: 'enabled', share: 'enabled', delete: 'enabled', edit: 'enabled' }} />
@@ -63,6 +70,7 @@ const MessageDemo = () => {
         </>
       )}
       {tab === 'conversation' && <Conversation messages={messages} />}
+      {tab === 'conversationList' && <ConversationList conversations={conversations} />}
     </div>
   </MessageConfigProvider>
   );
