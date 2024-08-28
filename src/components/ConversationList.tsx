@@ -13,7 +13,9 @@ const ConversationList: React.FC<ConversationListProps> = ({ conversations }) =>
       <ul>
         {conversations.map(conversation => (
           <li key={conversation.id}>
-            {conversation.content} - {conversation.author}
+            <>
+              {conversation.content} - {conversation.author}
+            </>
           </li>
         ))}
       </ul>
