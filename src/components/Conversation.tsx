@@ -20,7 +20,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
      setSelectedChildIndex(prevState => {
         const newState = { ...prevState };
         for (const message of Object.values(messages)) {
-          if (message.id && newState[message.id] === undefined) {
+          if (newState[message.id] === undefined) {
             const children = getChildren(message);
             if (children.length > 0) {
               newState[message.id] = children[0]?.id;
@@ -39,7 +39,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
       if (id != null && id != undefined)
           setSelectedChildIndex(prevState => {
             const children = getChildren(getMessage(id)!);
-            const currentSelected = prevState[id];
+            const currentSelected = prevState[id] || '';
             const currentSelectedIndex = children.findIndex(child => child.id === currentSelected);
             if (currentSelectedIndex < children.length - 1) {
               return {
@@ -55,7 +55,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
       if (id !== null && id !== undefined)
           setSelectedChildIndex(prevState => {
             const children = getChildren(getMessage(id)!);
-            const currentSelected = prevState[id];
+            const currentSelected = prevState[id] || '';
             const currentSelectedIndex = children.findIndex(child => child.id === currentSelected);
             if (currentSelectedIndex > 0) {
               return {
