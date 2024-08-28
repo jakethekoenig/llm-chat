@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 
 const SignIn: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -9,8 +8,18 @@ const SignIn: React.FC = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await axios.post('/signin', { username, password });
-      localStorage.setItem('token', response.data.token);
+      const response = await fetch('/signin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Invalid credentials');
+      }
+      localStorage.setItem('token', data.token);
       setError('');
       // Redirect or update UI as needed
     } catch (err) {
