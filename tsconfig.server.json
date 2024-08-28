@@ -8,7 +8,8 @@
     "esModuleInterop": true,
     "moduleResolution": "node",
     "skipLibCheck": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "types": ["node", "sequelize", "bcrypt", "jest"]
   },
   "include": ["server/**/*.ts"],
   "exclude": ["node_modules", "dist-server"]
