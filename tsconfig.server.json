@@ -1,14 +1,15 @@
 {
   "compilerOptions": {
-    "outDir": "./dist-server",  // Output directory for backend code
-    "rootDir": "./server",      // Source directory for backend code
-    "module": "commonjs",       // Module system for Node.js (use "esnext" if you want ES modules)
-    "target": "es2020",         // ECMAScript version for backend
-    "strict": true,             // Enable strict type-checking
-    "esModuleInterop": true,    // Enable ES module interop
-    "moduleResolution": "node", // Resolve modules in Node.js style
-    "skipLibCheck": true,       // Skip checking types of node_modules
-    "sourceMap": true           // Enable source maps for debugging
+    "outDir": "./dist-server",
+    "rootDir": "./server",
+    "module": "commonjs",
+    "target": "es2020",
+    "strict": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "types": ["node", "sequelize", "bcrypt", "jest"]
   },
   "include": ["server/**/*.ts"],
   "exclude": ["node_modules", "dist-server"]
