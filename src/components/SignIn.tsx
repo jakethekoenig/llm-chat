@@ -8,7 +8,7 @@ const SignIn: React.FC = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch('/signin', {
+      const response = await fetch('/api/signin', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
