@@ -1,6 +1,6 @@
 // __tests__/Conversation.test.tsx
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Conversation from '../src/components/Conversation';
 
@@ -9,6 +9,11 @@ const messages = [
   { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
   { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
 ];
+
+afterEach(() => {
+  jest.clearAllTimers();
+  jest.clearAllMocks();
+});
 
 test('renders conversation messages', () => {
   render(<Conversation messages={messages} />);
@@ -39,6 +44,33 @@ test('selects the first child by default', () => {
   ];
   render(<Conversation messages={messages} />);
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
+});
+
+test('sends a new message', () => {
+  render(<Conversation messages={messages} />);
+  const input = screen.getByPlaceholderText('Type your message');
+  const sendButton = screen.getByText('Send');
+  fireEvent.change(input, { target: { value: 'New message' } });
+  fireEvent.click(sendButton);
+  expect(screen.getByText('New message')).toBeInTheDocument();
+});
+
+test('handles empty message input', () => {
+  render(<Conversation messages={messages} />);
+  const input = screen.getByPlaceholderText('Type your message');
+  const sendButton = screen.getByText('Send');
+  fireEvent.change(input, { target: { value: '' } });
+  fireEvent.click(sendButton);
+  expect(screen.queryByText('')).toBeInTheDocument();
+});
+
+test('handles message with only spaces', () => {
+  render(<Conversation messages={messages} />);
+  const input = screen.getByPlaceholderText('Type your message');
+  const sendButton = screen.getByText('Send');
+  fireEvent.change(input, { target: { value: '   ' } });
+  fireEvent.click(sendButton);
+  expect(screen.queryByText('   ')).not.toBeInTheDocument();
 });
 
 test('renders conversation with recursive navigation and selection', () => {
