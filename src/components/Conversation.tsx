@@ -89,6 +89,8 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
           onPrev={() => decrementSelectedChildIndex(currentMessage.parentId)}
           onNext={() => incrementSelectedChildIndex(currentMessage.parentId)}
           hasSiblings={hasSiblings}
+          currentIndex={siblingIndex}
+          totalSiblings={totalSiblings}
         />
         {renderMessages(messages, selectedChild, childrenHaveSiblings)}
     </>);
