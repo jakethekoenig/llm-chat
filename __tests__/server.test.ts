@@ -72,7 +72,7 @@ describe('Server Tests', () => {
     const token = signInResponse.body.token;
 
     // Tamper the token to make it invalid
-    const invalidToken = token.slice(0, -1) + 'x';
+    const invalidToken = token ? token.slice(0, -1) + 'x' : 'invalidToken';
 
     const response = await request(app)
       .get('/get_completion')

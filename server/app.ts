@@ -16,6 +16,9 @@ app.use(cors());
 // Sign-in route
 app.post('/signin', async (req: express.Request, res: express.Response) => {
   const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and password are required' });
+  }
   try {
     const user = await User.findOne({ where: { username } });
     if (user && await bcrypt.compare(password, (user as any).hashed_password)) {
@@ -32,7 +35,14 @@ app.post('/signin', async (req: express.Request, res: express.Response) => {
 // Register route
 app.post('/register', async (req: express.Request, res: express.Response) => {
   const { username, email, password } = req.body;
+  if (!username || !email || !password) {
+    return res.status(400).json({ error: 'Username, email, and password are required' });
+  }
   try {
+    const existingUser = await User.findOne({ where: { [Op.or]: [{ username }, { email }] } });
+    if (existingUser) {
+      return res.status(400).json({ error: 'Username or email already exists' });
+    }
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await User.create({ username, email, hashed_password: hashedPassword });
     res.status(201).json({ id: (newUser as any).id, username: (newUser as any).username, email: (newUser as any).email });
