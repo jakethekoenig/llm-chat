@@ -5,6 +5,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
 import { User } from './database/models/User';
+import { Op } from 'sequelize';
 dotenv.config();
 
 const app = express();
