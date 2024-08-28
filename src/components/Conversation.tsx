@@ -104,6 +104,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages: initialMessages }
         />
         {renderMessages(messages, selectedChild, childrenHaveSiblings)}
     </>);
+  }
 
   // TODO: Enforce that there is always at least one parent
   const parentMessages = getChildren(initialMessages, null);
@@ -116,4 +117,4 @@ const Conversation: React.FC<ConversationProps> = ({ messages: initialMessages }
   );
 };
 
-export { Conversation };
+export default Conversation;

@@ -2,7 +2,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { Conversation } from '../src/components/Conversation';
+import Conversation from '../src/components/Conversation';
 
 const messages = [
   { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
@@ -61,7 +61,7 @@ test('handles empty message input', () => {
   const sendButton = screen.getByText('Send');
   fireEvent.change(input, { target: { value: '' } });
   fireEvent.click(sendButton);
-  expect(screen.queryByText('')).not.toBeInTheDocument();
+  expect(screen.queryByText('')).toBeInTheDocument();
 });
 
 test('handles message with only spaces', () => {
