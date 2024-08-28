@@ -72,6 +72,9 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
       return <></>;
     }
     const currentMessage = getMessage(currentId);
+    if (!currentMessage) {
+      return <></>;
+    }
     const childMessages = getChildren(currentMessage);
     let selectedChild = null;
     if (childMessages.length > 0) {

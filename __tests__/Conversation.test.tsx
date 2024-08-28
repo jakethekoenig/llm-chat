@@ -39,7 +39,7 @@ test('selects the first child by default', () => {
     '3': { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1', children: {} },
   };
   render(<Conversation messages={messages} />);
-  expect(screen.getByText('How are you?')).toBeInTheDocument();
+  expect(screen.getByText('Hi there!')).toBeInTheDocument();
 });
 
 test('renders conversation with recursive navigation and selection', () => {
@@ -59,6 +59,7 @@ test('renders conversation with recursive navigation and selection', () => {
   expect(screen.queryByText('Hi there!')).not.toBeInTheDocument();
   expect(screen.getByText('I am doing well!')).toBeInTheDocument();
   fireEvent.click(screen.getAllByText('<')[0]);
+  expect(screen.getByText('Hi there!')).toBeInTheDocument();
   expect(screen.queryByText('How are you?')).not.toBeInTheDocument();
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
   expect(screen.queryByText('I am doing well!')).not.toBeInTheDocument();
