@@ -8,6 +8,7 @@ interface ConversationProps {
 }
 
 const Conversation: React.FC<ConversationProps> = ({ messages: initialMessages }) => {
+  const [messages, setMessages] = useState<MessageType[]>(initialMessages);
   // TODO: Refactor messages to be a map
   const getChildren = (messages: MessageType[], parentId: string | null): MessageType[] => {
     return messages.filter(message => message.parentId === parentId);
