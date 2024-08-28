@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import Message from './Message';
 import { Message as MessageType } from '../types/Message';
+import MakeMessage from './MakeMessage';
 
 interface ConversationProps {
   messages: MessageType[];
 }
 
-const Conversation: React.FC<ConversationProps> = ({ messages }) => {
+const Conversation: React.FC<ConversationProps> = ({ messages: initialMessages }) => {
   // TODO: Refactor messages to be a map
   const getChildren = (messages: MessageType[], parentId: string | null): MessageType[] => {
     return messages.filter(message => message.parentId === parentId);
@@ -35,7 +36,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
 
   useEffect(() => {
     setChildren();
-  }, []);
+  }, [messages]);
 
   const incrementSelectedChildIndex = (id: string | null | undefined) => {
       if (id != null && id != undefined)
@@ -98,7 +99,12 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
   const parentMessages = getChildren(messages, null);
   const hasSiblings = parentMessages.length > 1;
 
-  return <div>{renderMessages(messages, parentMessages[0].id, hasSiblings)}</div>;
+  return (
+    <div>
+      {renderMessages(messages, parentMessages[0].id, hasSiblings)}
+      <MakeMessage onSend={handleSend} />
+    </div>
+  );
 };
 
 export default Conversation;
