@@ -5,11 +5,11 @@ import '@testing-library/jest-dom';
 import Conversation from '../src/components/Conversation';
 import ConversationList from '../src/components/ConversationList';
 
-const messages = [
-  { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
-  { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
-  { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
-];
+const messages = {
+  '1': { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null, children: {} },
+  '2': { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1', children: {} },
+  '3': { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1', children: {} },
+};
 
 test('renders conversation messages', () => {
   render(<Conversation messages={messages} />);
@@ -17,11 +17,11 @@ test('renders conversation messages', () => {
 });
 
 test('renders conversation with navigation and selection', async () => {
-  const messages = [
-    { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
-    { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
-    { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
-  ];
+  const messages = {
+    '1': { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null, children: {} },
+    '2': { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1', children: {} },
+    '3': { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1', children: {} },
+  };
   render(<Conversation messages={messages} />);
   expect(screen.getByText('Hello, world!')).toBeInTheDocument();
   fireEvent.click(screen.getByText('Hello, world!'));
@@ -33,24 +33,24 @@ test('renders conversation with navigation and selection', async () => {
 });
 
 test('selects the first child by default', () => {
-  const messages = [
-    { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
-    { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
-    { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
-  ];
+  const messages = {
+    '1': { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null, children: {} },
+    '2': { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1', children: {} },
+    '3': { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1', children: {} },
+  };
   render(<Conversation messages={messages} />);
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
 });
 
 test('renders conversation with recursive navigation and selection', () => {
-  const messages = [
-    { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
-    { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
-    { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
-    { id: '4', content: 'I am good, thanks!', author: 'User2', timestamp: new Date().toISOString(), parentId: '2' },
-    { id: '5', content: 'What about you?', author: 'User2', timestamp: new Date().toISOString(), parentId: '2' },
-    { id: '6', content: 'I am doing well!', author: 'User', timestamp: new Date().toISOString(), parentId: '3' },
-  ];
+  const messages = {
+    '1': { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null, children: {} },
+    '2': { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1', children: {} },
+    '3': { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1', children: {} },
+    '4': { id: '4', content: 'I am good, thanks!', author: 'User2', timestamp: new Date().toISOString(), parentId: '2', children: {} },
+    '5': { id: '5', content: 'What about you?', author: 'User2', timestamp: new Date().toISOString(), parentId: '2', children: {} },
+    '6': { id: '6', content: 'I am doing well!', author: 'User', timestamp: new Date().toISOString(), parentId: '3', children: {} },
+  };
   render(<Conversation messages={messages} />);
   expect(screen.getByText('Hello, world!')).toBeInTheDocument();
   expect(screen.getByText('Hi there!')).toBeInTheDocument();

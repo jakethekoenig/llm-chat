@@ -3,27 +3,25 @@ import Message from './Message';
 import { Message as MessageType } from '../types/Message';
 
 interface ConversationProps {
-  messages: MessageType[];
+  messages: { [key: string]: MessageType }; // Change to map of IDs to messages
 }
 
 const Conversation: React.FC<ConversationProps> = ({ messages }) => {
-  // TODO: Refactor messages to be a map
-  const getChildren = (messages: MessageType[], parentId: string | null): MessageType[] => {
-    return messages.filter(message => message.parentId === parentId);
+  const getChildren = (message: MessageType): MessageType[] => {
+    return Object.values(message.children || {});
   }
 
-  const getMessage = (messages: MessageType[], id: string): MessageType | null => {
-    return messages.find(message => message.id === id) || null;
+  const getMessage = (id: string): MessageType | null => {
+    return messages[id] || null;
   }
   const [selectedChildIndex, setSelectedChildIndex] = useState<{ [key: string]: string }>({});
-
 
   const setChildren = () => {
      setSelectedChildIndex(prevState => {
         const newState = { ...prevState };
-        for (const message of messages) {
+        for (const message of Object.values(messages)) {
           if (newState[message.id] === undefined) {
-            const children = getChildren(messages, message.id);
+            const children = getChildren(message);
             if (children.length > 0) {
               newState[message.id] = children[0].id;
             }
@@ -40,7 +38,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
   const incrementSelectedChildIndex = (id: string | null | undefined) => {
       if (id != null && id != undefined)
           setSelectedChildIndex(prevState => {
-            const children = getChildren(messages, id);
+            const children = getChildren(getMessage(id)!);
             const currentSelected = prevState[id];
             const currentSelectedIndex = children.findIndex(child => child.id === currentSelected);
             if (currentSelectedIndex < children.length - 1) {
@@ -56,7 +54,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
   const decrementSelectedChildIndex = (id: string | null | undefined) => {
       if (id !== null && id !== undefined)
           setSelectedChildIndex(prevState => {
-            const children = getChildren(messages, id);
+            const children = getChildren(getMessage(id)!);
             const currentSelected = prevState[id];
             const currentSelectedIndex = children.findIndex(child => child.id === currentSelected);
             if (currentSelectedIndex > 0) {
@@ -69,18 +67,17 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
           });
   }
 
-  const renderMessages = (messages: MessageType[], currentId: string | null = null, hasSiblings: boolean = false): JSX.Element => {
+  const renderMessages = (currentId: string | null = null, hasSiblings: boolean = false): JSX.Element => {
     if (currentId === null) {
       return <></>;
     }
-    const childMessages = getChildren(messages, currentId);
+    const currentMessage = getMessage(currentId) as MessageType;
+    const childMessages = getChildren(currentMessage);
     let selectedChild = null;
     if (childMessages.length > 0) {
-      selectedChild = getMessage(messages, selectedChildIndex[currentId])?.id;
+      selectedChild = getMessage(selectedChildIndex[currentId])?.id;
     }
 
-    const currentIndex = selectedChildIndex[currentId || 'root'] || 0;
-    const currentMessage = getMessage(messages, currentId) as MessageType;
     const childrenHaveSiblings = childMessages.length > 1;
 
     return (<>
@@ -90,15 +87,16 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
           onNext={() => incrementSelectedChildIndex(currentMessage.parentId)}
           hasSiblings={hasSiblings}
         />
-        {renderMessages(messages, selectedChild, childrenHaveSiblings)}
+        {renderMessages(selectedChild, childrenHaveSiblings)}
     </>);
   };
 
-  // TODO: Enforce that there is always at least one parent
-  const parentMessages = getChildren(messages, null);
+  const parentMessages = Object.values(messages).filter(message => message.parentId === null);
   const hasSiblings = parentMessages.length > 1;
 
-  return <div>{renderMessages(messages, parentMessages[0].id, hasSiblings)}</div>;
+  return <div>{renderMessages(parentMessages[0]?.id, hasSiblings)}</div>;
 };
+
+export default Conversation;
 
 export default Conversation;

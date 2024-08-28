@@ -196,11 +196,11 @@ test('renders plain text when no start sequence is found', () => {
   expect(screen.getByText(content)).toBeInTheDocument();
 });
 
-const messages = [
-  { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
-  { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
-  { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
-];
+const messages = {
+  '1': { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null, children: {} },
+  '2': { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1', children: {} },
+  '3': { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1', children: {} },
+};
 
 test('renders menu-ed buttons and triggers respective actions', async () => {
   renderWithConfig(<Message id="test-id-11" content="Test message" buttons={{ copy: 'menu-ed', share: 'menu-ed', delete: 'menu-ed', edit: 'menu-ed' }} />);

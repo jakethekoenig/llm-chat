@@ -21,4 +21,5 @@ export interface Message {
   parentId?: string | null;
   onPrev?: () => void;
   onNext?: () => void;
+  children?: { [key: string]: Message };
 }
