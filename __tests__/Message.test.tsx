@@ -39,6 +39,7 @@ test('renders author and timestamp', () => {
   expect(screen.getByText(new Date('2023-01-01T00:00:00Z').toLocaleString())).toBeInTheDocument();
 });
 
+`
 test('renders control buttons based on props', async () => {
   const content = 'Test message';
   const onCopy = jest.fn();

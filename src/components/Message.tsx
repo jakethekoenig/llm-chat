@@ -50,7 +50,7 @@ const ButtonContainer = styled.div`
   gap: 8px;
 `;
 
-const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons = {}, onCopy, onShare, onDelete, onEdit, renderers = [], onClick, onPrev, onNext, hasSiblings, currentIndex, totalSiblings }) => {
+const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons = {}, onCopy, onShare, onDelete, onEdit, renderers = [], onClick, onPrev, onNext, hasSiblings, currentIndex = 0, totalSiblings = 0 }) => {
   const globalConfig = useMessageConfig();
   const [displayedContent, setDisplayedContent] = useState<string>('');
   const isMountedRef = useRef(true);

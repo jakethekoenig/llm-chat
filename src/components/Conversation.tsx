@@ -79,7 +79,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
       selectedChild = getMessage(messages, selectedChildIndex[currentId])?.id;
     }
 
-    const currentIndex = selectedChildIndex[currentId || 'root'] || 0;
+    const currentIndex = siblingIndex;
     const currentMessage = getMessage(messages, currentId) as MessageType;
     const childrenHaveSiblings = childMessages.length > 1;
 
