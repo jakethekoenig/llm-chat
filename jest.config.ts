@@ -8,6 +8,7 @@ export default {
   testMatch: ['**/__tests__/**/*.test.(ts|js)'],
   moduleNameMapper: {
     '\\.(css|less)$': '<rootDir>/__mocks__/styleMock.ts',
+    '^uuid$': require.resolve('uuid'), // Add this line to handle ESM module
   },
   collectCoverage: true,
   coverageDirectory: 'coverage',
