@@ -49,10 +49,6 @@ test('sends a new message', () => {
   fireEvent.click(sendButton);
   expect(screen.getByText('New message')).toBeInTheDocument();
 });
-  ];
-  render(<Conversation messages={messages} />);
-  expect(screen.getByText('Hi there!')).toBeInTheDocument();
-});
 
 test('renders conversation with recursive navigation and selection', () => {
   const messages = [
