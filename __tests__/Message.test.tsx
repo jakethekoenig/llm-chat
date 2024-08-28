@@ -29,7 +29,7 @@ const renderWithConfig = (ui: React.ReactElement, config: Partial<MessageConfig>
 };
 
 test('renders message content', () => {
-  renderWithConfig(<Message id="test-id-1" content="Test message" />);
+  renderWithConfig(<Message id="test-id-1" content="Test message" currentIndex={0} totalSiblings={1} />);
   expect(screen.getByText('Test message')).toBeInTheDocument();
 });
 
