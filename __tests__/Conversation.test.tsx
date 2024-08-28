@@ -28,6 +28,7 @@ test('renders conversation with navigation and selection', async () => {
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
   expect(screen.getAllByText('<')[0]).toBeInTheDocument();
   expect(screen.getAllByText('>')[0]).toBeInTheDocument();
+  expect(screen.getByText('1 / 2')).toBeInTheDocument();
   await fireEvent.click(screen.getAllByText('>')[0]);
   expect(screen.getByText('How are you?')).toBeInTheDocument();
   expect(screen.getByText('2 / 2')).toBeInTheDocument();
