@@ -124,7 +124,7 @@ test('renders code block content', () => {
 test('renders multiple code blocks and text without duplication', () => {
   const renderers = [new CodeBlockRenderer()];
   const content = "Here is some text before the code block.\n```javascript\nconsole.log('Hello, World!');\nconsole.log('This is a second line.');\n```\nHere is some text between the code blocks.\n```python\nprint('Hello, World!')\nprint('This is a second line.')\n```\nHere is some text after the code block."
-  renderWithConfig(<Message id="test-id-10" content={content} renderers={renderers as Renderer[]} />);
+  renderWithConfig(<Message id="test-id-10" content={content} renderers={renderers as Renderer[]} currentIndex={0} totalSiblings={1} />);
   expect(screen.getByText("Here is some text before the code block.")).toBeInTheDocument();
   expect(screen.getByText("Here is some text between the code blocks.")).toBeInTheDocument();
   expect(screen.getByText("Here is some text after the code block.")).toBeInTheDocument();

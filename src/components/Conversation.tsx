@@ -83,7 +83,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
         <Message
           {...currentMessage}
           onPrev={() => decrementSelectedChildIndex(currentMessage.parentId)}
-          onNext={() => incrementSelectedChildIndex(currentMessage.parentId)}
+          onNext(() => incrementSelectedChildIndex(currentMessage.parentId)}
           hasSiblings={totalSiblings > 1}
           currentIndex={currentIndex}
           totalSiblings={totalSiblings}
