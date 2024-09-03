@@ -46,7 +46,7 @@ test('renders author and timestamp', () => {
 test('renders control buttons based on props', async () => {
   const content = 'Test message';
   const onCopy = jest.fn();
-  renderWithConfig(<Message id="test-id-3" content={content} buttons={{ copy: 'enabled' }} onCopy={onCopy} />);
+  renderWithConfig(<Message id="test-id-3" content={content} buttons={{ copy: 'enabled' }} onCopy={onCopy} currentIndex={0} totalSiblings={1} />);
   const copyButton = screen.getByText('Copy');
   await fireEvent.click(copyButton);
   expect(navigator.clipboard.writeText).toHaveBeenCalledWith(content);
