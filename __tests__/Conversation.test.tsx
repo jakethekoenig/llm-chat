@@ -56,7 +56,7 @@ test('renders conversation with recursive navigation and selection', () => {
   expect(screen.getByText('How are you?')).toBeInTheDocument();
   fireEvent.click(screen.getAllByText('>')[0]);
   expect(screen.getByText('I am good, thanks!')).toBeInTheDocument();
-  expect(screen.queryByText('Hi there!')).not.toBeInTheDocument();
+  expect(screen.queryByText('How are you?')).not.toBeInTheDocument();
   expect(screen.getByText('I am doing well!')).toBeInTheDocument();
   fireEvent.click(screen.getAllByText('<')[0]);
   expect(screen.getByText('How are you?')).toBeInTheDocument();

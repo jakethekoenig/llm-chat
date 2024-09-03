@@ -30,7 +30,6 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
         return newState;
       });
   }
-  }
 
   useEffect(() => {
     setChildren();
@@ -72,7 +71,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
     if (currentId === null) {
       return <></>;
     }
-    const currentMessage = getMessage(currentId);
+    const currentMessage = getMessage(currentId)!;
     if (!currentMessage) {
       return <></>;
     }
@@ -98,7 +97,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
   const parentMessages = Object.values(messages).filter(message => message.parentId === null);
   const hasSiblings = parentMessages.length > 1;
 
-  return <div>{renderMessages(parentMessages[0]?.id, hasSiblings)}</div>;
+  return <div>{renderMessages(parentMessages[0]?.id || null, hasSiblings)}</div>;
 };
 
 export default Conversation;
