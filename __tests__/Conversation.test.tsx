@@ -6,7 +6,7 @@ import Conversation from '../src/components/Conversation';
 import ConversationList from '../src/components/ConversationList';
 
 const messages = {
-  '1': { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null, children: {} },
+  '1': { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null, children: { '2': { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1', children: {} }, '3': { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1', children: {} } } },
   '2': { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1', children: {} },
   '3': { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1', children: {} },
 };
@@ -18,7 +18,7 @@ test('renders conversation messages', () => {
 
 test('renders conversation with navigation and selection', async () => {
   const messages = {
-    '1': { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null, children: {} },
+    '1': { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null, children: { '2': { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1', children: {} }, '3': { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1', children: {} } } },
     '2': { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1', children: {} },
     '3': { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1', children: {} },
   };
@@ -34,7 +34,7 @@ test('renders conversation with navigation and selection', async () => {
 
 test('selects the first child by default', () => {
   const messages = {
-    '1': { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null, children: {} },
+    '1': { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null, children: { '2': { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1', children: {} }, '3': { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1', children: {} } } },
     '2': { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1', children: {} },
     '3': { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1', children: {} },
   };
@@ -44,9 +44,9 @@ test('selects the first child by default', () => {
 
 test('renders conversation with recursive navigation and selection', () => {
   const messages = {
-    '1': { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null, children: {} },
-    '2': { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1', children: {} },
-    '3': { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1', children: {} },
+    '1': { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null, children: { '2': { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1', children: { '4': { id: '4', content: 'I am good, thanks!', author: 'User2', timestamp: new Date().toISOString(), parentId: '2', children: {} }, '5': { id: '5', content: 'What about you?', author: 'User2', timestamp: new Date().toISOString(), parentId: '2', children: {} } } }, '3': { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1', children: { '6': { id: '6', content: 'I am doing well!', author: 'User', timestamp: new Date().toISOString(), parentId: '3', children: {} } } } } },
+    '2': { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1', children: { '4': { id: '4', content: 'I am good, thanks!', author: 'User2', timestamp: new Date().toISOString(), parentId: '2', children: {} }, '5': { id: '5', content: 'What about you?', author: 'User2', timestamp: new Date().toISOString(), parentId: '2', children: {} } } },
+    '3': { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1', children: { '6': { id: '6', content: 'I am doing well!', author: 'User', timestamp: new Date().toISOString(), parentId: '3', children: {} } } },
     '4': { id: '4', content: 'I am good, thanks!', author: 'User2', timestamp: new Date().toISOString(), parentId: '2', children: {} },
     '5': { id: '5', content: 'What about you?', author: 'User2', timestamp: new Date().toISOString(), parentId: '2', children: {} },
     '6': { id: '6', content: 'I am doing well!', author: 'User', timestamp: new Date().toISOString(), parentId: '3', children: {} },

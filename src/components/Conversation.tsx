@@ -90,7 +90,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
           onNext={() => incrementSelectedChildIndex(currentMessage.parentId)}
           hasSiblings={hasSiblings}
         />
-        {renderMessages(selectedChild, childrenHaveSiblings)}
+        {childMessages.map(child => renderMessages(child.id, childrenHaveSiblings))}
     </>);
   };
 
