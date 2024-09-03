@@ -37,9 +37,6 @@ test('renders conversation with navigation and selection', async () => {
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
   expect(screen.getByText('1 / 2')).toBeInTheDocument();
   expect(screen.getAllByText('<')[0]).toBeDisabled();
-  expect(screen.getByText('Hi there!')).toBeInTheDocument();
-  expect(screen.getByText('1 / 2')).toBeInTheDocument();
-  expect(screen.getAllByText('<')[0]).toBeDisabled();
 });
 
 test('selects the first child by default', () => {
