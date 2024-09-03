@@ -31,7 +31,7 @@ test('renders conversation with navigation and selection', async () => {
 
 test('selects the first child by default', () => {
   render(<Conversation messages={messages} />);
-  expect(screen.getByText('How are you?')).toBeInTheDocument();
+  expect(screen.getByText('Hi there!')).toBeInTheDocument();
 });
 
 test('renders conversation with recursive navigation and selection', () => {

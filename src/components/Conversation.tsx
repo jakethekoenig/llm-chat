@@ -29,8 +29,8 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
         }
         return newState;
       });
-  }
-
+  }, []);
+  
   useEffect(() => {
     setChildren();
   }, [messages]);
@@ -90,7 +90,11 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
           onNext={() => incrementSelectedChildIndex(currentMessage.parentId)}
           hasSiblings={hasSiblings}
         />
-        {childMessages.map(child => renderMessages(child.id, childrenHaveSiblings))}
+        {childMessages.map(child => (
+          <div key={child.id}>
+            {renderMessages(child.id, childrenHaveSiblings)}
+          </div>
+        ))}
     </>);
   };
 
