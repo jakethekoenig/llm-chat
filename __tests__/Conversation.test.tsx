@@ -64,3 +64,7 @@ test('renders conversation list', () => {
   expect(screen.getByText('Conversation 1 - User1')).toBeInTheDocument();
   expect(screen.getByText('Conversation 2 - User2')).toBeInTheDocument();
 });
+  render(<ConversationList conversations={conversations} />);
+  expect(screen.getByText('Conversation 1 - User1')).toBeInTheDocument();
+  expect(screen.getByText('Conversation 2 - User2')).toBeInTheDocument();
+});
