@@ -23,7 +23,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
           if (newState[message.id] === undefined) {
             const children = getChildren(message);
             if (children.length > 0) {
-              newState[message.id] = children[0]?.id || '';
+              newState[message.id] = children[0].id;
             }
           }
         }
@@ -71,7 +71,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
     if (currentId === null) {
       return <></>;
     }
-    const currentMessage = getMessage(currentId)!;
+    const currentMessage = getMessage(currentId);
     if (!currentMessage) {
       return <></>;
     }
