@@ -108,7 +108,7 @@ test('renders async iterator content with delay', async () => {
 test('renders content without end sequence', () => {
   const renderers = [new CodeBlockRenderer()];
   const content = "```javascript\nconsole.log('Hello, World!');";
-  renderWithConfig(<Message id="test-id-15" content={content} renderers={renderers as Renderer[]} />);
+  renderWithConfig(<Message id="test-id-15" content={content} renderers={renderers as Renderer[]} currentIndex={0} totalSiblings={1} />);
   expect(screen.getByText("console")).toBeInTheDocument();
   expect(screen.getByText("log")).toBeInTheDocument();
 });
@@ -116,7 +116,7 @@ test('renders content without end sequence', () => {
 test('renders code block content', () => {
   const renderers = [new CodeBlockRenderer()];
   const content = "```javascript\nconsole.log('Hello, World!');\n```";
-  renderWithConfig(<Message id="test-id-9" content={content} renderers={renderers as Renderer[]} />);
+  renderWithConfig(<Message id="test-id-9" content={content} renderers={renderers as Renderer[]} currentIndex={0} totalSiblings={1} />);
   expect(screen.getByText("console")).toBeInTheDocument();
   expect(screen.getByText("log")).toBeInTheDocument();
 });

@@ -65,10 +65,12 @@ test('renders conversation with recursive navigation and selection', () => {
   expect(screen.getByText('How are you?')).toBeInTheDocument();
   expect(screen.queryByText('Hi there!')).not.toBeInTheDocument();
   expect(screen.getByText('I am doing well!')).toBeInTheDocument();
+  expect(screen.getByText('2 / 2')).toBeInTheDocument();
   fireEvent.click(screen.getAllByText('<')[0]);
   expect(screen.queryByText('How are you?')).not.toBeInTheDocument();
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
   expect(screen.queryByText('I am doing well!')).not.toBeInTheDocument();
+  expect(screen.getByText('1 / 2')).toBeInTheDocument();
 });
 
 test('renders conversation list', () => {
