@@ -31,10 +31,14 @@ const renderWithConfig = (ui: React.ReactElement, config: Partial<MessageConfig>
 test('renders message content', () => {
   renderWithConfig(<Message id="test-id-1" content="Test message" currentIndex={0} totalSiblings={1} />);
   expect(screen.getByText('Test message')).toBeInTheDocument();
+  expect(screen.getByText('1 / 2')).toBeInTheDocument();
 });
 
 test('renders author and timestamp', () => {
   renderWithConfig(<Message id="test-id-2" content="Test message" author="Test Author" timestamp="2023-01-01T00:00:00Z" currentIndex={0} totalSiblings={1} />);
+  expect(screen.getByText('Test Author')).toBeInTheDocument();
+  expect(screen.getByText(new Date('2023-01-01T00:00:00Z').toLocaleString())).toBeInTheDocument();
+  expect(screen.getByText('1 / 2')).toBeInTheDocument();
   expect(screen.getByText('Test Author')).toBeInTheDocument();
   expect(screen.getByText(new Date('2023-01-01T00:00:00Z').toLocaleString())).toBeInTheDocument();
 });
