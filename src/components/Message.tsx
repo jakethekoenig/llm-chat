@@ -163,7 +163,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
         )}
       </ButtonContainer>
       {onPrev && onNext && (
-        <NavigationButtons onPrev={onPrev} onNext={onNext} hasSiblings={hasSiblings} currentIndex={currentIndex || 0} totalSiblings={totalSiblings || 0} />
+        <NavigationButtons onPrev={onPrev} onNext={onNext} hasSiblings={hasSiblings} currentIndex={currentIndex} totalSiblings={totalSiblings} />
       )}
     </MessageContainer>
   );
