@@ -23,7 +23,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
           if (newState[message.id] === undefined) {
             const children = getChildren(message);
             if (children.length > 0) {
-              newState[message.id] = children[0].id;
+              newState[message.id] = children[0]?.id || '';
             }
           }
         }
@@ -101,7 +101,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
   const parentMessages = Object.values(messages).filter(message => message.parentId === null);
   const hasSiblings = parentMessages.length > 1;
 
-  return <div>{renderMessages(parentMessages[0]?.id || null, hasSiblings)}</div>;
+  return <div>{parentMessages.map(parent => renderMessages(parent.id, hasSiblings))}</div>;
 };
   
 export default Conversation;
