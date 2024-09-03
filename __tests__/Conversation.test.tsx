@@ -28,14 +28,14 @@ test('renders conversation with navigation and selection', async () => {
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
   expect(screen.getAllByText('<')[0]).toBeInTheDocument();
   expect(screen.getAllByText('>')[0]).toBeInTheDocument();
-  expect(screen.getByText((content, element) => element !== null && element.textContent === '1 / 2')).toBeInTheDocument();
+  expect(screen.getByText((content, element) => element && element.textContent === '1 / 2')).toBeInTheDocument();
   await fireEvent.click(screen.getAllByText('>')[0]);
   expect(screen.getByText('How are you?')).toBeInTheDocument();
-  expect(screen.getByText((content, element) => element !== null && element.textContent === '2 / 2')).toBeInTheDocument();
+  expect(screen.getByText((content, element) => element && element.textContent === '2 / 2')).toBeInTheDocument();
   expect(screen.getAllByText('>')[0]).toBeDisabled();
   await fireEvent.click(screen.getAllByText('<')[0]);
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
-  expect(screen.getByText((content, element) => element !== null && element.textContent === '1 / 2')).toBeInTheDocument();
+  expect(screen.getByText((content, element) => element && element.textContent === '1 / 2')).toBeInTheDocument();
   expect(screen.getAllByText('<')[0]).toBeDisabled();
 });
 
@@ -65,12 +65,12 @@ test('renders conversation with recursive navigation and selection', () => {
   expect(screen.getByText('How are you?')).toBeInTheDocument();
   expect(screen.queryByText('Hi there!')).not.toBeInTheDocument();
   expect(screen.getByText('I am doing well!')).toBeInTheDocument();
-  expect(screen.getByText((content, element) => element !== null && element.textContent === '2 / 2')).toBeInTheDocument();
+  expect(screen.getByText((content, element) => element && element.textContent === '2 / 2')).toBeInTheDocument();
   fireEvent.click(screen.getAllByText('<')[0]);
   expect(screen.queryByText('How are you?')).not.toBeInTheDocument();
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
   expect(screen.queryByText('I am doing well!')).not.toBeInTheDocument();
-  expect(screen.getByText((content, element) => element !== null && element.textContent === '1 / 2')).toBeInTheDocument();
+  expect(screen.getByText((content, element) => element && element.textContent === '1 / 2')).toBeInTheDocument();
 });
 test('renders conversation list', () => {
   const conversations = [

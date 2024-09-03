@@ -76,7 +76,6 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
     const childMessages = getChildren(messages, parentId);
     const currentIndex = childMessages.findIndex(message => message.id === currentId);
     const totalSiblings = childMessages.length;
-    const totalSiblings = childMessages.length;
     const currentMessage = getMessage(messages, currentId) as MessageType;
     const childrenHaveSiblings = getChildren(messages, currentId).length > 1;
 
