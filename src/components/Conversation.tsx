@@ -69,30 +69,26 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
           });
   }
 
-  const renderMessages = (messages: MessageType[], currentId: string | null = null, hasSiblings: boolean = false, siblingIndex: number = 0, totalSiblings: number = 0): JSX.Element => {
+  const renderMessages = (messages: MessageType[], currentId: string | null = null, parentId: string | null = null): JSX.Element => {
     if (currentId === null) {
       return <></>;
     }
-    const childMessages = getChildren(messages, currentId);
-    let selectedChild = null;
-    if (childMessages.length > 0) {
-      selectedChild = getMessage(messages, selectedChildIndex[currentId])?.id;
-    }
-
-    const currentIndex = siblingIndex;
+    const childMessages = getChildren(messages, parentId);
+    const currentIndex = childMessages.findIndex(message => message.id === currentId);
+    const totalSiblings = childMessages.length;
     const currentMessage = getMessage(messages, currentId) as MessageType;
-    const childrenHaveSiblings = childMessages.length > 1;
+    const childrenHaveSiblings = getChildren(messages, currentId).length > 1;
 
     return (<>
         <Message
           {...currentMessage}
           onPrev={() => decrementSelectedChildIndex(currentMessage.parentId)}
           onNext={() => incrementSelectedChildIndex(currentMessage.parentId)}
-          hasSiblings={hasSiblings}
+          hasSiblings={totalSiblings > 1}
           currentIndex={currentIndex}
           totalSiblings={totalSiblings}
         />
-        {renderMessages(messages, selectedChild, childrenHaveSiblings, siblingIndex + 1, totalSiblings)}
+        {renderMessages(messages, selectedChildIndex[currentId], currentId)}
     </>);
   };
 
@@ -100,7 +96,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
   const parentMessages = getChildren(messages, null);
   const hasSiblings = parentMessages.length > 1;
 
-  return <div>{renderMessages(messages, parentMessages[0].id, hasSiblings, 0, parentMessages.length)}</div>;
+  return <div>{renderMessages(messages, parentMessages[0]?.id, null)}</div>;
 };
 
 export default Conversation;

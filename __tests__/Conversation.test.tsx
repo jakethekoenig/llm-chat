@@ -71,10 +71,7 @@ test('renders conversation with recursive navigation and selection', () => {
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
   expect(screen.queryByText('I am doing well!')).not.toBeInTheDocument();
   expect(screen.getByText('1 / 2')).toBeInTheDocument();
-  expect(screen.getByText('2 / 2')).toBeInTheDocument();
-  expect(screen.getByText('1 / 2')).toBeInTheDocument();
 });
-
 test('renders conversation list', () => {
   const conversations = [
     { id: '1', content: 'Conversation 1', author: 'User1', timestamp: new Date().toISOString(), parentId: null },
