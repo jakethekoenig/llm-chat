@@ -31,14 +31,14 @@ const renderWithConfig = (ui: React.ReactElement, config: Partial<MessageConfig>
 test('renders message content', () => {
   renderWithConfig(<Message id="test-id-1" content="Test message" currentIndex={0} totalSiblings={2} />);
   expect(screen.getByText('Test message')).toBeInTheDocument();
-  expect(screen.getByText('1 / 2')).toBeInTheDocument();
+  expect(screen.getByText((content, element) => element.textContent === '1 / 2')).toBeInTheDocument();
 });
 
 test('renders author and timestamp', () => {
   renderWithConfig(<Message id="test-id-2" content="Test message" author="Test Author" timestamp="2023-01-01T00:00:00Z" currentIndex={0} totalSiblings={2} />);
   expect(screen.getByText('Test Author')).toBeInTheDocument();
   expect(screen.getByText(new Date('2023-01-01T00:00:00Z').toLocaleString())).toBeInTheDocument();
-  expect(screen.getByText('1 / 2')).toBeInTheDocument();
+  expect(screen.getByText((content, element) => element.textContent === '1 / 2')).toBeInTheDocument();
   expect(screen.getByText('Test Author')).toBeInTheDocument();
   expect(screen.getByText(new Date('2023-01-01T00:00:00Z').toLocaleString())).toBeInTheDocument();
 });
@@ -115,6 +115,7 @@ test('renders content without end sequence', () => {
   renderWithConfig(<Message id="test-id-15" content={content} renderers={renderers as Renderer[]} currentIndex={0} totalSiblings={1} />);
   expect(screen.getByText("console")).toBeInTheDocument();
   expect(screen.getByText("log")).toBeInTheDocument();
+  expect(screen.getByText('1 / 1')).toBeInTheDocument();
 });
 
 test('renders code block content', () => {
@@ -123,6 +124,7 @@ test('renders code block content', () => {
   renderWithConfig(<Message id="test-id-9" content={content} renderers={renderers as Renderer[]} currentIndex={0} totalSiblings={1} />);
   expect(screen.getByText("console")).toBeInTheDocument();
   expect(screen.getByText("log")).toBeInTheDocument();
+  expect(screen.getByText('1 / 1')).toBeInTheDocument();
 });
 
 test('renders multiple code blocks and text without duplication', () => {
