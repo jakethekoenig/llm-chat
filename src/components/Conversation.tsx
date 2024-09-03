@@ -92,7 +92,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
           currentIndex={siblingIndex}
           totalSiblings={totalSiblings}
         />
-        {renderMessages(messages, selectedChild, childrenHaveSiblings)}
+        {renderMessages(messages, selectedChild, childrenHaveSiblings, siblingIndex + 1, totalSiblings)}
     </>);
   };
 

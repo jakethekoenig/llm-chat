@@ -12,7 +12,7 @@ interface MessageProps extends MessageType {
   totalSiblings?: number;
 }
 
-const NavigationButtons = ({ onPrev, onNext, hasSiblings, currentIndex, totalSiblings }: { onPrev: () => void, onNext: () => void, hasSiblings: boolean | undefined, currentIndex: number, totalSiblings: number }) => (
+const NavigationButtons = ({ onPrev, onNext, hasSiblings, currentIndex = 0, totalSiblings = 0 }: { onPrev: () => void, onNext: () => void, hasSiblings: boolean | undefined, currentIndex: number, totalSiblings: number }) => (
   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
     {hasSiblings && <Button onClick={onPrev} disabled={currentIndex === 0}>&lt;</Button>}
     {hasSiblings && <span>{currentIndex + 1} / {totalSiblings}</span>}
