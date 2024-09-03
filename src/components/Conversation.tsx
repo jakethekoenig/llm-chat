@@ -29,7 +29,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
         }
         return newState;
       });
-  }
+  };
 
   useEffect(() => {
     setChildren();
