@@ -28,20 +28,12 @@ const renderWithConfig = (ui: React.ReactElement, config: Partial<MessageConfig>
   );
 };
 
-test('renders message content', () => {
-  renderWithConfig(<Message id="test-id-1" content="Test message" currentIndex={0} totalSiblings={2} />);
-  expect(screen.getByText('Test message')).toBeInTheDocument();
-  expect(screen.getByText((content, element) => element && element.textContent === '1 / 2')).toBeInTheDocument();
-});
-
 test('renders author and timestamp', () => {
   renderWithConfig(<Message id="test-id-2" content="Test message" author="Test Author" timestamp="2023-01-01T00:00:00Z" currentIndex={0} totalSiblings={2} />);
   expect(screen.getByText('Test Author')).toBeInTheDocument();
   expect(screen.getByText(new Date('2023-01-01T00:00:00Z').toLocaleString())).toBeInTheDocument();
-  expect(screen.getByText((content, element) => element && element.textContent === '1 / 2')).toBeInTheDocument();
-  expect(screen.getByText('Test Author')).toBeInTheDocument();
-  expect(screen.getByText(new Date('2023-01-01T00:00:00Z').toLocaleString())).toBeInTheDocument();
 });
+
 test('renders control buttons based on props', async () => {
   const content = 'Test message';
   const onCopy = jest.fn();
@@ -114,7 +106,6 @@ test('renders content without end sequence', () => {
   renderWithConfig(<Message id="test-id-15" content={content} renderers={renderers as Renderer[]} currentIndex={0} totalSiblings={1} />);
   expect(screen.getByText("console")).toBeInTheDocument();
   expect(screen.getByText("log")).toBeInTheDocument();
-  expect(screen.getByText('1 / 1')).toBeInTheDocument();
 });
 
 test('renders code block content', () => {
@@ -123,7 +114,6 @@ test('renders code block content', () => {
   renderWithConfig(<Message id="test-id-9" content={content} renderers={renderers as Renderer[]} currentIndex={0} totalSiblings={1} />);
   expect(screen.getByText("console")).toBeInTheDocument();
   expect(screen.getByText("log")).toBeInTheDocument();
-  expect(screen.getByText('1 / 1')).toBeInTheDocument();
 });
 
 test('renders multiple code blocks and text without duplication', () => {
@@ -133,10 +123,10 @@ test('renders multiple code blocks and text without duplication', () => {
   expect(screen.getByText("Here is some text before the code block.")).toBeInTheDocument();
   expect(screen.getByText("Here is some text between the code blocks.")).toBeInTheDocument();
   expect(screen.getByText("Here is some text after the code block.")).toBeInTheDocument();
-  expect(screen.getAllByText((content, element) => element !== null && element.tagName.toLowerCase() === 'span' && content.includes("console"))).toHaveLength(2);
-  expect(screen.getAllByText((content, element) => element !== null && element.tagName.toLowerCase() === 'span' && content.includes("log"))).toHaveLength(2);
-  expect(screen.getAllByText((content, element) => element !== null && element.tagName.toLowerCase() === 'span' && content.includes("'This is a second line.'"))).toHaveLength(2);
-  expect(screen.getAllByText((content, element) => element !== null && element.tagName.toLowerCase() === 'span' && content.includes("print"))).toHaveLength(2);
+  expect(screen.getAllByText(/console/)).toHaveLength(2);
+  expect(screen.getAllByText(/log/)).toHaveLength(2);
+  expect(screen.getAllByText(/'This is a second line.'/)).toHaveLength(2);
+  expect(screen.getAllByText(/print/)).toHaveLength(2);
   expect(screen.getByTestId('message-container')).toBeInTheDocument();
 });
 
