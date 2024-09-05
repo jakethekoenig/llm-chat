@@ -1,4 +1,4 @@
-// src/components/ConversationList.tsx
+// chat-components/ConversationList.tsx
 import React from 'react';
 import { Message as MessageType } from '../types/Message';
 
