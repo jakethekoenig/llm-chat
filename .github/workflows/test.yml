@@ -30,16 +30,7 @@ jobs:
     - name: Build project
       run: npm run build
 
-    - name: Run server tests
-      run: npm run test:server
-
-    - name: Run component tests
-      run: npm run test:component
-
-    - name: Run site tests
-      run: npm run test:site
-
-    - name: Run all tests
+    - name: Run tests
       run: npm test
 
     - name: Generate coverage report
