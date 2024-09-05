@@ -1,6 +1,6 @@
 import request from 'supertest';
 import express from 'express';
-import app, { authenticateToken } from '../server/app'
+import app, { authenticateToken } from '../../server/app';
 
 // Streaming endpoint
 app.get('/get_completion', authenticateToken, (req: express.Request, res: express.Response) => {
