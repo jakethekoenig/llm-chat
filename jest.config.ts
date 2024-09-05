@@ -11,11 +11,7 @@ export default {
   },
   collectCoverage: true,
   coverageDirectory: 'coverage',
-  testMatch: [
-    '**/__tests__/server/**/*.test.[jt]s?(x)',
-    '**/__tests__/component/**/*.test.[jt]s?(x)',
-    '**/__tests__/site/**/*.test.[jt]s?(x)'
-  ],
+  testMatch: ['**/?(*.)+(spec|test).[jt]s?(x)'],
   coverageReporters: ['text', 'lcov'],
   coverageThreshold: {
     global: {
