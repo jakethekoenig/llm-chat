@@ -1,8 +1,8 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import Conversation from '../chat-components/Conversation';
-import ConversationList from '../chat-components/ConversationList';
+import Conversation from '../../chat-components/Conversation';
+import ConversationList from '../../chat-components/ConversationList';
 
 const messages = [
   { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
