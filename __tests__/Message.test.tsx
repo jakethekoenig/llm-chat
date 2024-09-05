@@ -1,10 +1,10 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import Message from '../src/components/Message';
-import { CodeBlockRenderer } from '../src/renderers/CodeBlockRenderer';
-import { Renderer } from '../src/renderers/Renderer';
-import { MessageConfigProvider, MessageConfig, defaultConfig } from '../src/components/MessageConfigContext';
+import Message from '../chat-components/Message';
+import { CodeBlockRenderer } from '../chat-components/renderers/CodeBlockRenderer';
+import { Renderer } from '../chat-components/renderers/Renderer';
+import { MessageConfigProvider, MessageConfig, defaultConfig } from '../chat-components/MessageConfigContext';
 
 beforeAll(() => {
   Object.assign(navigator, {

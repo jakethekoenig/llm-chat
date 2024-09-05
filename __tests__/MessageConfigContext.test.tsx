@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { MessageConfigProvider, useMessageConfig } from '../src/components/MessageConfigContext';
+import { MessageConfigProvider, useMessageConfig } from '../chat-components/MessageConfigContext';
 
 const TestComponent: React.FC = () => {
   const config = useMessageConfig();
