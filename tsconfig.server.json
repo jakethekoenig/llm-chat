@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "outDir": "./dist-server",
-    "rootDir": "./server",
+    "rootDir": "./",
     "module": "commonjs",
     "target": "es2020",
     "strict": true,
@@ -11,6 +11,6 @@
     "sourceMap": true,
     "types": ["node", "sequelize", "bcrypt", "jest"]
   },
-  "include": ["server/**/*.ts"],
+  "include": ["server/**/*.ts", "__tests__/server/**/*.ts"],
   "exclude": ["node_modules", "dist-server"]
 }

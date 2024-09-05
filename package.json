@@ -5,9 +5,10 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && tsc -p tsconfig.server.json",
+    "build": "npm run build:frontend && npm run build:server",
     "preview": "vite preview",
     "test": "jest",
+    "postbuild": "mkdir -p dist-server/config && cp config/config.json dist-server/config/config.json",
     "build:server": "tsc -p tsconfig.server.json",
     "build:frontend": "vite build",
     "start:server": "node dist-server/index.js",
