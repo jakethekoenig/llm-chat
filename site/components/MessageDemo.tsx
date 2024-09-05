@@ -1,12 +1,12 @@
 import * as React from 'react';
 import { useState } from 'react';
-import Message from './Message';
-import Conversation from './Conversation';
-import ConversationList from './ConversationList';
-import { CodeBlockRenderer } from '../renderers/CodeBlockRenderer';
-import { LatexRenderer } from '../renderers/LatexRenderer';
-import { MessageConfigProvider } from './MessageConfigContext';
-import { Message as MessageType } from '../types/Message';
+import Message from '../../chat-components/Message';
+import Conversation from '../../chat-components/Conversation';
+import ConversationList from '../../chat-components/ConversationList';
+import { CodeBlockRenderer } from '../../chat-components/renderers/CodeBlockRenderer';
+import { LatexRenderer } from '../../chat-components/renderers/LatexRenderer';
+import { MessageConfigProvider } from '../../chat-components/MessageConfigContext';
+import { Message as MessageType } from '../../chat-components/types/Message';
 
 const MessageDemo = () => {
   const [streamingContent, setStreamingContent] = useState<AsyncIterable<string> | null>(null);

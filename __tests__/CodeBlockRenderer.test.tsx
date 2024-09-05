@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { CodeBlockRenderer } from '../src/renderers/CodeBlockRenderer';
+import { CodeBlockRenderer } from '../chat-components/renderers/CodeBlockRenderer';
 
 test('renders code block correctly', () => {
   const renderer = new CodeBlockRenderer();
