@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Message from '../../chat-components/Message';
 import { CodeBlockRenderer } from '../../chat-components/renderers/CodeBlockRenderer';
+import { ArtifactRenderer } from '../../chat-components/renderers/ArtifactRenderer';
 import { Renderer } from '../../chat-components/renderers/Renderer';
 import { MessageConfigProvider, MessageConfig, defaultConfig } from '../../chat-components/MessageConfigContext';
 
@@ -32,6 +33,27 @@ test('renders author and timestamp', () => {
   renderWithConfig(<Message id="test-id-2" content="Test message" author="Test Author" timestamp="2023-01-01T00:00:00Z" currentIndex={0} totalSiblings={2} />);
   expect(screen.getByText('Test Author')).toBeInTheDocument();
   expect(screen.getByText(new Date('2023-01-01T00:00:00Z').toLocaleString())).toBeInTheDocument();
+});
+
+test('renders artifact content and opens side panel', async () => {
+  const content = '<artifact>Artifact Content</artifact>';
+  const renderers = [new ArtifactRenderer({ tagName: 'artifact' })];
+  renderWithConfig(<Message id="test-id-17" content={content} renderers={renderers} />);
+  
+  const artifactElement = screen.getByText('Artifact Content');
+  expect(artifactElement).toBeInTheDocument();
+  
+  fireEvent.click(artifactElement);
+  
+  const sidePanel = await screen.findByText('Artifact Content');
+  expect(sidePanel).toBeInTheDocument();
+  
+  const closeButton = screen.getByText('Close');
+  fireEvent.click(closeButton);
+  
+  await waitFor(() => {
+    expect(sidePanel).not.toBeInTheDocument();
+  });
 });
 
 test('renders control buttons based on props', async () => {
