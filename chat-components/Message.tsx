@@ -128,7 +128,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
         }
         break;
       }
-      if (endSeq !== null) {
+      if (startSeq && endSeq !== null) {
         const artifactContent = content.slice(startSeq[1], endSeq[0]);
         elements.push(
           <span key={`rendered-${startSeq[0]}`} onClick={() => handleArtifactClick(artifactContent)}>
