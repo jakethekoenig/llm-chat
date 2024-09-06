@@ -3,5 +3,3 @@ coverage
 dist
 dist-server
 todo
-database_development.sqlite
-database_test.sqlite
