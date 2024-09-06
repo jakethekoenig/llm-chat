@@ -59,10 +59,10 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
   const [artifactContent, setArtifactContent] = useState<string | null>(null);
 
-  const handleArtifactClick = (content: string) => {
+  const handleArtifactClick = useCallback((content: string) => {
     setArtifactContent(content);
     setIsSidePanelOpen(true);
-  };
+  }, []);
 
   useEffect(() => {
     isMountedRef.current = true;
