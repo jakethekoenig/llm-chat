@@ -56,6 +56,13 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
   const [displayedContent, setDisplayedContent] = useState<string>('');
   const isMountedRef = useRef(true);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
+  const [artifactContent, setArtifactContent] = useState<string | null>(null);
+
+  const handleArtifactClick = (content: string) => {
+    setArtifactContent(content);
+    setIsSidePanelOpen(true);
+  };
 
   useEffect(() => {
     isMountedRef.current = true;
