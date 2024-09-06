@@ -67,7 +67,7 @@ const MessageDemo = () => {
           <Message id="1" content={exampleMessage} author="John Doe" timestamp={new Date().toISOString()} renderers={renderers} buttons={{ copy: 'enabled', share: 'enabled', delete: 'enabled', edit: 'enabled' }} />
           <Message id="2" content="No buttons example" author="Jane Doe" timestamp={new Date().toISOString()} buttons={{ copy: 'disabled', share: 'disabled', delete: 'disabled', edit: 'disabled' }} />
           <button onClick={() => setStreamingContent(startStreaming())}>Start Streaming</button>
-          {streamingContent && <Message id="3" content={streamingContent} author="Streamer" timestamp={new Date().toISOString()} renderers={renderers} buttons={{ copy: 'enabled', share: 'menu-ed', delete: 'menu-ed', edit: 'menu-ed' }} />}
+          {streamingContent && <Message id="3" content={streamingContent} author="Streamer" timestamp={new Date().toISOString()} renderers={renderers} buttons={{ copy: 'enabled', share: 'enabled', delete: 'enabled', edit: 'enabled' }} />}
         </>
       )}
       {tab === 'conversation' && <Conversation messages={messages} />}

@@ -55,6 +55,23 @@ test('renders artifact content and opens side panel', async () => {
     expect(sidePanel).not.toBeInTheDocument();
   });
 });
+  renderWithConfig(<Message id="test-id-17" content={content} renderers={renderers} />);
+  
+  const artifactElement = screen.getByText('Artifact Content');
+  expect(artifactElement).toBeInTheDocument();
+  
+  fireEvent.click(artifactElement);
+  
+  const sidePanel = await screen.findByText('Artifact Content');
+  expect(sidePanel).toBeInTheDocument();
+  
+  const closeButton = screen.getByText('Close');
+  fireEvent.click(closeButton);
+  
+  await waitFor(() => {
+    expect(sidePanel).not.toBeInTheDocument();
+  });
+});
 
 test('renders control buttons based on props', async () => {
   const content = 'Test message';
