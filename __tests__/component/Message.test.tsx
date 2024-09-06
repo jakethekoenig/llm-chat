@@ -4,6 +4,7 @@ import '@testing-library/jest-dom';
 import Message from '../../chat-components/Message';
 import { CodeBlockRenderer } from '../../chat-components/renderers/CodeBlockRenderer';
 import { ArtifactRenderer } from '../../chat-components/renderers/ArtifactRenderer';
+import { MessageConfigProvider, MessageConfig, defaultConfig } from '../../chat-components/MessageConfigContext';
 import { Renderer } from '../../chat-components/renderers/Renderer';
 import { MessageConfigProvider, MessageConfig, defaultConfig } from '../../chat-components/MessageConfigContext';
 
