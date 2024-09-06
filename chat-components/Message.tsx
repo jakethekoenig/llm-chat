@@ -5,6 +5,7 @@ import { ContentCopy as CopyIcon, Share as ShareIcon, Delete as DeleteIcon, Edit
 import { useMessageConfig } from './MessageConfigContext';
 import { Renderer } from './renderers/Renderer';
 import { ArtifactRenderer } from './renderers/ArtifactRenderer';
+import { ArtifactRenderer } from './renderers/ArtifactRenderer';
 import { Message as MessageType } from './types/Message';
 
 interface MessageProps extends MessageType {
@@ -63,7 +64,6 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
     setArtifactContent(content);
     setIsSidePanelOpen(true);
   }, []);
-
   useEffect(() => {
     isMountedRef.current = true;
     setDisplayedContent(''); // Reset content when prop changes
