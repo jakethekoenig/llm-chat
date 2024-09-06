@@ -13,7 +13,8 @@
     "build:frontend": "vite build",
     "start:server": "node dist-server/index.js",
     "dev:server": "nodemon --exec ts-node server/index.ts",
-    "dev:frontend": "vite"
+    "dev:frontend": "vite",
+    "seed:test": "sequelize db:seed:all --env test"
   },
   "repository": {
     "type": "git",
