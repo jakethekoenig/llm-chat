@@ -55,10 +55,6 @@ test('renders artifact content and opens side panel', async () => {
     expect(sidePanel).not.toBeInTheDocument();
   });
 });
-  renderWithConfig(<Message id="test-id-17" content={content} renderers={renderers} />);
-  
-  const artifactElement = screen.getByText('Artifact Content');
-  expect(artifactElement).toBeInTheDocument();
   
   fireEvent.click(artifactElement);
   
