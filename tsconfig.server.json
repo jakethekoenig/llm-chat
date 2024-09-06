@@ -11,6 +11,6 @@
     "sourceMap": true,
     "types": ["node", "sequelize", "bcrypt", "jest"]
   },
-  "include": ["server/**/*.ts", "__tests__/server/**/*.ts"],
+  "include": ["server/**/*.ts", "__tests__/server/**/*.ts", "server/database/seeders/20240827043208-seed-test-data.d.ts"],
   "exclude": ["node_modules", "dist-server"]
 }
