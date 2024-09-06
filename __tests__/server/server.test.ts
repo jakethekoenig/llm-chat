@@ -1,13 +1,24 @@
 import request from 'supertest';
 import express from 'express';
 import app, { authenticateToken } from '../../server/app';
+import { sequelize } from '../../server/database/models';
+import { up, down } from '../../server/database/seeders/20240827043208-seed-test-data';
+
+beforeAll(async () => {
+  await sequelize.sync({ force: true });
+  await up();
+});
+
+afterAll(async () => {
+  await down();
+  await sequelize.close();
+});
 
 // Streaming endpoint
 app.get('/get_completion', authenticateToken, (req: express.Request, res: express.Response) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
-
   // Example stream data with delays
   const messages = [
     'data: Example stream data part 1\n\n',
