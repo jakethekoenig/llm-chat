@@ -1,0 +1,27 @@
+/* site/components/Header.css */
+.site-header {
+  background-color: #f8f9fa;
+  padding: 10px 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.site-header nav ul {
+  list-style: none;
+  display: flex;
+  justify-content: flex-end;
+  margin: 0;
+  padding: 0;
+}
+
+.site-header nav ul li {
+  margin-left: 20px;
+}
+
+.site-header nav ul li a {
+  text-decoration: none;
+  color: #007bff;
+}
+
+.site-header nav ul li a:hover {
+  text-decoration: underline;
+}

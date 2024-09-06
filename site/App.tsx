@@ -3,6 +3,7 @@ import { Route, Routes } from 'react-router-dom';
 import MessageDemo from './components/MessageDemo';
 import SignIn from './components/SignIn';
 import Register from './components/Register';
+import Header from './components/Header'; // Add this line
 import './App.css';
 import { MathJaxContext } from 'better-react-mathjax';
 
@@ -25,6 +26,7 @@ const App = () => {
   return (
     <MathJaxContext config={mathjaxConfig as any}>
       <div>
+        <Header /> {/* Add this line */}
         <h1>LLM Chat Component Showcase</h1>
         <Routes>
           <Route path="/" element={<MessageDemo />} />
