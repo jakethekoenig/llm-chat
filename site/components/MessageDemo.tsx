@@ -36,7 +36,7 @@ const MessageDemo = () => {
     }
   };
 
-  const exampleMessage = `<artifact><canvas id="myCanvas"></canvas></artifact>\nHere's an example with inline math \\(E=mc^2\\), display math $$\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2},$$ and bracketed math \\[\\sum_{n=1}^\\infty \\frac{1}{n^2} = \\frac{\\pi^2}{6}.\\] \nAnd one more final formula: \\(\\frac{d}{dx}\\left(\\int_{0}^{x} f(u) \\, du\\right) = f(x)\\).`;
+  const exampleMessage = `<artifact>Artifact Content</artifact>\nHere's an example with inline math \\(E=mc^2\\), display math $$\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2},$$ and bracketed math \\[\\sum_{n=1}^\\infty \\frac{1}{n^2} = \\frac{\\pi^2}{6}.\\] \nAnd one more final formula: \\(\\frac{d}{dx}\\left(\\int_{0}^{x} f(u) \\, du\\right) = f(x)\\).`;
 
   const renderers = [new CodeBlockRenderer(), new LatexRenderer(), new ArtifactRenderer({ tagName: 'artifact' })];
 
