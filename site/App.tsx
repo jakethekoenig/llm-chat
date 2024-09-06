@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Route, Routes } from 'react-router-dom';
 import MessageDemo from './components/MessageDemo';
 import SignIn from './components/SignIn';
+import Register from './components/Register';
 import './App.css';
 import { MathJaxContext } from 'better-react-mathjax';
 
@@ -28,10 +29,10 @@ const App = () => {
         <Routes>
           <Route path="/" element={<MessageDemo />} />
           <Route path="/signin" element={<SignIn />} />
+          <Route path="/register" element={<Register />} /> {/* Add this line */}
         </Routes>
       </div>
     </MathJaxContext>
   );
 };
-
 export default App;
