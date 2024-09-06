@@ -6,7 +6,6 @@ import { CodeBlockRenderer } from '../../chat-components/renderers/CodeBlockRend
 import { ArtifactRenderer } from '../../chat-components/renderers/ArtifactRenderer';
 import { MessageConfigProvider, MessageConfig, defaultConfig } from '../../chat-components/MessageConfigContext';
 import { Renderer } from '../../chat-components/renderers/Renderer';
-import { MessageConfigProvider, MessageConfig, defaultConfig } from '../../chat-components/MessageConfigContext';
 
 beforeAll(() => {
   Object.assign(navigator, {

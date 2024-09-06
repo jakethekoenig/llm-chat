@@ -124,7 +124,9 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
       }
       const endSeq = matchedRenderer.detectEndSequence(content, startSeq[1]) as [number, number] | null;
       if (!endSeq) {
-        elements.push(<span key={`rendered-${startSeq[0]}`} onClick={() => handleArtifactClick(content.slice(startSeq[1], content.length))}>{matchedRenderer.render(content, startSeq[0], content.length)}</span>);
+        if (startSeq) {
+          elements.push(<span key={`rendered-${startSeq[0]}`} onClick={() => handleArtifactClick(content.slice(startSeq[1], content.length))}>{matchedRenderer.render(content, startSeq[0], content.length)}</span>);
+        }
         break;
       }
       if (endSeq !== null) {

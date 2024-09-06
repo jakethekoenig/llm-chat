@@ -38,7 +38,7 @@ export class ArtifactRenderer implements Renderer {
     const artifactContent = content.slice(startIndex, endIndex);
     return (
       <span className="artifact-content" data-content={artifactContent}>
-        {this.subRenderer ? this.subRenderer.render(artifactContent, 0, artifactContent.length) : artifactContent}
+        {this.subRenderer ? this.subRenderer.render(artifactContent, 0, artifactContent.length) : <div dangerouslySetInnerHTML={{ __html: artifactContent }} />}
       </span>
     );
   }
