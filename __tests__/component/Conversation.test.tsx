@@ -95,3 +95,10 @@ test('renders author messages with right justification and different background'
     expect(message.parentElement).toHaveStyle('background-color: #e0f7fa');
   });
 });
+  render(<Conversation messages={messages} author="User" />);
+  const authorMessages = screen.getAllByText('User');
+  authorMessages.forEach(message => {
+    expect(message.parentElement).toHaveStyle('text-align: right');
+    expect(message.parentElement).toHaveStyle('background-color: #e0f7fa');
+  });
+});
