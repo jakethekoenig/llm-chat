@@ -10,10 +10,11 @@ const messages = [
   { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
 ];
 
-test('renders conversation messages with correct styles', () => {
+test('renders author messages with correct styles', () => {
   render(<Conversation messages={messages} author="User" />);
-  const authorMessage = screen.getByText('Hello, world!');
-  expect(authorMessage.parentElement).toHaveStyle('text-align: right');
+  const authorMessage = screen.getByText('Hello, world!').parentElement;
+  expect(authorMessage).toHaveStyle('text-align: right');
+  expect(authorMessage).toHaveStyle('background-color: #e0f7fa');
 });
 
 test('renders conversation with navigation and selection', async () => {
