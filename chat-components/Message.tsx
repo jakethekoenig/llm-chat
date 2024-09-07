@@ -140,7 +140,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
   };
 
   return (
-    <MessageContainer theme={globalConfig.theme} data-testid="message-container" onClick={onClick} isAuthor={isAuthor} {...rest}>
+    <MessageContainer theme={globalConfig.theme} data-testid="message-container" onClick={onClick} {...rest} isAuthor={isAuthor}>
       <MessageContent>{renderContent(displayedContent)}</MessageContent>
       {author && <><br></br><MessageAuthor>{author}</MessageAuthor></>}
       {timestamp && <MessageTimestamp>{new Date(timestamp).toLocaleString()}</MessageTimestamp>}
