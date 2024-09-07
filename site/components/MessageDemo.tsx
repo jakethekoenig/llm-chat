@@ -69,7 +69,7 @@ const MessageDemo = () => {
           {streamingContent && <Message id="3" content={streamingContent} author="Streamer" timestamp={new Date().toISOString()} renderers={renderers} buttons={{ copy: 'enabled', share: 'menu-ed', delete: 'menu-ed', edit: 'menu-ed' }} />}
         </>
       )}
-      {tab === 'conversation' && <Conversation messages={messages} />}
+      {tab === 'conversation' && <Conversation messages={messages} author="User" />}
       {tab === 'conversationList' && <ConversationList conversations={conversations} />}
     </div>
   </MessageConfigProvider>

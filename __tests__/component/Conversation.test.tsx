@@ -101,4 +101,3 @@ test('renders author messages with right justification and different background'
     expect(message.parentElement).toHaveStyle('text-align: right');
     expect(message.parentElement).toHaveStyle('background-color: #e0f7fa');
   });
-});
