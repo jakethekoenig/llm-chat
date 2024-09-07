@@ -4,9 +4,10 @@ import { Message as MessageType } from './types/Message';
 
 interface ConversationProps {
   messages: MessageType[];
+  author: string; // New prop
 }
 
-const Conversation: React.FC<ConversationProps> = ({ messages }) => {
+const Conversation: React.FC<ConversationProps> = ({ messages, author }) => {
   // TODO: Refactor messages to be a map
   const getChildren = (messages: MessageType[], parentId: string | null): MessageType[] => {
     return messages.filter(message => message.parentId === parentId);
@@ -87,6 +88,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
           hasSiblings={totalSiblings > 1}
           currentIndex={currentIndex}
           totalSiblings={totalSiblings}
+          isAuthor={currentMessage.author === author} // Pass isAuthor prop
         />
         {renderMessages(messages, selectedChildIndex[currentId], currentId)}
     </>);

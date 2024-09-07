@@ -81,3 +81,17 @@ test('renders conversation list', () => {
   expect(screen.getByText('Conversation 1 - User1')).toBeInTheDocument();
   expect(screen.getByText('Conversation 2 - User2')).toBeInTheDocument();
 });
+
+test('renders author messages with right justification and different background', () => {
+  const messages = [
+    { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
+    { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
+    { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
+  ];
+  render(<Conversation messages={messages} author="User" />);
+  const authorMessages = screen.getAllByText('User');
+  authorMessages.forEach(message => {
+    expect(message.parentElement).toHaveStyle('text-align: right');
+    expect(message.parentElement).toHaveStyle('background-color: #e0f7fa');
+  });
+});

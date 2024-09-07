@@ -10,6 +10,7 @@ interface MessageProps extends MessageType {
   hasSiblings?: boolean;
   currentIndex?: number;
   totalSiblings?: number;
+  isAuthor?: boolean; // New prop
 }
 
 const NavigationButtons = ({ onPrev, onNext, hasSiblings, currentIndex = 0, totalSiblings = 0 }: { onPrev: () => void, onNext: () => void, hasSiblings: boolean | undefined, currentIndex: number, totalSiblings: number }) => (
@@ -22,19 +23,19 @@ const NavigationButtons = ({ onPrev, onNext, hasSiblings, currentIndex = 0, tota
 
 const MessageContainer = styled.div.attrs<{ 'data-testid': string }>(props => ({
   'data-testid': props['data-testid'],
-}))<{ theme: { primaryColor: string; secondaryColor: string; mode: 'light' | 'dark' } }>`
+}))<{ theme: { primaryColor: string; secondaryColor: string; mode: 'light' | 'dark' }, isAuthor?: boolean }>`
   border: 1px solid ${props => props.theme.primaryColor};
   padding: 16px;
   margin: 8px 0;
   border-radius: 8px;
-  background-color: ${props => props.theme.mode === 'light' ? '#FFFFFF' : '#333333'};
+  background-color: ${props => props.isAuthor ? '#e0f7fa' : (props.theme.mode === 'light' ? '#FFFFFF' : '#333333')}; // Change background color if isAuthor
   color: ${props => props.theme.mode === 'light' ? '#000000' : '#FFFFFF'};
+  text-align: ${props => props.isAuthor ? 'right' : 'left'}; // Right-justify if isAuthor
 `;
 
 const MessageContent = styled.span`
   margin: 0;
 `;
-
 const MessageAuthor = styled.span`
   font-weight: bold;
 `;
@@ -139,7 +140,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
   };
 
   return (
-    <MessageContainer theme={globalConfig.theme} data-testid="message-container" onClick={onClick}>
+    <MessageContainer theme={globalConfig.theme} data-testid="message-container" onClick={onClick} isAuthor={isAuthor}>
       <MessageContent>{renderContent(displayedContent)}</MessageContent>
       {author && <><br></br><MessageAuthor>{author}</MessageAuthor></>}
       {timestamp && <MessageTimestamp>{new Date(timestamp).toLocaleString()}</MessageTimestamp>}
