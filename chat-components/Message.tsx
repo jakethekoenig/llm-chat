@@ -51,7 +51,7 @@ const ButtonContainer = styled.div`
   gap: 8px;
 `;
 
-const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons = {}, onCopy, onShare, onDelete, onEdit, renderers = [], onClick, onPrev, onNext, hasSiblings, currentIndex = 0, totalSiblings = 0, isAuthor = false }) => {
+const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons = {}, onCopy, onShare, onDelete, onEdit, renderers = [], onClick, onPrev, onNext, hasSiblings, currentIndex = 0, totalSiblings = 0, isAuthor = false, ...rest }) => {
   const globalConfig = useMessageConfig();
   const [displayedContent, setDisplayedContent] = useState<string>('');
   const isMountedRef = useRef(true);
@@ -140,7 +140,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
   };
 
   return (
-    <MessageContainer theme={globalConfig.theme} data-testid="message-container" onClick={onClick} isAuthor={isAuthor}>
+    <MessageContainer theme={globalConfig.theme} data-testid="message-container" onClick={onClick} isAuthor={isAuthor} {...rest}>
       <MessageContent>{renderContent(displayedContent)}</MessageContent>
       {author && <><br></br><MessageAuthor>{author}</MessageAuthor></>}
       {timestamp && <MessageTimestamp>{new Date(timestamp).toLocaleString()}</MessageTimestamp>}
