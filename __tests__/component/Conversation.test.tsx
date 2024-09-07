@@ -12,7 +12,7 @@ const messages = [
 
 test('renders author messages with correct styles', async () => {
   render(<Conversation messages={messages} author="User" />);
-  const authorMessage = await screen.findByText('Hello, world!').parentElement;
+  const authorMessage = await (await screen.findByText('Hello, world!')).parentElement;
   expect(authorMessage).toHaveStyle('text-align: right');
   expect(authorMessage).toHaveStyle('background-color: #e0f7fa');
 });
@@ -97,9 +97,3 @@ test('renders author messages with right justification and different background'
     expect(message.parentElement).toHaveStyle('background-color: #e0f7fa');
   });
 });
-  render(<Conversation messages={messages} author="User" />);
-  const authorMessages = screen.getAllByText('User');
-  authorMessages.forEach(message => {
-    expect(message.parentElement).toHaveStyle('text-align: right');
-    expect(message.parentElement).toHaveStyle('background-color: #e0f7fa');
-  });
