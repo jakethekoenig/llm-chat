@@ -102,7 +102,7 @@ describe('Server Tests', () => {
 
     it('should fetch all messages in a specific conversation', async () => {
       // Create a conversation and messages for testing
-      const conversation: Conversation = await Conversation.create({ title: 'Test Conversation' });
+      const conversation: Conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
       await Message.create({ conversation_id: conversation.id, user_id: 1, content: 'Test Message' });
 
       const response = await request(app)
