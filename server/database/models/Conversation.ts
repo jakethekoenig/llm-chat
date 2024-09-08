@@ -5,15 +5,16 @@ import db from '../index';
 interface ConversationAttributes {
   id: number;
   title: string;
+  user_id: number;
 }
 
 interface ConversationCreationAttributes extends Optional<ConversationAttributes, 'id'> {
-  user_id: number;
 }
 
 class Conversation extends Model<ConversationAttributes, ConversationCreationAttributes> implements ConversationAttributes {
   public id!: number;
   public title!: string;
+  public user_id!: number;
 }
 
 Conversation.init({
@@ -24,6 +25,10 @@ Conversation.init({
   },
   title: {
     type: DataTypes.STRING,
+  },
+  user_id: { // Add this block
+    type: DataTypes.INTEGER,
+    allowNull: false,
   },
 }, {
   sequelize: db.sequelize,
