@@ -7,7 +7,9 @@ interface ConversationAttributes {
   title: string;
 }
 
-interface ConversationCreationAttributes extends Optional<ConversationAttributes, 'id'> {}
+interface ConversationCreationAttributes extends Optional<ConversationAttributes, 'id'> {
+  user_id: number;
+}
 
 class Conversation extends Model<ConversationAttributes, ConversationCreationAttributes> implements ConversationAttributes {
   public id!: number;
