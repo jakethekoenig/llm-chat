@@ -34,5 +34,4 @@ Conversation.init({
   sequelize: db.sequelize,
   modelName: 'Conversation',
 });
-
 export { Conversation };
