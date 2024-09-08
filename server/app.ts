@@ -17,6 +17,19 @@ const SECRET_KEY = process.env.SECRET_KEY || 'fallback-secret-key';
 app.use(bodyParser.json());
 app.use(cors());
 
+// Middleware to verify token
+export const authenticateToken = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.sendStatus(401);
+
+  jwt.verify(token, SECRET_KEY as jwt.Secret, {}, (err: jwt.VerifyErrors | null, decoded: string | jwt.JwtPayload | undefined) => {
+    if (err) return res.sendStatus(403);
+    (req as any).user = decoded;
+    next();
+  });
+};
+
 // Sign-in route
 app.post('/signin', async (req: express.Request, res: express.Response) => {
   const { username, password } = req.body;
@@ -79,19 +92,6 @@ app.post('/get_completion_for_message', authenticateToken, async (req: express.R
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
-// Middleware to verify token
-export const authenticateToken = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  if (!token) return res.sendStatus(401);
-
-  jwt.verify(token, SECRET_KEY as jwt.Secret, {}, (err: jwt.VerifyErrors | null, decoded: string | jwt.JwtPayload | undefined) => {
-    if (err) return res.sendStatus(403);
-    (req as any).user = decoded;
-    next();
-  });
-};
 
 // Streaming endpoint
 app.post('/get_completion', authenticateToken, async (req: express.Request, res: express.Response) => {
