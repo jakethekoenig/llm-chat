@@ -4,7 +4,9 @@ import db from '../index';
 import { User } from './User';
 import { Conversation } from './Conversation';
 
-class Message extends Model {}
+class Message extends Model {
+  public id!: number; // Add this line to ensure the id property is recognized
+}
 Message.init({
   id: {
     type: DataTypes.INTEGER,

@@ -78,7 +78,7 @@ app.post('/get_completion_for_message', authenticateToken, async (req: express.R
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }
-});
+};
 
 // Middleware to verify token
 export const authenticateToken = (req: express.Request, res: express.Response, next: express.NextFunction) => {
