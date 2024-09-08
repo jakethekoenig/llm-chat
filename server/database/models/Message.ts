@@ -36,6 +36,14 @@ Message.init({
   content: {
     type: DataTypes.TEXT,
   },
+  model: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  temperature: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+  },
   timestamp: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,

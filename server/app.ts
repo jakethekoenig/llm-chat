@@ -8,6 +8,7 @@ import { User } from './database/models/User';
 import { Op } from 'sequelize';
 import { Conversation } from './database/models/Conversation';
 import { Message } from './database/models/Message';
+import { addMessage, generateCompletion } from './helpers/messageHelpers';
 dotenv.config();
 
 const app = express();
@@ -54,6 +55,31 @@ app.post('/register', async (req: express.Request, res: express.Response) => {
   }
 });
 
+// Add message endpoint
+app.post('/add_message', authenticateToken, async (req: express.Request, res: express.Response) => {
+  const { content, conversationId, parentId } = req.body;
+  const userId = (req as any).user.id;
+
+  try {
+    const message = await addMessage(content, conversationId, parentId, userId);
+    res.status(201).json({ id: message.id });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get completion for message endpoint
+app.post('/get_completion_for_message', authenticateToken, async (req: express.Request, res: express.Response) => {
+  const { messageId, model, temperature } = req.body;
+
+  try {
+    const completionMessage = await generateCompletion(messageId, model, temperature);
+    res.status(201).json({ id: completionMessage.id });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Middleware to verify token
 export const authenticateToken = (req: express.Request, res: express.Response, next: express.NextFunction) => {
   const authHeader = req.headers['authorization'];
@@ -68,28 +94,39 @@ export const authenticateToken = (req: express.Request, res: express.Response, n
 };
 
 // Streaming endpoint
-app.get('/get_completion', authenticateToken, (req: express.Request, res: express.Response) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
+app.post('/get_completion', authenticateToken, async (req: express.Request, res: express.Response) => {
+  const { model, parentId, temperature } = req.body;
 
-  // Example stream data with delays
-  const messages = [
-    'data: Example stream data part 1\n\n',
-    'data: Example stream data part 2\n\n',
-    'data: Example stream data part 3\n\n'
-  ];
+  try {
+    const completionMessage = await generateCompletion(parentId, model, temperature);
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
 
-  let index = 0;
-  const interval = setInterval(() => {
-    if (index < messages.length) {
-      res.write(messages[index]);
-      index++;
-    } else {
-      clearInterval(interval);
-      res.end();
-    }
-  }, 1000);
+    const streamData = JSON.stringify({ id: completionMessage.id });
+    res.write(`data: ${streamData}\n\n`);
+
+    // Placeholder for actual streaming logic
+    const messages = [
+      { chunk: 'Example stream data part 1' },
+      { chunk: 'Example stream data part 2' },
+      { chunk: 'Example stream data part 3' }
+    ];
+
+    let index = 0;
+    const interval = setInterval(() => {
+      if (index < messages.length) {
+        const chunkData = JSON.stringify(messages[index]);
+        res.write(`data: ${chunkData}\n\n`);
+        index++;
+      } else {
+        clearInterval(interval);
+        res.end();
+      }
+    }, 1000);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Route to get all conversations for a logged-in user
