@@ -1,8 +1,8 @@
 'use strict';
 
-import { User, Conversation, Message } from '../models';
+const { User, Conversation, Message } = require('../models');
 
-export async function up(queryInterface, Sequelize) {
+async function up(queryInterface, Sequelize) {
   // Create Users
   const users = await User.bulkCreate([
     { username: 'testuser1', email: 'test1@example.com', hashed_password: 'hashedpassword1' },
@@ -22,8 +22,10 @@ export async function up(queryInterface, Sequelize) {
   ]);
 }
 
-export async function down(queryInterface, Sequelize) {
+async function down(queryInterface, Sequelize) {
   await queryInterface.bulkDelete('Messages', null, {});
   await queryInterface.bulkDelete('Conversations', null, {});
   await queryInterface.bulkDelete('Users', null, {});
 }
+
+module.exports = { up, down };
