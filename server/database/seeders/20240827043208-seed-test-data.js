@@ -22,7 +22,7 @@ async function up(queryInterface, Sequelize) {
   ]);
 }
 
-async function down(queryInterface, Sequelize) {
+async function down(queryInterface) {
   await queryInterface.bulkDelete('Messages', null, {});
   await queryInterface.bulkDelete('Conversations', null, {});
   await queryInterface.bulkDelete('Users', null, {});

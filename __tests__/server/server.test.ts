@@ -9,6 +9,7 @@ import { Message } from '../../server/database/models/Message';
 beforeAll(async () => {
   await sequelize.sync({ force: true });
   await up();
+  await up();
 });
 
 afterAll(async () => {
