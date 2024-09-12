@@ -2,7 +2,7 @@ import request from 'supertest';
 import express from 'express';
 import app, { authenticateToken } from '../../server/app';
 import { sequelize } from '../../server/database/models';
-import { up, down } from '../../database/seeders/20240827043208-seed-test-data';
+import { up, down } from '../../server/database/seeders/20240827043208-seed-test-data';
 import { Conversation } from '../../server/database/models/Conversation';
 import { Message } from '../../server/database/models/Message';
 
