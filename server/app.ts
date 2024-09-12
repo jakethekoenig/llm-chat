@@ -6,6 +6,8 @@ import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
 import { User } from './database/models/User';
 import { Op } from 'sequelize';
+import { Conversation } from './database/models/Conversation';
+import { Message } from './database/models/Message';
 dotenv.config();
 
 const app = express();
@@ -88,6 +90,36 @@ app.get('/get_completion', authenticateToken, (req: express.Request, res: expres
       res.end();
     }
   }, 1000);
+});
+
+// Route to get all conversations for a logged-in user
+app.get('/conversations', authenticateToken, async (req: express.Request, res: express.Response) => {
+  try {
+    const userId = (req as any).user.id;
+    const conversations = await Conversation.findAll({
+      include: [{
+        model: Message,
+        where: { user_id: userId },
+        required: false
+      }]
+    });
+    res.json(conversations);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Route to get all messages in a specific conversation
+app.get('/conversations/:conversationId/messages', authenticateToken, async (req: express.Request, res: express.Response) => {
+  try {
+    const { conversationId } = req.params;
+    const messages = await Message.findAll({
+      where: { conversation_id: conversationId }
+    });
+    res.json(messages);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 export default app;

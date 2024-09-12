@@ -1,8 +1,19 @@
 // server/models/Conversation.ts
-import { DataTypes, Model } from 'sequelize';
+import { DataTypes, Model, Optional } from 'sequelize';
 import db from '../index';
 
-class Conversation extends Model {}
+interface ConversationAttributes {
+  id: number;
+  title: string;
+}
+
+interface ConversationCreationAttributes extends Optional<ConversationAttributes, 'id'> {}
+
+class Conversation extends Model<ConversationAttributes, ConversationCreationAttributes> implements ConversationAttributes {
+  public id!: number;
+  public title!: string;
+}
+
 Conversation.init({
   id: {
     type: DataTypes.INTEGER,
