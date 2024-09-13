@@ -7,7 +7,7 @@ interface ConversationListProps {
   onConversationClick: (id: string) => void;
 }
 
-const ConversationList: React.FC<ConversationListProps> = ({ conversations }) => {
+const ConversationList: React.FC<ConversationListProps> = ({ conversations, onConversationClick }) => {
   return (
     <div>
       <h2>Conversations</h2>
