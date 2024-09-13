@@ -77,7 +77,7 @@ test('renders conversation list', () => {
     { id: '1', content: 'Conversation 1', author: 'User1', timestamp: new Date().toISOString(), parentId: null },
     { id: '2', content: 'Conversation 2', author: 'User2', timestamp: new Date().toISOString(), parentId: null },
   ];
-  render(<ConversationList conversations={conversations} />);
+  render(<ConversationList conversations={conversations} onConversationClick={() => {}} />);
   expect(screen.getByText('Conversation 1 - User1')).toBeInTheDocument();
   expect(screen.getByText('Conversation 2 - User2')).toBeInTheDocument();
 });

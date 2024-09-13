@@ -106,7 +106,7 @@ describe('Server Tests', () => {
 
     it('should fetch all conversations for a logged-in user', async () => {
       const response = await request(app)
-        .get('/conversations')
+        .get('/api/conversations')
         .set('Authorization', `Bearer ${token}`);
       expect(response.status).toBe(200);
       expect(response.body).toBeInstanceOf(Array);
@@ -118,7 +118,7 @@ describe('Server Tests', () => {
       await Message.create({ conversation_id: conversation.get('id'), user_id: 1, content: 'Test Message' });
 
       const response = await request(app)
-        .get(`/conversations/${conversation.get('id')}/messages`)
+        .get(`/api/conversations/${conversation.get('id')}/messages`)
         .set('Authorization', `Bearer ${token}`);
       expect(response.status).toBe(200);
       expect(response.body).toBeInstanceOf(Array);
@@ -126,11 +126,11 @@ describe('Server Tests', () => {
     });
 
     it('should return 401 for unauthorized access to conversations', async () => {
-      const response = await request(app).get('/conversations');
+      const response = await request(app).get('/api/conversations');
     });
 
     it('should return 401 for unauthorized access to messages', async () => {
-      const response = await request(app).get('/conversations/1/messages');
+      const response = await request(app).get('/api/conversations/1/messages');
       expect(response.status).toBe(401);
     });
 
