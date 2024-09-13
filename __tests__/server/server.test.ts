@@ -7,14 +7,13 @@ import { Conversation } from '../../server/database/models/Conversation';
 import { Message } from '../../server/database/models/Message';
 
 beforeAll(async () => {
-  await sequelize.sync({ force: true });
-  await up();
-  await up();
+  await sequelize.sequelize.sync({ force: true });
+  await up(sequelize.sequelize.getQueryInterface(), sequelize.sequelize);
 });
 
 afterAll(async () => {
-  await down();
-  await sequelize.close();
+  await down(sequelize.sequelize.getQueryInterface(), sequelize.sequelize);
+  await sequelize.sequelize.close();
 });
 
 // Streaming endpoint
