@@ -13,6 +13,12 @@ dotenv.config();
 const app = express();
 const SECRET_KEY = process.env.SECRET_KEY || 'fallback-secret-key';
 
+// Custom logging middleware
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
+
 app.use(bodyParser.json());
 app.use(cors());
 
@@ -50,6 +56,7 @@ app.post('/register', async (req: express.Request, res: express.Response) => {
     const newUser = await User.create({ username, email, hashed_password: hashedPassword });
     res.status(201).json({ id: (newUser as any).id, username: (newUser as any).username, email: (newUser as any).email });
   } catch (error) {
+    console.log(error);
     res.status(400).json({ error: 'Error creating user' });
   }
 });
