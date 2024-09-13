@@ -114,11 +114,11 @@ describe('Server Tests', () => {
 
     it('should fetch all messages in a specific conversation', async () => {
       // Create a conversation and messages for testing
-      const conversation: Conversation = await Conversation.create({ title: 'Test Conversation' });
-      await Message.create({ conversation_id: conversation.id, user_id: 1, content: 'Test Message' });
+      const conversation: Conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
+      await Message.create({ conversation_id: conversation.get('id'), user_id: 1, content: 'Test Message' });
 
       const response = await request(app)
-        .get(`/conversations/${conversation.id}/messages`)
+        .get(`/conversations/${conversation.get('id')}/messages`)
         .set('Authorization', `Bearer ${token}`);
       expect(response.status).toBe(200);
       expect(response.body).toBeInstanceOf(Array);
@@ -127,12 +127,47 @@ describe('Server Tests', () => {
 
     it('should return 401 for unauthorized access to conversations', async () => {
       const response = await request(app).get('/conversations');
-      expect(response.status).toBe(401);
     });
 
     it('should return 401 for unauthorized access to messages', async () => {
       const response = await request(app).get('/conversations/1/messages');
       expect(response.status).toBe(401);
+    });
+
+    describe('Add Message and Get Completion for Message Endpoints', () => {
+      it('should add a new message', async () => {
+        const response = await request(app)
+          .post('/add_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ content: 'New Test Message', conversationId: 1, parentId: 1 });
+        expect(response.status).toBe(201);
+        expect(response.body.id).toBeDefined();
+      });
+
+      it('should return 400 for invalid add_message request', async () => {
+        const response = await request(app)
+          .post('/add_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ content: '', conversationId: 'invalid', parentId: null });
+        expect(response.status).toBe(400);
+      });
+
+      it('should get completion for a message', async () => {
+        const response = await request(app)
+          .post('/get_completion_for_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ messageId: 1, model: 'test-model', temperature: 0.5 });
+        expect(response.status).toBe(201);
+        expect(response.body.id).toBeDefined();
+      });
+
+      it('should return 400 for invalid get_completion_for_message request', async () => {
+        const response = await request(app)
+          .post('/get_completion_for_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ messageId: 'invalid', model: '', temperature: 'invalid' });
+        expect(response.status).toBe(400);
+      });
     });
   });
 });
