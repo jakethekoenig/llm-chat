@@ -5,15 +5,16 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite",
-    "build": "npm run build:frontend && npm run build:server",
+    "build": "npm run build:frontend && npm run build:server && npm run postbuild",
     "preview": "vite preview",
     "test": "jest",
     "postbuild": "mkdir -p dist-server/config && cp config/config.json dist-server/config/config.json",
-    "build:server": "tsc -p tsconfig.server.json",
+    "build:server": "tsc -p tsconfig.server.json && npm run postbuild",
     "build:frontend": "vite build",
-    "start:server": "node dist-server/index.js",
+    "start:server": "node dist-server/server/index.js",
     "dev:server": "nodemon --exec ts-node server/index.ts",
-    "dev:frontend": "vite"
+    "dev:frontend": "vite",
+    "seed:test": "sequelize db:seed:all --env test"
   },
   "repository": {
     "type": "git",
