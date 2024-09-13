@@ -11,10 +11,6 @@
     "sourceMap": true,
     "types": ["node", "sequelize", "bcrypt", "jest"]
   },
-<<<<<<< Updated upstream
-  "include": ["server/**/*.ts", "__tests__/server/**/*.ts"],
-=======
-  "include": ["server/**/*.ts", "server/database/seeders/20240827043208-seed-test-data.d.ts"],
->>>>>>> Stashed changes
+  "include": ["server/**/*.ts"],
   "exclude": ["node_modules", "dist-server"]
 }
