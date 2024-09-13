@@ -22,7 +22,7 @@ const Register: React.FC = () => {
         throw new Error(data.message || 'Error creating user');
       }
       setError('');
-      // Redirect or update UI as needed
+      window.location.href = '/';
     } catch (err) {
       setError('Error creating user');
     }

@@ -165,7 +165,7 @@ app.post('/get_completion', authenticateToken, [
 });
 
 // Route to get all conversations for a logged-in user
-app.get('/conversations', authenticateToken, async (req: express.Request, res: express.Response) => {
+app.get('/api/conversations', authenticateToken, async (req: express.Request, res: express.Response) => {
   try {
     const userId = (req as any).user.id;
     const conversations = await Conversation.findAll({
@@ -182,7 +182,7 @@ app.get('/conversations', authenticateToken, async (req: express.Request, res: e
 });
 
 // Route to get all messages in a specific conversation
-app.get('/conversations/:conversationId/messages', authenticateToken, async (req: express.Request, res: express.Response) => {
+app.get('/api/conversations/:conversationId/messages', authenticateToken, async (req: express.Request, res: express.Response) => {
   try {
     const { conversationId } = req.params;
     const messages = await Message.findAll({

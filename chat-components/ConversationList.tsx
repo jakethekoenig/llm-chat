@@ -4,6 +4,7 @@ import { Message as MessageType } from './types/Message';
 
 interface ConversationListProps {
   conversations: MessageType[];
+  onConversationClick: (id: string) => void;
 }
 
 const ConversationList: React.FC<ConversationListProps> = ({ conversations }) => {
@@ -12,7 +13,7 @@ const ConversationList: React.FC<ConversationListProps> = ({ conversations }) =>
       <h2>Conversations</h2>
       <ul>
         {conversations.map(conversation => (
-          <li key={conversation.id}>
+          <li key={conversation.id} onClick={() => onConversationClick(conversation.id)}>
             <>
               {conversation.content} - {conversation.author}
             </>

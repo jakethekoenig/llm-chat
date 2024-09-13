@@ -4,6 +4,7 @@ import MessageDemo from './components/MessageDemo';
 import SignIn from './components/SignIn';
 import Register from './components/Register';
 import Header from './components/Header'; // Add this line
+import ConversationPage from './components/ConversationPage'; // Add this line
 import './App.css';
 import { MathJaxContext } from 'better-react-mathjax';
 
@@ -29,9 +30,11 @@ const App = () => {
         <Header /> {/* Add this line */}
         <h1>LLM Chat Component Showcase</h1>
         <Routes>
-          <Route path="/" element={<MessageDemo />} />
+          <Route path="/" element={<ConversationListPage />} /> {/* Change this line */}
           <Route path="/signin" element={<SignIn />} />
           <Route path="/register" element={<Register />} /> {/* Add this line */}
+          <Route path="/showcase" element={<MessageDemo />} /> {/* Add this line */}
+          <Route path="/conversation/:id" element={<ConversationPage />} /> {/* Add this line */}
         </Routes>
       </div>
     </MathJaxContext>
