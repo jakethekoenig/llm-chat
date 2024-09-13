@@ -9,6 +9,7 @@ import { Op } from 'sequelize';
 import { Conversation } from './database/models/Conversation';
 import { Message } from './database/models/Message';
 import { addMessage, generateCompletion } from './helpers/messageHelpers';
+import { body, validationResult } from 'express-validator';
 dotenv.config();
 
 const app = express();
@@ -75,8 +76,17 @@ app.post('/register', async (req: express.Request, res: express.Response) => {
   }
 });
 
-// Add message endpoint
-app.post('/add_message', authenticateToken, async (req: express.Request, res: express.Response) => {
+// Add message endpoint with validation
+app.post('/add_message', authenticateToken, [
+  body('content').notEmpty().withMessage('Content is required'),
+  body('conversationId').isInt().withMessage('Conversation ID must be an integer'),
+  body('parentId').optional().isInt().withMessage('Parent ID must be an integer')
+], async (req: express.Request, res: express.Response) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   const { content, conversationId, parentId } = req.body;
   const userId = (req as any).user.get('id');
 
@@ -88,8 +98,17 @@ app.post('/add_message', authenticateToken, async (req: express.Request, res: ex
   }
 });
 
-// Get completion for message endpoint
-app.post('/get_completion_for_message', authenticateToken, async (req: express.Request, res: express.Response) => {
+// Get completion for message endpoint with validation
+app.post('/get_completion_for_message', authenticateToken, [
+  body('messageId').isInt().withMessage('Message ID must be an integer'),
+  body('model').notEmpty().withMessage('Model is required'),
+  body('temperature').isFloat().withMessage('Temperature must be a float')
+], async (req: express.Request, res: express.Response) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   const { messageId, model, temperature } = req.body;
 
   try {
@@ -100,8 +119,17 @@ app.post('/get_completion_for_message', authenticateToken, async (req: express.R
   }
 });
 
-// Streaming endpoint
-app.post('/get_completion', authenticateToken, async (req: express.Request, res: express.Response) => {
+// Streaming endpoint with validation
+app.post('/get_completion', authenticateToken, [
+  body('model').notEmpty().withMessage('Model is required'),
+  body('parentId').isInt().withMessage('Parent ID must be an integer'),
+  body('temperature').isFloat().withMessage('Temperature must be a float')
+], async (req: express.Request, res: express.Response) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   const { model, parentId, temperature } = req.body;
 
   try {

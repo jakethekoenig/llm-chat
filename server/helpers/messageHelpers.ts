@@ -12,11 +12,18 @@ export const addMessage = async (content: string, conversationId: number, parent
 };
 
 export const generateCompletion = async (messageId: number, model: string, temperature: number) => {
-  // Placeholder for actual completion logic
+  // Fetch parent message to get conversation_id and user_id
+  const parentMessage = await Message.findByPk(messageId);
+  if (!parentMessage) {
+    throw new Error(`Parent message with ID ${messageId} not found`);
+  }
+
   const completionContent = `Generated completion for message ${messageId} using model ${model} with temperature ${temperature}`;
   const completionMessage = await Message.create({
     content: completionContent,
     parent_id: messageId,
+    conversation_id: parentMessage.get('conversation_id'),
+    user_id: parentMessage.get('user_id'),
     model,
     temperature,
   });

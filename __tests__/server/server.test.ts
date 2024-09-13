@@ -127,6 +127,49 @@ describe('Server Tests', () => {
 
     it('should return 401 for unauthorized access to conversations', async () => {
       const response = await request(app).get('/conversations');
+    });
+
+    it('should return 401 for unauthorized access to messages', async () => {
+      const response = await request(app).get('/conversations/1/messages');
+      expect(response.status).toBe(401);
+    });
+
+    describe('Add Message and Get Completion for Message Endpoints', () => {
+      it('should add a new message', async () => {
+        const response = await request(app)
+          .post('/add_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ content: 'New Test Message', conversationId: 1, parentId: null });
+        expect(response.status).toBe(201);
+        expect(response.body.id).toBeDefined();
+      });
+
+      it('should return 400 for invalid add_message request', async () => {
+        const response = await request(app)
+          .post('/add_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ content: '', conversationId: 'invalid', parentId: null });
+        expect(response.status).toBe(400);
+      });
+
+      it('should get completion for a message', async () => {
+        const response = await request(app)
+          .post('/get_completion_for_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ messageId: 1, model: 'test-model', temperature: 0.5 });
+        expect(response.status).toBe(201);
+        expect(response.body.id).toBeDefined();
+      });
+
+      it('should return 400 for invalid get_completion_for_message request', async () => {
+        const response = await request(app)
+          .post('/get_completion_for_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ messageId: 'invalid', model: '', temperature: 'invalid' });
+        expect(response.status).toBe(400);
+      });
+    });
+  });
       expect(response.status).toBe(401);
     });
 
