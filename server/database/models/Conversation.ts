@@ -2,20 +2,8 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import db from '../index';
 
-interface ConversationAttributes {
-  id: number;
-  title: string;
-  user_id: number;
-}
 
-interface ConversationCreationAttributes extends Optional<ConversationAttributes, 'id'> {
-}
-
-class Conversation extends Model<ConversationAttributes, ConversationCreationAttributes> implements ConversationAttributes {
-  public id!: number;
-  public title!: string;
-  public user_id!: number;
-}
+class Conversation extends Model {}
 
 Conversation.init({
   id: {

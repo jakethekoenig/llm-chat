@@ -39,7 +39,7 @@ app.post('/signin', async (req: express.Request, res: express.Response) => {
   try {
     const user = await User.findOne({ where: { username } });
     if (user && await bcrypt.compare(password, (user as any).hashed_password)) {
-      const token = jwt.sign({ id: (user as any).id }, SECRET_KEY as jwt.Secret, { expiresIn: '1h' });
+      const token = jwt.sign({ id: (user as any).get('id') }, SECRET_KEY as jwt.Secret, { expiresIn: '1h' });
       res.json({ token });
     } else {
       res.status(401).send('Invalid credentials');
@@ -62,7 +62,7 @@ app.post('/register', async (req: express.Request, res: express.Response) => {
     }
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await User.create({ username, email, hashed_password: hashedPassword });
-    res.status(201).json({ id: (newUser as any).id, username: (newUser as any).username, email: (newUser as any).email });
+    res.status(201).json({ id: (newUser as any).get('id'), username: (newUser as any).username, email: (newUser as any).email });
   } catch (error) {
     res.status(400).json({ error: 'Error creating user' });
   }
@@ -71,11 +71,11 @@ app.post('/register', async (req: express.Request, res: express.Response) => {
 // Add message endpoint
 app.post('/add_message', authenticateToken, async (req: express.Request, res: express.Response) => {
   const { content, conversationId, parentId } = req.body;
-  const userId = (req as any).user.id;
+  const userId = (req as any).user.get('id');
 
   try {
     const message = await addMessage(content, conversationId, parentId, userId);
-    res.status(201).json({ id: message.id });
+    res.status(201).json({ id: message.get('id') });
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -87,7 +87,7 @@ app.post('/get_completion_for_message', authenticateToken, async (req: express.R
 
   try {
     const completionMessage = await generateCompletion(messageId, model, temperature);
-    res.status(201).json({ id: completionMessage.id });
+    res.status(201).json({ id: completionMessage.get('id') });
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -103,7 +103,7 @@ app.post('/get_completion', authenticateToken, async (req: express.Request, res:
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    const streamData = JSON.stringify({ id: completionMessage.id });
+    const streamData = JSON.stringify({ id: completionMessage.get('id') });
     res.write(`data: ${streamData}\n\n`);
 
     // Placeholder for actual streaming logic
@@ -132,7 +132,7 @@ app.post('/get_completion', authenticateToken, async (req: express.Request, res:
 // Route to get all conversations for a logged-in user
 app.get('/conversations', authenticateToken, async (req: express.Request, res: express.Response) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as any).user.get('id');
     const conversations = await Conversation.findAll({
       where: { user_id: userId }, // Ensure the user_id condition is applied
       include: [{
