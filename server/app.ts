@@ -88,7 +88,7 @@ app.post('/add_message', authenticateToken, [
   }
 
   const { content, conversationId, parentId } = req.body;
-  const userId = (req as any).user.get('id');
+  const userId = (req as any).user.id;
 
   try {
     const message = await addMessage(content, conversationId, parentId, userId);
@@ -167,7 +167,7 @@ app.post('/get_completion', authenticateToken, [
 // Route to get all conversations for a logged-in user
 app.get('/conversations', authenticateToken, async (req: express.Request, res: express.Response) => {
   try {
-    const userId = (req as any).user.get('id');
+    const userId = (req as any).user.id;
     const conversations = await Conversation.findAll({
       where: { user_id: userId }, // Ensure the user_id condition is applied
       include: [{

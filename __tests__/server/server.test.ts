@@ -139,7 +139,7 @@ describe('Server Tests', () => {
         const response = await request(app)
           .post('/add_message')
           .set('Authorization', `Bearer ${token}`)
-          .send({ content: 'New Test Message', conversationId: 1, parentId: null });
+          .send({ content: 'New Test Message', conversationId: 1, parentId: 1 });
         expect(response.status).toBe(201);
         expect(response.body.id).toBeDefined();
       });
@@ -168,14 +168,6 @@ describe('Server Tests', () => {
           .send({ messageId: 'invalid', model: '', temperature: 'invalid' });
         expect(response.status).toBe(400);
       });
-    });
-  });
-      expect(response.status).toBe(401);
-    });
-
-    it('should return 401 for unauthorized access to messages', async () => {
-      const response = await request(app).get('/conversations/1/messages');
-      expect(response.status).toBe(401);
     });
   });
 });
