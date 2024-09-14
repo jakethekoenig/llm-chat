@@ -6,7 +6,7 @@ describe('Site Render Tests', () => {
   let driver: any;
 
   beforeAll(async () => {
-    driver = await new Builder().forBrowser('chrome').setChromeOptions(new Options().headless()).build(); // Use Options type
+    driver = await new Builder().forBrowser('chrome').setChromeOptions(new Options().addArguments('--headless')).build(); // Use addArguments method
   });
 
   afterAll(async () => {
