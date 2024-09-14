@@ -92,7 +92,7 @@ test('submits a new message and updates the conversation', async () => {
   await waitFor(() => expect(mockOnSubmit).toHaveBeenCalledWith('New message'));
   expect(screen.getByText((content, element) => {
     if (!element) return false;
-    const text = element.textContent || '';
+    const text = Array.from(element.childNodes).reduce((acc, node) => acc + (node.textContent || ''), '');
     return text.includes('You typed:') && text.includes('New message');
   })).toBeInTheDocument();
 });
