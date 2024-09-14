@@ -1,6 +1,6 @@
 // server/helpers/messageHelpers.ts
 import { Message } from '../database/models/Message';
-import { Configuration, OpenAIApi } from 'openai'; // Fix import for Configuration and OpenAIApi
+import OpenAI from 'openai'; // Fix import for OpenAI
 import config from 'config'; // Correct import for config
 import dotenv from 'dotenv';
 dotenv.config();
@@ -28,18 +28,18 @@ export const generateCompletion = async (messageId: number, model: string, tempe
   }
 
   // Initialize OpenAI API client inside the function
-  const openai = new OpenAIApi(new Configuration({
+  const openai = new OpenAI({
     apiKey: config.apiKeys.openai,
-  }));
+  });
 
   try {
-    const response = await openai.createCompletion({
+    const response = await openai.completions.create({
       model,
       prompt: parentMessage.content,
       temperature,
     });
 
-    const completionContent = response.data.choices[0].text;
+    const completionContent = response.data.choices[0].text || '';
     const completionMessage = await Message.create({
       content: completionContent,
       parent_id: messageId,
@@ -50,7 +50,7 @@ export const generateCompletion = async (messageId: number, model: string, tempe
     });
     return completionMessage;
   } catch (error) {
-    console.error('Error generating completion:', error);
+    console.error('Error generating completion:', error.response ? error.response.data : error.message);
     throw new Error('Failed to generate completion');
   }
 };
