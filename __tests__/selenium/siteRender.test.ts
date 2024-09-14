@@ -1,11 +1,11 @@
 import { Builder, By, until } from 'selenium-webdriver';
-import { Options } from 'selenium-webdriver/chrome';
+import * as chrome from 'selenium-webdriver/chrome';
 import 'chromedriver';
 
 describe('Site Render Tests', () => {
   let driver: any;
   beforeAll(async () => {
-    driver = await new Builder().forBrowser('chrome').setChromeOptions(new Options().addArguments('--headless')).build(); // Changed from 'chromium' to 'chrome' to fix CI failure related to WebDriver options
+    driver = await new Builder().forBrowser('chrome').setChromeOptions(new chrome.Options().addArguments('--headless')).build(); // Changed from 'chromium' to 'chrome' to fix CI failure related to WebDriver options
   });
 
   afterAll(async () => {

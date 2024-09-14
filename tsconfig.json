@@ -10,7 +10,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "types": ["node", "jest", "selenium-webdriver"]
+    "types": ["node", "jest", "selenium-webdriver", "chrome"]
   },
   "include": ["src", "server", "__tests__"],
   "exclude": ["node_modules"]
