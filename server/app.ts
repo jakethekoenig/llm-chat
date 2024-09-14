@@ -10,6 +10,7 @@ import { Conversation } from './database/models/Conversation';
 import { Message } from './database/models/Message';
 import { addMessage, generateCompletion } from './helpers/messageHelpers';
 import { body, validationResult } from 'express-validator';
+import { Configuration, OpenAIApi } from 'openai'; // Fix import for Configuration and OpenAIApi
 dotenv.config();
 
 const app = express();

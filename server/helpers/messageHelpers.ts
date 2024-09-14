@@ -1,17 +1,9 @@
 // server/helpers/messageHelpers.ts
 import { Message } from '../database/models/Message';
-import Configuration from 'openai'; // Fix import for Configuration
-import OpenAIApi from 'openai'; // Fix import for OpenAIApi
+import { Configuration, OpenAIApi } from 'openai'; // Fix import for Configuration and OpenAIApi
+import config from 'config'; // Correct import for config
 import dotenv from 'dotenv';
 dotenv.config();
-
-// Add type declaration for 'config' module
-declare module 'config' {
-  const apiKeys: {
-    openai: string;
-  };
-  export default { apiKeys };
-}
 
 // Remove global initialization
 // const openai = new OpenAIApi(new Configuration({
@@ -37,7 +29,7 @@ export const generateCompletion = async (messageId: number, model: string, tempe
 
   // Initialize OpenAI API client inside the function
   const openai = new OpenAIApi(new Configuration({
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey: config.apiKeys.openai,
   }));
 
   try {
