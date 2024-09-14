@@ -1,20 +1,13 @@
 // server/helpers/messageHelpers.ts
 import { Message } from '../database/models/Message';
-import OpenAI from 'openai'; // Fix import for OpenAI
-import config from 'config'; // Correct import for config
+import OpenAI from 'openai';
+import config from 'config';
 import dotenv from 'dotenv';
 dotenv.config();
 
-interface Completion {
-  data: {
-    choices: { text: string }[];
-  };
+interface CompletionResponse {
+  choices: { text: string }[];
 }
-
-// Remove global initialization
-// const openai = new OpenAIApi(new Configuration({
-//   apiKey: config.apiKeys.openai,
-// }));
 
 export const addMessage = async (content: string, conversationId: number, parentId: number | null, userId: number) => {
   const message = await Message.create({
@@ -27,13 +20,11 @@ export const addMessage = async (content: string, conversationId: number, parent
 };
 
 export const generateCompletion = async (messageId: number, model: string, temperature: number) => {
-  // Fetch parent message to get conversation_id and user_id
   const parentMessage = await Message.findByPk(messageId);
   if (!parentMessage) {
     throw new Error(`Parent message with ID ${messageId} not found`);
   }
 
-  // Initialize OpenAI API client inside the function
   const openai = new OpenAI({
     apiKey: config.apiKeys.openai,
   });
@@ -45,7 +36,7 @@ export const generateCompletion = async (messageId: number, model: string, tempe
       temperature,
     });
 
-    const completionContent = response.data.choices[0].text || '';
+    const completionContent = response.choices[0].text || '';
     const completionMessage = await Message.create({
       content: completionContent,
       parent_id: messageId,
@@ -56,7 +47,6 @@ export const generateCompletion = async (messageId: number, model: string, tempe
     });
     return completionMessage;
   } catch (error) {
-    // Handle unknown type for errors
     if (error instanceof Error) {
       console.error('Error generating completion:', error.message);
     } else {
