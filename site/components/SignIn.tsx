@@ -21,7 +21,7 @@ const SignIn: React.FC = () => {
       }
       localStorage.setItem('token', data.token);
       setError('');
-      // Redirect or update UI as needed
+      window.location.href = '/';
     } catch (err) {
       setError('Invalid credentials');
     }
