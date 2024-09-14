@@ -22,8 +22,8 @@ export const generateCompletion = async (messageId: number, model: string, tempe
   const completionMessage = await Message.create({
     content: completionContent,
     parent_id: messageId,
-    conversation_id: parentMessage.get('conversation_id'),
-    user_id: parentMessage.get('user_id'),
+    conversation_id: parentMessage.get('conversation_id') as number,
+    user_id: parentMessage.get('user_id') as number,
     model,
     temperature,
   });

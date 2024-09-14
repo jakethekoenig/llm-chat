@@ -211,8 +211,8 @@ app.post('/create_conversation', authenticateToken, [
 
   try {
     const conversation = await Conversation.create({ title, user_id: userId });
-    const message = await addMessage(initialMessage, conversation.get('id'), null, userId);
-    const completionMessage = await generateCompletion(message.get('id'), model, temperature);
+    const message = await addMessage(initialMessage, conversation.get('id') as number, null, userId);
+    const completionMessage = await generateCompletion(message.get('id') as number, model, temperature);
     res.status(201).json({ conversationId: conversation.get('id'), initialMessageId: message.get('id'), completionMessageId: completionMessage.get('id') });
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
