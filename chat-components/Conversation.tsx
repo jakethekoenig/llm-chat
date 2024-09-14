@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import Message from './Message';
 import { Message as MessageType } from './types/Message';
+import NewMessage from '../site/components/NewMessage';
 
 interface ConversationProps {
   messages: MessageType[];
-  onSubmit: (message: string) => AsyncIterable<string>; // Add onSubmit prop
+  onSubmit: (message: string) => AsyncIterable<string>;
 }
 
-const Conversation: React.FC<ConversationProps> = ({ messages }) => {
+const Conversation: React.FC<ConversationProps> = ({ messages, onSubmit }) => {
   // TODO: Refactor messages to be a map
   const getChildren = (messages: MessageType[], parentId: string | null): MessageType[] => {
     return messages.filter(message => message.parentId === parentId);
