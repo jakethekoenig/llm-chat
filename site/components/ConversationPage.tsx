@@ -22,23 +22,25 @@ const ConversationPage: React.FC = () => {
   }, [conversationId]);
 
   const handleNewMessageSubmit = async function* (message: string): AsyncIterable<string> {
-    // Simulate async message processing
-    const content = [
-      `You typed: ${message}\n`,
-      'Processing...\n',
-      'Done!\n'
-    ];
-    for (const chunk of content) {
-      yield chunk;
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
+    const response = await fetch(`/api/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ content: message })
+    });
+    const data = await response.json();
+    setMessages(prevMessages => [...prevMessages, data]);
+    yield `You typed: ${message}\nProcessing...\nDone!\n`;
   };
 
   return (
     <div>
       <h2>Conversation</h2>
-      <Conversation messages={messages} />
+      <Conversation messages={messages} onSubmit={handleNewMessageSubmit} />
     </div>
   );
+}
 
 export default ConversationPage;
