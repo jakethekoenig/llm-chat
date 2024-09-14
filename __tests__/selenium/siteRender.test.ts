@@ -1,12 +1,11 @@
 import { Builder, By, until } from 'selenium-webdriver';
-import chrome, { Options } from 'selenium-webdriver/chrome'; // Import Options type
+import { Options } from 'selenium-webdriver/chrome';
 import 'chromedriver';
 
 describe('Site Render Tests', () => {
   let driver: any;
-
   beforeAll(async () => {
-    driver = await new Builder().forBrowser('chrome').setChromeOptions(new Options().addArguments('--headless')).build(); // Use addArguments method
+    driver = await new Builder().forBrowser('chrome').setChromeOptions(new Options().addArguments('--headless')).build();
   });
 
   afterAll(async () => {
