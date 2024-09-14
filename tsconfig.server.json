@@ -11,6 +11,6 @@
     "sourceMap": true,
     "types": ["node", "sequelize", "bcrypt", "jest"]
   },
-  "include": ["server/**/*.ts"],
+  "include": ["server/**/*.ts", "server/types/**/*.d.ts"],
   "exclude": ["node_modules", "dist-server"]
 }
