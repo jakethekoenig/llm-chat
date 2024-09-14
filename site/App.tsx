@@ -36,6 +36,7 @@ const App = () => {
           <Route path="/register" element={<Register />} /> {/* Add this line */}
           <Route path="/showcase" element={<MessageDemo />} /> {/* Add this line */}
           <Route path="/conversation/:id" element={<ConversationPage />} /> {/* Add this line */}
+          <Route path="*" element={<div>Page Not Found</div>} /> {/* Add this line */}
         </Routes>
       </div>
     </MathJaxContext>

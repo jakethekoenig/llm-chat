@@ -16,5 +16,10 @@ export default defineConfig({
     rollupOptions: {
       external: ['react-router-dom']
     }
+  },
+  resolve: {
+    alias: {
+      '@': '/site'
+    }
   }
 });
