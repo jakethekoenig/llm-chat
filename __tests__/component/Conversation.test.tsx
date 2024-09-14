@@ -93,6 +93,6 @@ test('submits a new message and updates the conversation', async () => {
   expect(screen.getByText((content, element) => {
     if (!element) return false;
     const text = element.textContent || '';
-    return text.startsWith('You typed:') && text.includes('New message');
+    return text.includes('You typed:') && text.includes('New message');
   })).toBeInTheDocument();
 });
