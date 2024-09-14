@@ -1,6 +1,6 @@
 // site/components/Register.tsx
 import React, { useState } from 'react';
-import './App.css'; // Ensure the CSS file is imported
+import '../App.css'; // Ensure the CSS file is imported
 
 const Register: React.FC = () => {
   const [username, setUsername] = useState('');

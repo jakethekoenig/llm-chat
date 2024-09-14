@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './App.css'; // Ensure the CSS file is imported
+import '../App.css'; // Ensure the CSS file is imported
 
 const SignIn: React.FC = () => {
   const [username, setUsername] = useState('');
