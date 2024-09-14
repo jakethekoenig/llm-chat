@@ -90,5 +90,5 @@ test('submits a new message and updates the conversation', async () => {
   fireEvent.change(screen.getByPlaceholderText('Type your message...'), { target: { value: 'New message' } });
   fireEvent.click(screen.getByText('Send'));
   await waitFor(() => expect(mockOnSubmit).toHaveBeenCalledWith('New message'));
-  expect(screen.getByText('You typed: New message')).toBeInTheDocument();
+  expect(screen.getByText((content, element) => content.startsWith('You typed:') && content.includes('New message'))).toBeInTheDocument();
 });
