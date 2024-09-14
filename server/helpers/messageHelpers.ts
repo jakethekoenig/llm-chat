@@ -5,6 +5,12 @@ import config from 'config'; // Correct import for config
 import dotenv from 'dotenv';
 dotenv.config();
 
+interface Completion {
+  data: {
+    choices: { text: string }[];
+  };
+}
+
 // Remove global initialization
 // const openai = new OpenAIApi(new Configuration({
 //   apiKey: config.apiKeys.openai,
@@ -50,7 +56,12 @@ export const generateCompletion = async (messageId: number, model: string, tempe
     });
     return completionMessage;
   } catch (error) {
-    console.error('Error generating completion:', error.response ? error.response.data : error.message);
+    // Handle unknown type for errors
+    if (error instanceof Error) {
+      console.error('Error generating completion:', error.message);
+    } else {
+      console.error('Error generating completion:', error);
+    }
     throw new Error('Failed to generate completion');
   }
 };
