@@ -11,7 +11,7 @@ const messages = [
 ];
 
 test('renders conversation messages', () => {
-  render(<Conversation messages={messages} />);
+  render(<Conversation messages={messages} onSubmit={async function* (message: string) { yield `You typed: ${message}\nProcessing...\nDone!\n`; }} />);
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
 });
 
@@ -21,7 +21,7 @@ test('renders conversation with navigation and selection', async () => {
     { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
     { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
   ];
-  render(<Conversation messages={messages} />);
+  render(<Conversation messages={messages} onSubmit={async function* (message: string) { yield `You typed: ${message}\nProcessing...\nDone!\n`; }} />);
   expect(screen.getByText('Hello, world!')).toBeInTheDocument();
   fireEvent.click(screen.getByText('Hello, world!'));
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
@@ -44,7 +44,7 @@ test('selects the first child by default', () => {
     { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
     { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
   ];
-  render(<Conversation messages={messages} />);
+  render(<Conversation messages={messages} onSubmit={async function* (message: string) { yield `You typed: ${message}\nProcessing...\nDone!\n`; }} />);
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
 });
 
@@ -57,7 +57,7 @@ test('renders conversation with recursive navigation and selection', () => {
     { id: '5', content: 'What about you?', author: 'User2', timestamp: new Date().toISOString(), parentId: '2' },
     { id: '6', content: 'I am doing well!', author: 'User', timestamp: new Date().toISOString(), parentId: '3' },
   ];
-  render(<Conversation messages={messages} />);
+  render(<Conversation messages={messages} onSubmit={async function* (message: string) { yield `You typed: ${message}\nProcessing...\nDone!\n`; }} />);
   expect(screen.getByText('Hello, world!')).toBeInTheDocument();
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
   fireEvent.click(screen.getAllByText('>')[0]);
@@ -80,4 +80,15 @@ test('renders conversation list', () => {
   render(<ConversationList conversations={conversations} onConversationClick={() => {}} />);
   expect(screen.getByText('Conversation 1 - User1')).toBeInTheDocument();
   expect(screen.getByText('Conversation 2 - User2')).toBeInTheDocument();
+});
+
+test('submits a new message and updates the conversation', async () => {
+  const mockOnSubmit = jest.fn(async function* (message: string) {
+    yield `You typed: ${message}\nProcessing...\nDone!\n`;
+  });
+  render(<Conversation messages={messages} onSubmit={mockOnSubmit} />);
+  fireEvent.change(screen.getByPlaceholderText('Type your message...'), { target: { value: 'New message' } });
+  fireEvent.click(screen.getByText('Send'));
+  await waitFor(() => expect(mockOnSubmit).toHaveBeenCalledWith('New message'));
+  expect(screen.getByText('You typed: New message')).toBeInTheDocument();
 });
