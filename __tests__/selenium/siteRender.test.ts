@@ -5,7 +5,7 @@ import 'chromedriver';
 describe('Site Render Tests', () => {
   let driver: any;
   beforeAll(async () => {
-    driver = await new Builder().forBrowser('chrome').setChromeOptions(new chrome.Options().addArguments('--headless')).build(); // Changed from 'chromium' to 'chrome' to fix CI failure related to WebDriver options
+    driver = await new Builder().forBrowser('chrome').setChromeOptions(new chrome.Options().addArguments('--headless')).build();
   });
 
   afterAll(async () => {
