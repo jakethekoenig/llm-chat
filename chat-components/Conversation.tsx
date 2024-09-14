@@ -96,7 +96,25 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
   const parentMessages = getChildren(messages, null);
   const hasSiblings = parentMessages.length > 1;
 
-  return <div>{renderMessages(messages, parentMessages[0]?.id, null)}</div>;
+  const handleNewMessageSubmit = async function* (message: string): AsyncIterable<string> {
+    // Simulate async message processing
+    const content = [
+      `You typed: ${message}\n`,
+      'Processing...\n',
+      'Done!\n'
+    ];
+    for (const chunk of content) {
+      yield chunk;
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  };
+
+  return (
+    <div>
+      {renderMessages(messages, parentMessages[0]?.id, null)}
+      <NewMessage onSubmit={handleNewMessageSubmit} />
+    </div>
+  );
 };
 
 export default Conversation;

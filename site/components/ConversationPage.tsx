@@ -38,9 +38,7 @@ const ConversationPage: React.FC = () => {
     <div>
       <h2>Conversation</h2>
       <Conversation messages={messages} />
-      <NewMessage onSubmit={handleNewMessageSubmit} /> {/* Add this line */}
     </div>
   );
-};
 
 export default ConversationPage;
