@@ -30,6 +30,7 @@ describe('Site Render Tests', () => {
     await driver.wait(until.elementLocated(By.css('body')), 10000); 
     const pageSource = await driver.getPageSource();
     console.log(pageSource);
+    await driver.wait(until.elementLocated(By.css('header')), 10000); 
     const header = await driver.findElement(By.css('header'));
     expect(await header.isDisplayed()).toBe(true);
   });
