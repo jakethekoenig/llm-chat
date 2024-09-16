@@ -28,6 +28,8 @@ describe('Site Render Tests', () => {
   test('should verify certain components are visible', async () => {
     await driver.get('http://localhost:5173');
     await driver.wait(until.elementLocated(By.css('body')), 10000); 
+    const pageSource = await driver.getPageSource();
+    console.log(pageSource);
     const header = await driver.findElement(By.css('header'));
     expect(await header.isDisplayed()).toBe(true);
   });

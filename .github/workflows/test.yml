@@ -30,12 +30,6 @@ jobs:
     - name: Build project
       run: npm run build
 
-    - name: Check if server is running
-      run: |
-        npm run start:all & # Start the server in the background
-        sleep 10 # Wait for the server to start
-        curl http://localhost:5173 # Try to access the server
-
     - name: Install ChromeDriver
       run: |
         sudo apt-get update
