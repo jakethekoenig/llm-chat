@@ -32,7 +32,9 @@ export const authenticateToken = (req: express.Request, res: express.Response, n
   if (!token) return res.sendStatus(401);
 
   jwt.verify(token, SECRET_KEY as jwt.Secret, {}, (err: jwt.VerifyErrors | null, decoded: string | jwt.JwtPayload | undefined) => {
-    if (err) return res.sendStatus(403);
+    if (err || !decoded) {
+      return res.status(403).json({ message: 'Invalid or expired token' });
+    }
     (req as any).user = decoded;
     next();
   });

@@ -1,5 +1,6 @@
 // site/components/Register.tsx
 import React, { useState } from 'react';
+import '../App.css'; // Ensure the CSS file is imported
 
 const Register: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -29,7 +30,7 @@ const Register: React.FC = () => {
   };
 
   return (
-    <div>
+    <div className="form-container">
       <h2>Register</h2>
       <form onSubmit={handleRegister}>
         <div>
@@ -56,7 +57,7 @@ const Register: React.FC = () => {
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+        {error && <p>{error}</p>}
         <button type="submit">Register</button>
       </form>
     </div>
