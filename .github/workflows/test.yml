@@ -40,4 +40,4 @@ jobs:
         sudo apt-get install -y google-chrome-stable
 
     - name: Run tests
-      run: npm test
+      run: npm test:ci

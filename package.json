@@ -12,10 +12,13 @@
     "build:server": "tsc -p tsconfig.server.json && npm run postbuild",
     "build:frontend": "vite build",
     "start:server": "node dist-server/server/index.js",
+    "start:client": "vite",
     "dev:server": "nodemon --exec ts-node server/index.ts",
     "dev:frontend": "vite",
     "seed:test": "sequelize db:seed:all --env test",
-    "test:selenium": "jest --config=jest.selenium.config.js"
+    "test:selenium": "jest --config=jest.selenium.config.js",
+    "start:all": "npm-run-all --parallel start:server start:client",
+    "test:ci": "npm-run-all --parallel --race start:all test"
   },
   "repository": {
     "type": "git",
@@ -74,6 +77,7 @@
     "@types/react-dom": "^18.0.9",
     "@types/selenium-webdriver": "^4.1.26",
     "@types/supertest": "^2.0.11",
+    "npm-run-all": "^4.1.5",
     "selenium-webdriver": "^4.24.1",
     "sequelize-cli": "^6.6.2",
     "supertest": "^7.0.0",
