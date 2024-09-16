@@ -2,7 +2,6 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import bodyParser from 'body-parser';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
 import { User } from './database/models/User';
 import { Op } from 'sequelize';
@@ -10,8 +9,6 @@ import { Conversation } from './database/models/Conversation';
 import { Message } from './database/models/Message';
 import { addMessage, generateCompletion } from './helpers/messageHelpers';
 import { body, validationResult } from 'express-validator';
-import OpenAI from 'openai'; // Fix import for OpenAI
-dotenv.config();
 
 const app = express();
 const SECRET_KEY = process.env.SECRET_KEY || 'fallback-secret-key';
@@ -118,6 +115,8 @@ app.post('/get_completion_for_message', authenticateToken, [
     const completionMessage = await generateCompletion(messageId, model, temperature);
     res.status(201).json({ id: completionMessage.get('id') });
   } catch (error) {
+      console.log('jake here');
+    console.log(error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

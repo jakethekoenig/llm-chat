@@ -1,9 +1,7 @@
 // server/helpers/messageHelpers.ts
 import { Message } from '../database/models/Message';
+import 'openai/shims/node'
 import OpenAI from 'openai';
-import config from 'config';
-import dotenv from 'dotenv';
-dotenv.config();
 
 interface CompletionResponse {
   choices: { text: string }[];
@@ -25,14 +23,12 @@ export const generateCompletion = async (messageId: number, model: string, tempe
     throw new Error(`Parent message with ID ${messageId} not found`);
   }
 
-  const openai = new OpenAI({
-    apiKey: config.apiKeys.openai,
-  });
+  const openai = new OpenAI();
 
   try {
     const response: CompletionResponse = await openai.completions.create({
       model,
-      prompt: parentMessage.get('content'),
+      prompt: parentMessage.get('content') as string,
       temperature,
     });
 
