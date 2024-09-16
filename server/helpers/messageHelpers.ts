@@ -39,7 +39,7 @@ export const addMessage = async (content: string, conversationId: number, parent
 };
 
 export const generateCompletion = async (messageId: number, model: string, temperature: number) => {
-  const parentMessage: Message | null = await Message.findByPk(messageId);
+  const parentMessage: MessageModel | null = await MessageModel.findByPk(messageId);
   if (!parentMessage) {
     throw new Error(`Parent message with ID ${messageId} not found`);
   }
@@ -54,7 +54,7 @@ export const generateCompletion = async (messageId: number, model: string, tempe
   try {
     const response: CompletionResponse = await openai.completions.create({
       model,
-      prompt: parentMessage.content,
+      prompt: parentMessage.get('content'),
       temperature,
     });
 
