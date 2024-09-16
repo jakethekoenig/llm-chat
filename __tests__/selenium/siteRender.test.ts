@@ -1,11 +1,17 @@
 import { Builder, By, until } from 'selenium-webdriver';
-import * as chrome from 'selenium-webdriver/chrome';
+import { Options as ChromeOptions } from 'selenium-webdriver/chrome';
 import 'chromedriver';
 
 describe('Site Render Tests', () => {
   let driver: any;
+
   beforeAll(async () => {
-    driver = await new Builder().forBrowser('chrome').setChromeOptions(new chrome.Options().addArguments('--headless')).build();
+    const options = new ChromeOptions();
+    //options.addArguments('--headless');
+    driver = await new Builder()
+      .forBrowser('chrome')
+      .setChromeOptions(options)
+      .build();
   });
 
   afterAll(async () => {
@@ -20,7 +26,7 @@ describe('Site Render Tests', () => {
   });
 
   test('should verify certain components are visible', async () => {
-    await driver.get('http://localhost:3000');
+    await driver.get('http://localhost:5173/showcase');
     const header = await driver.findElement(By.css('header'));
     const conversationList = await driver.findElement(By.css('.conversation-list'));
     const messageDemo = await driver.findElement(By.css('.message-demo'));

@@ -30,9 +30,6 @@ jobs:
     - name: Build project
       run: npm run build
 
-    - name: Run tests
-      run: npm test
-
     - name: Install ChromeDriver
       run: |
         sudo apt-get update
@@ -43,5 +40,5 @@ jobs:
         sudo apt-get install -y google-chrome-stable
         sudo apt-get install -y xvfb
 
-    - name: Run Selenium tests
-      run: xvfb-run --server-args="-screen 0 1920x1080x24" npm run test:selenium
+    - name: Run tests
+      run: npm test
