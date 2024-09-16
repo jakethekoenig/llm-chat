@@ -5,6 +5,19 @@ import { sequelize } from '../../server/database/models';
 import { up, down } from '../../server/database/seeders/20240827043208-seed-test-data';
 import { Conversation } from '../../server/database/models/Conversation';
 import { Message } from '../../server/database/models/Message';
+import OpenAI from 'openai';
+
+jest.mock('openai');
+
+const mockOpenAI = {
+  completions: {
+    create: jest.fn().mockResolvedValue({
+      choices: [{ text: 'Mocked completion response' }]
+    })
+  }
+};
+
+OpenAI.mockImplementation(() => mockOpenAI);
 
 beforeAll(async () => {
   await sequelize.sequelize.sync({ force: true });
@@ -93,10 +106,36 @@ describe('Server Tests', () => {
     expect(response.status).toBe(403);
   });
 
+  it('should generate a completion for a valid message', async () => {
+    const response = await request(app)
+      .post('/get_completion_for_message')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ messageId: 1, model: 'test-model', temperature: 0.5 });
+    expect(response.status).toBe(201);
+    expect(response.body.id).toBeDefined();
+    expect(response.body.content).toBe('Mocked completion response');
+  });
+
+  it('should return 400 for invalid messageId', async () => {
+    const response = await request(app)
+      .post('/get_completion_for_message')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ messageId: 'invalid', model: 'test-model', temperature: 0.5 });
+    expect(response.status).toBe(400);
+  });
+
+  it('should return 500 if OpenAI API fails', async () => {
+    mockOpenAI.completions.create.mockRejectedValueOnce(new Error('OpenAI API error'));
+    const response = await request(app)
+      .post('/get_completion_for_message')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ messageId: 1, model: 'test-model', temperature: 0.5 });
+    expect(response.status).toBe(500);
+  });
+
   // Add new test cases for conversations and messages routes
   describe('Conversations and Messages Routes', () => {
     let token: string;
-
     beforeAll(async () => {
       const signInResponse = await request(app)
         .post('/signin')

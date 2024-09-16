@@ -1,8 +1,17 @@
 // server/helpers/messageHelpers.ts
-import { Message } from '../database/models/Message';
+import { Message as MessageModel } from '../database/models/Message';
 import 'openai/shims/node'
 import OpenAI from 'openai';
 
+interface Message {
+  id: number;
+  content: string;
+  conversation_id: number;
+  parent_id: number | null;
+  user_id: number;
+  model?: string;
+  temperature?: number;
+}
 interface CompletionResponse {
   choices: { text: string }[];
 }
@@ -23,12 +32,17 @@ export const generateCompletion = async (messageId: number, model: string, tempe
     throw new Error(`Parent message with ID ${messageId} not found`);
   }
 
-  const openai = new OpenAI();
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OpenAI API key is not set');
+  }
+
+  const openai = new OpenAI(apiKey);
 
   try {
     const response: CompletionResponse = await openai.completions.create({
       model,
-      prompt: parentMessage.get('content') as string,
+      prompt: parentMessage.content,
       temperature,
     });
 
@@ -36,8 +50,8 @@ export const generateCompletion = async (messageId: number, model: string, tempe
     const completionMessage: Message = await Message.create({
       content: completionContent,
       parent_id: messageId,
-      conversation_id: parentMessage.get('conversation_id'),
-      user_id: parentMessage.get('user_id'),
+      conversation_id: parentMessage.conversation_id,
+      user_id: parentMessage.user_id,
       model,
       temperature,
     });

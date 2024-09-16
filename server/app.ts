@@ -15,7 +15,6 @@ const SECRET_KEY = process.env.SECRET_KEY || 'fallback-secret-key';
 
 // Custom logging middleware
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
 
@@ -115,8 +114,6 @@ app.post('/get_completion_for_message', authenticateToken, [
     const completionMessage = await generateCompletion(messageId, model, temperature);
     res.status(201).json({ id: completionMessage.get('id') });
   } catch (error) {
-      console.log('jake here');
-    console.log(error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
