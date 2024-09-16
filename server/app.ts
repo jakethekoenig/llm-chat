@@ -13,11 +13,6 @@ import { body, validationResult } from 'express-validator';
 const app = express();
 const SECRET_KEY = process.env.SECRET_KEY || 'fallback-secret-key';
 
-// Custom logging middleware
-app.use((req, res, next) => {
-  next();
-});
-
 app.use(bodyParser.json());
 app.use(cors());
 
