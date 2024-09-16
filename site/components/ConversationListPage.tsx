@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import '../App.css'; // Correct the import path
 import ConversationList from '../../chat-components/ConversationList';
 import { Message as MessageType } from '../../chat-components/types/Message';
 
