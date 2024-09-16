@@ -32,7 +32,7 @@ export const generateCompletion = async (messageId: number, model: string, tempe
   try {
     const response: CompletionResponse = await openai.completions.create({
       model,
-      prompt: parentMessage.content,
+      prompt: parentMessage.get('content'),
       temperature,
     });
 
