@@ -20,6 +20,7 @@ describe('Site Render Tests', () => {
 
   test('should open the site and check for console errors', async () => {
     await driver.get('http://localhost:5173');
+    await driver.wait(until.elementLocated(By.css('body')), 10000); 
     const logs = await driver.manage().logs().get('browser');
     const errorLogs = logs.filter((log: any) => log.level === 'SEVERE');
     expect(errorLogs.length).toBe(0);
