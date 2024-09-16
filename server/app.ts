@@ -70,7 +70,6 @@ app.post('/register', async (req: express.Request, res: express.Response) => {
     const newUser = await User.create({ username, email, hashed_password: hashedPassword });
     res.status(201).json({ id: (newUser as any).get('id'), username: (newUser as any).username, email: (newUser as any).email });
   } catch (error) {
-    console.log(error);
     res.status(400).json({ error: 'Error creating user' });
   }
 });

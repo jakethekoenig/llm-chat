@@ -2,6 +2,18 @@
 import { Message as MessageModel } from '../database/models/Message';
 import 'openai/shims/node'
 import OpenAI from 'openai';
+import { createLogger, transports, format } from 'winston';
+
+const logger = createLogger({
+  level: 'error',
+  format: format.combine(
+    format.timestamp(),
+    format.json()
+  ),
+  transports: [
+    new transports.Console()
+  ]
+});
 
 interface Message {
   id: number;
@@ -58,9 +70,9 @@ export const generateCompletion = async (messageId: number, model: string, tempe
     return completionMessage;
   } catch (error) {
     if (error instanceof Error) {
-      console.error('Error generating completion:', error.message);
+      logger.error('Error generating completion:', { message: error.message });
     } else {
-      console.error('Error generating completion:', error);
+      logger.error('Error generating completion:', { error });
     }
     throw new Error('Failed to generate completion');
   }

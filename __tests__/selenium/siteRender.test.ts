@@ -1,6 +1,19 @@
 import { Builder, By, until } from 'selenium-webdriver';
 import { Options as ChromeOptions } from 'selenium-webdriver/chrome';
 import 'chromedriver';
+import OpenAI from 'openai';
+
+jest.mock('openai');
+
+const mockOpenAI = {
+  completions: {
+    create: jest.fn().mockResolvedValue({
+      choices: [{ text: 'Mocked completion response' }]
+    })
+  }
+};
+
+OpenAI.mockImplementation(() => mockOpenAI);
 
 describe('Site Render Tests', () => {
   let driver: any;
@@ -15,7 +28,6 @@ options.addArguments('--disable-dev-shm-usage');
       .setChromeOptions(options)
       .build();
   });
-
   afterAll(async () => {
     await driver.quit();
   });
