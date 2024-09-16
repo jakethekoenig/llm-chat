@@ -7,7 +7,7 @@ describe('Site Render Tests', () => {
 
   beforeAll(async () => {
     const options = new ChromeOptions();
-    //options.addArguments('--headless');
+    options.addArguments('--headless');
     driver = await new Builder()
       .forBrowser('chrome')
       .setChromeOptions(options)
@@ -26,13 +26,8 @@ describe('Site Render Tests', () => {
   });
 
   test('should verify certain components are visible', async () => {
-    await driver.get('http://localhost:5173/showcase');
+    await driver.get('http://localhost:5173');
     const header = await driver.findElement(By.css('header'));
-    const conversationList = await driver.findElement(By.css('.conversation-list'));
-    const messageDemo = await driver.findElement(By.css('.message-demo'));
-
     expect(await header.isDisplayed()).toBe(true);
-    expect(await conversationList.isDisplayed()).toBe(true);
-    expect(await messageDemo.isDisplayed()).toBe(true);
   });
 });

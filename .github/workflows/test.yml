@@ -32,13 +32,7 @@ jobs:
 
     - name: Install ChromeDriver
       run: |
-        sudo apt-get update
-        sudo apt-get install -y libappindicator3-1 fonts-liberation
-        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-        sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
-        sudo apt-get update
         sudo apt-get install -y google-chrome-stable
-        sudo apt-get install -y xvfb
 
     - name: Run tests
       run: npm test
