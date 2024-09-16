@@ -25,11 +25,14 @@ options.addArguments('--disable-dev-shm-usage');
     const logs = await driver.manage().logs().get('browser');
     const errorLogs = logs.filter((log: any) => log.level === 'SEVERE');
     expect(errorLogs.length).toBe(0);
+    console.log('Error logs:', logs);
   });
 
   test('should verify certain components are visible', async () => {
     await driver.get('http://localhost:5173');
     await driver.wait(until.elementLocated(By.css('body')), 10000); 
+    const logs = await driver.manage().logs().get('browser');
+    console.log('Error logs:', logs);
     const pageSource = await driver.getPageSource();
     console.log(pageSource);
     await driver.wait(until.elementLocated(By.css('header')), 10000); 
