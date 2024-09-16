@@ -8,6 +8,8 @@ describe('Site Render Tests', () => {
   beforeAll(async () => {
     const options = new ChromeOptions();
     options.addArguments('--headless');
+options.addArguments('--no-sandbox');
+options.addArguments('--disable-dev-shm-usage');
     driver = await new Builder()
       .forBrowser('chrome')
       .setChromeOptions(options)
