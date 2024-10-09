@@ -4,6 +4,7 @@ import { Button, Menu, MenuItem } from '@mui/material';
 import { ContentCopy as CopyIcon, Share as ShareIcon, Delete as DeleteIcon, Edit as EditIcon, MoreVert as MoreVertIcon } from '@mui/icons-material';
 import { useMessageConfig } from './MessageConfigContext';
 import { Renderer } from './renderers/Renderer';
+import { ArtifactRenderer } from './renderers/ArtifactRenderer';
 import { Message as MessageType } from './types/Message';
 
 interface MessageProps extends MessageType {
@@ -55,7 +56,13 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
   const [displayedContent, setDisplayedContent] = useState<string>('');
   const isMountedRef = useRef(true);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
+  const [artifactContent, setArtifactContent] = useState<string | null>(null);
 
+  const handleArtifactClick = useCallback((content: string) => {
+    setArtifactContent(content);
+    setIsSidePanelOpen(true);
+  }, []);
   useEffect(() => {
     isMountedRef.current = true;
     setDisplayedContent(''); // Reset content when prop changes
@@ -116,11 +123,18 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
       }
       const endSeq = matchedRenderer.detectEndSequence(content, startSeq[1]) as [number, number] | null;
       if (!endSeq) {
-        elements.push(<span key={`rendered-${startSeq[0]}`}>{matchedRenderer.render(content, startSeq[0], content.length)}</span>);
+        if (startSeq) {
+          elements.push(<span key={`rendered-${startSeq[0]}`} onClick={() => handleArtifactClick(content.slice(startSeq[1], content.length))}>{matchedRenderer.render(content, startSeq[0], content.length)}</span>);
+        }
         break;
       }
-      if (endSeq !== null) {
-        elements.push(<span key={`rendered-${startSeq[0]}`}>{matchedRenderer.render(content, startSeq[0], endSeq[1])}</span>);
+      if (startSeq && endSeq !== null) {
+        const artifactContent = content.slice(startSeq[1], endSeq[0]);
+        elements.push(
+          <span key={`rendered-${startSeq[0]}`} onClick={() => handleArtifactClick(artifactContent)}>
+            {matchedRenderer.render(content, startSeq[0], endSeq[1])}
+          </span>
+        );
         start = endSeq[1];
       } else {
         elements.push(<span key={`plain-${start}`}>{content.slice(start)}</span>);
@@ -164,6 +178,12 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
       </ButtonContainer>
       {onPrev && onNext && (
         <NavigationButtons onPrev={onPrev} onNext={onNext} hasSiblings={hasSiblings} currentIndex={currentIndex} totalSiblings={totalSiblings} />
+      )}
+      {isSidePanelOpen && (
+        <div className="side-panel">
+          <button onClick={() => setIsSidePanelOpen(false)}>Close</button>
+          <div>{artifactContent}</div>
+        </div>
       )}
     </MessageContainer>
   );
