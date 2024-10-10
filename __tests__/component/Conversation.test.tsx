@@ -3,6 +3,19 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Conversation from '../../chat-components/Conversation';
 import ConversationList from '../../chat-components/ConversationList';
+import OpenAI from 'openai';
+
+jest.mock('openai', () => {
+  return {
+    OpenAI: jest.fn().mockImplementation(() => ({
+      completions: {
+        create: jest.fn().mockResolvedValue({
+          choices: [{ text: 'Mocked completion response' }]
+        })
+      }
+    }))
+  };
+});
 
 const messages = [
   { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
@@ -16,7 +29,6 @@ test('renders author messages with correct styles', async () => {
   expect(authorMessage).toHaveStyle('text-align: right');
   expect(authorMessage).toHaveStyle('background-color: #e0f7fa');
 });
-
 test('renders conversation with navigation and selection', async () => {
   const messages = [
     { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
@@ -79,7 +91,7 @@ test('renders conversation list', () => {
     { id: '1', content: 'Conversation 1', author: 'User1', timestamp: new Date().toISOString(), parentId: null },
     { id: '2', content: 'Conversation 2', author: 'User2', timestamp: new Date().toISOString(), parentId: null },
   ];
-  render(<ConversationList conversations={conversations} />);
+  render(<ConversationList conversations={conversations} onConversationClick={() => {}} />);
   expect(screen.getByText('Conversation 1 - User1')).toBeInTheDocument();
   expect(screen.getByText('Conversation 2 - User2')).toBeInTheDocument();
 });

@@ -5,6 +5,7 @@ import { User } from './User';
 import { Conversation } from './Conversation';
 
 class Message extends Model {}
+
 Message.init({
   id: {
     type: DataTypes.INTEGER,
@@ -22,7 +23,7 @@ Message.init({
     type: DataTypes.INTEGER,
     allowNull: true,
     references: {
-      model: 'Messages', // self-reference
+      model: 'Messages',
       key: 'id',
     },
   },
@@ -35,6 +36,14 @@ Message.init({
   },
   content: {
     type: DataTypes.TEXT,
+  },
+  model: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  temperature: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
   },
   timestamp: {
     type: DataTypes.DATE,

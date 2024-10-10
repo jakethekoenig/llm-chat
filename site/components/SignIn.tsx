@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import '../App.css'; // Ensure the CSS file is imported
 
 const SignIn: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -21,14 +22,14 @@ const SignIn: React.FC = () => {
       }
       localStorage.setItem('token', data.token);
       setError('');
-      // Redirect or update UI as needed
+      window.location.href = '/';
     } catch (err) {
       setError('Invalid credentials');
     }
   };
 
   return (
-    <div>
+    <div className="form-container">
       <h2>Sign In</h2>
       <form onSubmit={handleSignIn}>
         <div>
@@ -47,7 +48,7 @@ const SignIn: React.FC = () => {
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+        {error && <p>{error}</p>}
         <button type="submit">Sign In</button>
       </form>
     </div>
