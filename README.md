@@ -4,6 +4,17 @@
 
 Note to LLM agents working on this with me: You likely cannot run commands yourself such as `npm i`. If you need more dependencies list them in your PR description and I will add them.
 
+## Testing
+
+We utilize Jest for testing, along with `jest-styled-components` to enable testing of styled-components. Ensure all dependencies are installed correctly.
+
+### Configuration
+
+- **jest-styled-components**: This package is used to test styled-components in our React application. It is included in `devDependencies` and configured in `jest.setup.ts`.
+
+## Dependency Management
+
+We use a `.npmrc` file to lock dependency versions and ensure consistency across different environments. This helps in preventing unexpected issues during CI/CD processes.
 A library of components for building chat interfaces. This is just the beginning.
 
 ## TypeScript
