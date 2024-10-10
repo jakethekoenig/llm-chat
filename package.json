@@ -13,8 +13,7 @@
     "build:frontend": "vite build",
     "start:server": "node dist-server/index.js",
     "dev:server": "nodemon --exec ts-node server/index.ts",
-    "dev:frontend": "vite",
-    "docs:build": "documentation build src -f html -o docs"
+    "dev:frontend": "vite"
   },
   "repository": {
     "type": "git",
@@ -74,7 +73,6 @@
     "supertest": "^7.0.0",
     "ts-jest": "^29.2.4",
     "ts-node": "^10.9.1",
-    "typescript": "^4.9.4",
-    "documentation": "^13.2.5"
+    "typescript": "^4.9.4"
   }
 }
