@@ -1,6 +1,6 @@
 // server/helpers/messageHelpers.ts
 import { Message } from '../database/models/Message';
-import 'openai/shims/node'
+import 'openai/shims/node';
 import { OpenAI } from 'openai';
 import { createLogger, transports, format } from 'winston';
 
@@ -14,7 +14,7 @@ const logger = createLogger({
     new transports.Console()
   ]
 });
-
+// Removed duplicate logger declaration
 
 export const addMessage = async (content: string, conversationId: number, parentId: number | null, userId: number) => {
   const message = await Message.create({
