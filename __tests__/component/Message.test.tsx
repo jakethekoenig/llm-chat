@@ -222,22 +222,22 @@ test('renders menu-ed buttons and triggers respective actions', async () => {
 });
 
 test('renders message with right justification and different background for author', () => {
-  renderWithConfig(<Message id="test-id-17" content="Test message" author="Test Author" isAuthor={true} />);
+  renderWithConfig(<Message id="test-id-17" content="Test message" author="Test Author" $isAuthor={true} />);
   const messageContainer = screen.getByTestId('message-container');
   expect(messageContainer).toHaveStyle('text-align: right');
   expect(messageContainer).toHaveStyle('background-color: #e0f7fa');
-  // Ensure isAuthor is not passed to DOM
-  expect(messageContainer).not.toHaveAttribute('isAuthor');
+  // Ensure $isAuthor is not passed to DOM
+  expect(messageContainer).not.toHaveAttribute('$isAuthor');
 });
 
-test('does not pass isAuthor prop to DOM', () => {
-  renderWithConfig(<Message id="test-id-20" content="Another test message" author="AuthorUser" isAuthor={true} />);
+test('does not pass $isAuthor prop to DOM', () => {
+  renderWithConfig(<Message id="test-id-20" content="Another test message" author="AuthorUser" $isAuthor={true} />);
   const messageContainer = screen.getByTestId('message-container');
-  expect(messageContainer).not.toHaveAttribute('isAuthor');
+  expect(messageContainer).not.toHaveAttribute('$isAuthor');
 });
 
 test('does not pass transient props to DOM elements', () => {
-  renderWithConfig(<Message id="test-id-19" content="Test message" isAuthor={true} />);
+  renderWithConfig(<Message id="test-id-19" content="Test message" $isAuthor={true} />);
   const messageContainer = screen.getByTestId('message-container');
   expect(messageContainer).not.toHaveAttribute('$isAuthor');
 });

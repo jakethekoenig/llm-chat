@@ -10,7 +10,7 @@ interface MessageProps extends MessageType {
   hasSiblings?: boolean;
   currentIndex?: number;
   totalSiblings?: number;
-  isAuthor?: boolean; // Retain for logic
+  $isAuthor?: boolean; // Marked as transient prop
 
   // Event handlers
   onCopy?: () => void;
@@ -38,7 +38,7 @@ const MessageContainer = styled.div.attrs<{ 'data-testid': string }>(props => ({
   margin: 8px 0;
   border-radius: 8px;
   background-color: ${props => props.$isAuthor ? '#e0f7fa' : (props.theme.mode === 'light' ? '#FFFFFF' : '#333333')}; 
-  /**
+  /*
    * The `$isAuthor` prop is a transient prop used by styled-components to apply conditional styling
    * without passing the prop to the underlying DOM element. This prevents React from issuing warnings
    * about unrecognized props on DOM elements.
@@ -66,7 +66,7 @@ const ButtonContainer = styled.div`
 `;
 
 const Message: React.FC<MessageProps> = ({ renderers = [], currentIndex = 0, totalSiblings = 0, ...props }) => {
-  const { isAuthor, content, author, timestamp, buttons, onCopy, onShare, onDelete, onEdit, onClick, onPrev, onNext, hasSiblings, ...filteredProps } = props;
+  const { $isAuthor, content, author, timestamp, buttons, onCopy, onShare, onDelete, onEdit, onClick, onPrev, onNext, hasSiblings, ...filteredProps } = props;
   const globalConfig = useMessageConfig();
   const [displayedContent, setDisplayedContent] = useState<string>('');
   const isMountedRef = useRef(true);
