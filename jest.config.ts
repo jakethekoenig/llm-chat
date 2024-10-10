@@ -21,5 +21,5 @@ export default {
       functions: 87,  // Adjusted to match current coverage
     },
   },
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'], // Add this line
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'], // Ensure correct path
 };

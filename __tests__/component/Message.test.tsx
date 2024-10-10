@@ -231,5 +231,5 @@ test('renders message with right justification and different background for auth
 test('does not pass isAuthor prop to DOM element', () => {
   renderWithConfig(<Message id="test-id-18" content="Test message" author="Test Author" isAuthor={true} />);
   const messageContainer = screen.getByTestId('message-container');
-  expect(messageContainer).not.toHaveAttribute('isauthor');
+  expect(messageContainer).not.toHaveAttribute('isAuthor');
 });
