@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Message from './Message';
-import NewMessage from './NewMessage'; // Add this import at the top
+import NewMessage from './NewMessage';
 import { Message as MessageType } from './types/Message';
 
 interface ConversationProps {
