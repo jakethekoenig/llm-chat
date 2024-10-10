@@ -40,7 +40,7 @@ export const authenticateToken = (req: express.Request, res: express.Response, n
 };
 
 // Sign-in route
-app.post('/signin', async (req: express.Request, res: express.Response) => {
+app.post('/api/signin', async (req: express.Request, res: express.Response) => {
   const { username, password } = req.body;
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password are required' });
@@ -59,7 +59,7 @@ app.post('/signin', async (req: express.Request, res: express.Response) => {
 });
 
 // Register route
-app.post('/register', async (req: express.Request, res: express.Response) => {
+app.post('/api/register', async (req: express.Request, res: express.Response) => {
   const { username, email, password } = req.body;
   if (!username || !email || !password) {
     return res.status(400).json({ error: 'Username, email, and password are required' });
@@ -79,7 +79,7 @@ app.post('/register', async (req: express.Request, res: express.Response) => {
 });
 
 // Add message endpoint with validation
-app.post('/add_message', authenticateToken, [
+app.post('/api/add_message', authenticateToken, [
   body('content').notEmpty().withMessage('Content is required'),
   body('conversationId').isInt().withMessage('Conversation ID must be an integer'),
   body('parentId').optional().isInt().withMessage('Parent ID must be an integer')
@@ -101,7 +101,7 @@ app.post('/add_message', authenticateToken, [
 });
 
 // Get completion for message endpoint with validation
-app.post('/get_completion_for_message', authenticateToken, [
+app.post('/api/get_completion_for_message', authenticateToken, [
   body('messageId').isInt().withMessage('Message ID must be an integer'),
   body('model').notEmpty().withMessage('Model is required'),
   body('temperature').isFloat().withMessage('Temperature must be a float')
