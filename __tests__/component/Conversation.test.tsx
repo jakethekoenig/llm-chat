@@ -81,7 +81,7 @@ test('renders conversation with recursive navigation and selection', () => {
     { id: '5', content: 'What about you?', author: 'User2', timestamp: new Date().toISOString(), parentId: '2' },
     { id: '6', content: 'I am doing well!', author: 'User', timestamp: new Date().toISOString(), parentId: '3' },
   ];
-  render(<Conversation messages={messages} author="User" />);
+  render(<Conversation messages={messages} author="User" onSubmit={mockOnSubmit} />);
   expect(screen.getByText('Hello, world!')).toBeInTheDocument();
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
   fireEvent.click(screen.getAllByText('>')[0]);
