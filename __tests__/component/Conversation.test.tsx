@@ -138,5 +138,7 @@ test('passes isAuthor prop correctly to Message components', () => {
   const userMessage = screen.getByText('Hello from User').parentElement?.parentElement;
   const user2Message = screen.getByText('Hello from User2').parentElement?.parentElement;
   expect(userMessage).toHaveStyle('text-align: right');
+  expect(userMessage).toHaveStyle('background-color: #e0f7fa');
   expect(user2Message).toHaveStyle('text-align: left');
+  expect(user2Message).toHaveStyle('background-color: #fff');
 });

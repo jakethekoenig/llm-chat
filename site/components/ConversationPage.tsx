@@ -55,7 +55,7 @@ const ConversationPage: React.FC = () => {
   return (
     <div>
       <h2>Conversation</h2>
-      <Conversation messages={messages} onSubmit={handleNewMessageSubmit} />
+      <Conversation messages={messages} onSubmit={handleNewMessageSubmit} author="User" />
     </div>
   );
 }

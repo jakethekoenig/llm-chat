@@ -55,19 +55,6 @@ const MessageDemo = () => {
     { id: '2', content: 'Conversation 2', author: 'User2', timestamp: new Date().toISOString(), parentId: null },
   ];
 
-  const handleNewMessageSubmit = async function* (message: string): AsyncIterable<string> {
-    // Simulate async message processing
-    const content = [
-      `You typed: ${message}\n`,
-      'Processing...\n',
-      'Done!\n'
-    ];
-    for (const chunk of content) {
-      yield chunk;
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-  };
-
   return (
     <MessageConfigProvider config={{ buttons: { copy: 'enabled', share: 'enabled', delete: 'enabled', edit: 'enabled' }, theme: { primaryColor: '#007BFF', secondaryColor: '#6C757D', mode: 'light' } }}>
       <div>
@@ -81,7 +68,6 @@ const MessageDemo = () => {
           <Message id="2" content="No buttons example" author="Jane Doe" timestamp={new Date().toISOString()} buttons={{ copy: 'disabled', share: 'disabled', delete: 'disabled', edit: 'disabled' }} />
           <button onClick={() => setStreamingContent(startStreaming())}>Start Streaming</button>
           {streamingContent && <Message id="3" content={streamingContent} author="Streamer" timestamp={new Date().toISOString()} renderers={renderers} buttons={{ copy: 'enabled', share: 'menu-ed', delete: 'menu-ed', edit: 'menu-ed' }} />}
-          <NewMessage onSubmit={handleNewMessageSubmit} />
         </>
       )}
       {tab === 'conversation' && <Conversation messages={messages} author="User" />}
