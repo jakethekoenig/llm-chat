@@ -14,7 +14,7 @@ Conversation.init({
   title: {
     type: DataTypes.STRING,
   },
-  user_id: { // Add this block
+  user_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
   },

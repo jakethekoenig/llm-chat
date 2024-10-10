@@ -9,22 +9,22 @@ interface ConversationProps {
 
 const Conversation: React.FC<ConversationProps> = ({ messages, author }) => {
   // TODO: Refactor messages to be a map
-  const getChildren = (messages: MessageType[], parentId: string | null): MessageType[] => {
-    return messages.filter(message => message.parentId === parentId);
+  const getChildren = (_messages: MessageType[], parentId: string | null): MessageType[] => {
+    return _messages.filter(message => message.parentId === parentId);
   }
 
-  const getMessage = (messages: MessageType[], id: string): MessageType | null => {
-    return messages.find(message => message.id === id) || null;
+  const getMessage = (_messages: MessageType[], id: string): MessageType | null => {
+    return _messages.find(message => message.id === id) || null;
   }
   const [selectedChildIndex, setSelectedChildIndex] = useState<{ [key: string]: string }>({});
 
 
-  const setChildren = () => {
+  const setChildren = (_messages: MessageType[]) => {
      setSelectedChildIndex(prevState => {
         const newState = { ...prevState };
-        for (const message of messages) {
+        for (const message of _messages) {
           if (newState[message.id] === undefined) {
-            const children = getChildren(messages, message.id);
+            const children = getChildren(_messages, message.id);
             if (children.length > 0) {
               newState[message.id] = children[0].id;
             }
@@ -35,8 +35,8 @@ const Conversation: React.FC<ConversationProps> = ({ messages, author }) => {
   }
 
   useEffect(() => {
-    setChildren();
-  }, []);
+    setChildren(messages);
+  }, [messages]);
 
   const incrementSelectedChildIndex = (id: string | null | undefined) => {
       if (id != null && id != undefined)
@@ -70,31 +70,34 @@ const Conversation: React.FC<ConversationProps> = ({ messages, author }) => {
           });
   }
 
-  const renderMessages = (messages: MessageType[], currentId: string | null = null, parentId: string | null = null): JSX.Element => {
+  const renderMessages = (_messages: MessageType[], currentId: string | null = null, parentId: string | null = null): JSX.Element => {
     if (currentId === null) {
       return <></>;
     }
-    const childMessages = getChildren(messages, parentId);
+    const childMessages = getChildren(_messages, parentId);
     const currentIndex = childMessages.findIndex(message => message.id === currentId);
     const totalSiblings = childMessages.length;
-    const currentMessage = getMessage(messages, currentId) as MessageType;
-    const childrenHaveSiblings = getChildren(messages, currentId).length > 1;
-
-    return (<>
-        <Message
-          content={currentMessage.content}
-          author={currentMessage.author}
-          timestamp={currentMessage.timestamp}
-          id={currentMessage.id}
-          onPrev={() => decrementSelectedChildIndex(currentMessage.parentId)}
-          onNext={() => incrementSelectedChildIndex(currentMessage.parentId)}
-          hasSiblings={totalSiblings > 1}
-          currentIndex={currentIndex}
-          totalSiblings={totalSiblings}
-          $isAuthor={currentMessage.author === author}
-        />
-        {renderMessages(messages, selectedChildIndex[currentId], currentId)}
-    </>);
+    const currentMessage = getMessage(_messages, currentId) as MessageType;
+    const childrenHaveSiblings = getChildren(_messages, currentId).length > 1;
+    if (!currentMessage) {
+      return (<></>);
+    } else {
+        return (<>
+            <Message
+              content={currentMessage.content}
+              author={currentMessage.author}
+              timestamp={currentMessage.timestamp}
+              id={currentMessage.id}
+              onPrev={() => decrementSelectedChildIndex(currentMessage.parentId)}
+              onNext={() => incrementSelectedChildIndex(currentMessage.parentId)}
+              hasSiblings={totalSiblings > 1}
+              currentIndex={currentIndex}
+              totalSiblings={totalSiblings}
+              $isAuthor={currentMessage.author === author}
+            />
+            {renderMessages(_messages, selectedChildIndex[currentId], currentId)}
+        </>);
+    }
   };
 
   // TODO: Enforce that there is always at least one parent

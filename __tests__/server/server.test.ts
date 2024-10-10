@@ -11,10 +11,12 @@ import 'jest-styled-components';
 jest.mock('openai', () => {
   return {
     OpenAI: jest.fn().mockImplementation(() => ({
-      completions: {
-        create: jest.fn().mockResolvedValue({
-          choices: [{ text: 'Mocked completion response' }]
-        })
+      chat: {
+        completions: {
+          create: jest.fn().mockResolvedValue({
+            choices: [{message: { role: "assistant", content: 'Mocked completion response' }}]
+          })
+        }
       }
     }))
   };
@@ -209,6 +211,62 @@ describe('Server Tests', () => {
           .set('Authorization', `Bearer ${token}`)
           .send({ messageId: 'invalid', model: '', temperature: 'invalid' });
         expect(response.status).toBe(400);
+      });
+
+      it('should create a new conversation with valid data', async () => {
+        const response = await request(app)
+          .post('/api/create_conversation')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ initialMessage: 'Hello, world!', model: 'gpt-4o', temperature: 0.0 });
+        expect(response.status).toBe(201);
+        expect(response.body.conversationId).toBeDefined();
+        expect(response.body.initialMessageId).toBeDefined();
+        expect(response.body.completionMessageId).toBeDefined();
+      });
+
+      it('should return 400 for missing initialMessage', async () => {
+        const response = await request(app)
+          .post('/api/create_conversation')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ model: 'gpt-4o', temperature: 0.0 });
+        expect(response.status).toBe(400);
+        expect(response.body.errors).toBeDefined();
+        expect(response.body.errors[0].msg).toBe('Initial message is required');
+      });
+
+      it('should return 400 for missing model', async () => {
+        const response = await request(app)
+          .post('/api/create_conversation')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ initialMessage: 'Hello, world!', temperature: 0.0 });
+        expect(response.status).toBe(400);
+        expect(response.body.errors).toBeDefined();
+        expect(response.body.errors[0].msg).toBe('Model is required');
+      });
+
+      it('should return 400 for invalid temperature', async () => {
+        const response = await request(app)
+          .post('/api/create_conversation')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ initialMessage: 'Hello, world!', model: 'gpt-4o', temperature: 'invalid' });
+        expect(response.status).toBe(400);
+        expect(response.body.errors).toBeDefined();
+        expect(response.body.errors[0].msg).toBe('Temperature must be a float');
+      });
+
+      it('should handle server errors gracefully', async () => {
+        // Mock Conversation.create to throw an error
+        jest.spyOn(Conversation, 'create').mockImplementationOnce(() => {
+          throw new Error('Database error');
+        });
+        
+        const response = await request(app)
+          .post('/api/create_conversation')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ initialMessage: 'Hello, world!', model: 'gpt-4o', temperature: 0.0 });
+        
+        expect(response.status).toBe(500);
+        expect(response.body.error).toBe('Internal server error');
       });
     });
   });

@@ -15,9 +15,6 @@ const logger = createLogger({
   ]
 });
 
-interface CompletionResponse {
-  choices: { text: string }[];
-}
 
 export const addMessage = async (content: string, conversationId: number, parentId: number | null, userId: number) => {
   const message = await Message.create({
@@ -49,18 +46,19 @@ export const generateCompletion = async (messageId: number, model: string, tempe
   const openai = new OpenAI({ apiKey: apiKey});
 
   try {
-    const response: CompletionResponse = await openai.completions.create({
+    const response = await openai.chat.completions.create({
       model,
-      prompt: content,
+      messages: [{"role": "user", "content": content}],
       temperature,
     });
 
-    const completionContent = response.choices[0].text || '';
+    const completionContent = response.choices[0].message?.content || '';
+    console.log('completionContent:', completionContent);
     const completionMessage: Message = await Message.create({
       content: completionContent,
       parent_id: messageId,
-      conversation_id: parentMessage.get('conversation_id'),
-      user_id: parentMessage.get('user_id'),
+      conversation_id: parentMessage.get('conversation_id') as number,
+      user_id: parentMessage.get('user_id') as number,
       model,
       temperature,
     });
