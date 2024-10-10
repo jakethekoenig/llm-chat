@@ -38,11 +38,6 @@ const MessageContainer = styled.div.attrs<{ 'data-testid': string }>(props => ({
   margin: 8px 0;
   border-radius: 8px;
   background-color: ${props => props.$isAuthor ? '#e0f7fa' : (props.theme.mode === 'light' ? '#FFFFFF' : '#333333')}; 
-  /*
-   * The `$isAuthor` prop is a transient prop used by styled-components to apply conditional styling
-   * without passing the prop to the underlying DOM element. This prevents React from issuing warnings
-   * about unrecognized props on DOM elements.
-   */
   color: ${props => props.theme.mode === 'light' ? '#000000' : '#FFFFFF'};
   text-align: ${props => props.$isAuthor ? 'right' : 'left'}; // Right-justify if $isAuthor
 `;
@@ -155,7 +150,7 @@ const Message: React.FC<MessageProps> = ({ renderers = [], currentIndex = 0, tot
   };
 
   return (
-    <MessageContainer theme={globalConfig.theme} data-testid="message-container" onClick={onClick} {...filteredProps} $isAuthor={isAuthor}>
+    <MessageContainer theme={globalConfig.theme} data-testid="message-container" onClick={onClick} {...filteredProps} $isAuthor={$isAuthor}>
       <MessageContent>{renderContent(displayedContent)}</MessageContent>
       {author && <><br></br><MessageAuthor>{author}</MessageAuthor></>}
       {timestamp && <MessageTimestamp>{new Date(timestamp).toLocaleString()}</MessageTimestamp>}

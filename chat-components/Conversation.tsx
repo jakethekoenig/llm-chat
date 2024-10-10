@@ -91,7 +91,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages, author }) => {
           hasSiblings={totalSiblings > 1}
           currentIndex={currentIndex}
           totalSiblings={totalSiblings}
-          isAuthor={currentMessage.author === author}
+          $isAuthor={currentMessage.author === author}
         />
         {renderMessages(messages, selectedChildIndex[currentId], currentId)}
     </>);

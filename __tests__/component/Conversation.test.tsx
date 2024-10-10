@@ -25,9 +25,9 @@ const messages = [
 
 test('renders author messages with correct styles', async () => {
   render(<Conversation messages={messages} author="User" />);
-  const authorMessage = await screen.findByTestId('message-container');
-  expect(authorMessage).toHaveStyle('text-align: right');
-  expect(authorMessage).toHaveStyle('background-color: #e0f7fa');
+  const authorMessage = await screen.findAllByTestId('message-container');
+  expect(authorMessage[0]).toHaveStyle('text-align: right');
+  expect(authorMessage[0]).toHaveStyle('background-color: #e0f7fa');
 });
 test('renders conversation with navigation and selection', async () => {
   const messages = [
@@ -116,8 +116,8 @@ test('passes isAuthor prop correctly to Message components', () => {
     { id: '2', content: 'Hello from User2', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
   ];
   render(<Conversation messages={messages} author="User" />);
-  const userMessage = screen.getByText('Hello from User').parentElement;
-  const user2Message = screen.getByText('Hello from User2').parentElement;
+  const userMessage = screen.getByText('Hello from User').parentElement?.parentElement;
+  const user2Message = screen.getByText('Hello from User2').parentElement?.parentElement;
   expect(userMessage).toHaveStyle('text-align: right');
   expect(user2Message).toHaveStyle('text-align: left');
 });
