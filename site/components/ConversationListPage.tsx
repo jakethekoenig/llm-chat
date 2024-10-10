@@ -26,7 +26,6 @@ const ConversationListPage: React.FC = () => {
   const [model, setModel] = useState('gpt-4o');
   const [temperature, setTemperature] = useState(0.0);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const handleConversationClick = (conversationId: string) => {
     navigate(`/conversations/${conversationId}`);
