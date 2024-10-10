@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Conversation from '../../chat-components/Conversation';
 import { Message as MessageType } from '../../chat-components/types/Message';
+import '../App.css';
 
 const ConversationPage: React.FC = () => {
   const { conversationId } = useParams<{ conversationId: string }>();

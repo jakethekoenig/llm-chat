@@ -2,7 +2,6 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import bodyParser from 'body-parser';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
 import { User } from './database/models/User';
 import { Op } from 'sequelize';
@@ -10,16 +9,9 @@ import { Conversation } from './database/models/Conversation';
 import { Message } from './database/models/Message';
 import { addMessage, generateCompletion } from './helpers/messageHelpers';
 import { body, validationResult } from 'express-validator';
-dotenv.config();
 
 const app = express();
 const SECRET_KEY = process.env.SECRET_KEY || 'fallback-secret-key';
-
-// Custom logging middleware
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  next();
-});
 
 app.use(bodyParser.json());
 app.use(cors());
@@ -31,14 +23,16 @@ export const authenticateToken = (req: express.Request, res: express.Response, n
   if (!token) return res.sendStatus(401);
 
   jwt.verify(token, SECRET_KEY as jwt.Secret, {}, (err: jwt.VerifyErrors | null, decoded: string | jwt.JwtPayload | undefined) => {
-    if (err) return res.sendStatus(403);
+    if (err || !decoded) {
+      return res.status(403).json({ message: 'Invalid or expired token' });
+    }
     (req as any).user = decoded;
     next();
   });
 };
 
 // Sign-in route
-app.post('/signin', async (req: express.Request, res: express.Response) => {
+app.post('/api/signin', async (req: express.Request, res: express.Response) => {
   const { username, password } = req.body;
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password are required' });
@@ -57,7 +51,7 @@ app.post('/signin', async (req: express.Request, res: express.Response) => {
 });
 
 // Register route
-app.post('/register', async (req: express.Request, res: express.Response) => {
+app.post('/api/register', async (req: express.Request, res: express.Response) => {
   const { username, email, password } = req.body;
   if (!username || !email || !password) {
     return res.status(400).json({ error: 'Username, email, and password are required' });
@@ -71,13 +65,12 @@ app.post('/register', async (req: express.Request, res: express.Response) => {
     const newUser = await User.create({ username, email, hashed_password: hashedPassword });
     res.status(201).json({ id: (newUser as any).get('id'), username: (newUser as any).username, email: (newUser as any).email });
   } catch (error) {
-    console.log(error);
     res.status(400).json({ error: 'Error creating user' });
   }
 });
 
 // Add message endpoint with validation
-app.post('/add_message', authenticateToken, [
+app.post('/api/add_message', authenticateToken, [
   body('content').notEmpty().withMessage('Content is required'),
   body('conversationId').isInt().withMessage('Conversation ID must be an integer'),
   body('parentId').optional().isInt().withMessage('Parent ID must be an integer')
@@ -99,7 +92,7 @@ app.post('/add_message', authenticateToken, [
 });
 
 // Get completion for message endpoint with validation
-app.post('/get_completion_for_message', authenticateToken, [
+app.post('/api/get_completion_for_message', authenticateToken, [
   body('messageId').isInt().withMessage('Message ID must be an integer'),
   body('model').notEmpty().withMessage('Model is required'),
   body('temperature').isFloat().withMessage('Temperature must be a float')
@@ -113,14 +106,14 @@ app.post('/get_completion_for_message', authenticateToken, [
 
   try {
     const completionMessage = await generateCompletion(messageId, model, temperature);
-    res.status(201).json({ id: completionMessage.get('id') });
+    res.status(201).json({ id: completionMessage.get('id'), content: completionMessage.get('content')});
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // Streaming endpoint with validation
-app.post('/get_completion', authenticateToken, [
+app.post('/api/get_completion', authenticateToken, [
   body('model').notEmpty().withMessage('Model is required'),
   body('parentId').isInt().withMessage('Parent ID must be an integer'),
   body('temperature').isFloat().withMessage('Temperature must be a float')
@@ -138,7 +131,7 @@ app.post('/get_completion', authenticateToken, [
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    const streamData = JSON.stringify({ id: completionMessage.get('id') });
+    const streamData = JSON.stringify({ id: completionMessage.get('id'), content: completionMessage.get('content')});
     res.write(`data: ${streamData}\n\n`);
 
     // Placeholder for actual streaming logic

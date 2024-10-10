@@ -3,6 +3,19 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Conversation from '../../chat-components/Conversation';
 import ConversationList from '../../chat-components/ConversationList';
+import OpenAI from 'openai';
+
+jest.mock('openai', () => {
+  return {
+    OpenAI: jest.fn().mockImplementation(() => ({
+      completions: {
+        create: jest.fn().mockResolvedValue({
+          choices: [{ text: 'Mocked completion response' }]
+        })
+      }
+    }))
+  };
+});
 
 const messages = [
   { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
@@ -14,7 +27,6 @@ test('renders conversation messages', () => {
   render(<Conversation messages={messages} />);
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
 });
-
 test('renders conversation with navigation and selection', async () => {
   const messages = [
     { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },

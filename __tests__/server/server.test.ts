@@ -5,6 +5,20 @@ import { sequelize } from '../../server/database/models';
 import { up, down } from '../../server/database/seeders/20240827043208-seed-test-data';
 import { Conversation } from '../../server/database/models/Conversation';
 import { Message } from '../../server/database/models/Message';
+import { OpenAI } from 'openai';
+
+jest.mock('openai', () => {
+  return {
+    OpenAI: jest.fn().mockImplementation(() => ({
+      completions: {
+        create: jest.fn().mockResolvedValue({
+          choices: [{ text: 'Mocked completion response' }]
+        })
+      }
+    }))
+  };
+});
+process.env.OPENAI_API_KEY = 'test';
 
 beforeAll(async () => {
   await sequelize.sequelize.sync({ force: true });
@@ -17,7 +31,7 @@ afterAll(async () => {
 });
 
 // Streaming endpoint
-app.get('/get_completion', authenticateToken, (req: express.Request, res: express.Response) => {
+app.get('/api/get_completion', authenticateToken, (req: express.Request, res: express.Response) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
@@ -43,7 +57,7 @@ app.get('/get_completion', authenticateToken, (req: express.Request, res: expres
 describe('Server Tests', () => {
   it('should sign in and return a token', async () => {
     const response = await request(app)
-      .post('/signin')
+      .post('/api/signin')
       .send({ username: 'user1', password: 'password1' });
     expect(response.status).toBe(200);
     expect(response.body.token).toBeDefined();
@@ -51,19 +65,19 @@ describe('Server Tests', () => {
 
   it('should return 401 for invalid credentials', async () => {
     const response = await request(app)
-      .post('/signin')
+      .post('/api/signin')
       .send({ username: 'user1', password: 'wrongpassword' });
     expect(response.status).toBe(401);
   });
 
   it('should stream data for authenticated users', async () => {
     const signInResponse = await request(app)
-      .post('/signin')
+      .post('/api/signin')
       .send({ username: 'user1', password: 'password1' });
     const token = signInResponse.body.token;
 
     const response = await request(app)
-      .get('/get_completion')
+      .get('/api/get_completion')
       .set('Authorization', `Bearer ${token}`)
       .expect('Content-Type', /text\/event-stream/)
       .expect(200);
@@ -74,13 +88,13 @@ describe('Server Tests', () => {
   });
 
   it('should return 401 for unauthenticated users', async () => {
-    const response = await request(app).get('/get_completion');
+    const response = await request(app).get('/api/get_completion');
     expect(response.status).toBe(401);
   });
 
   it('should return 403 for invalid token', async () => {
     const signInResponse = await request(app)
-      .post('/signin')
+      .post('/api/signin')
       .send({ username: 'user1', password: 'password1' });
     const token = signInResponse.body.token;
 
@@ -88,18 +102,45 @@ describe('Server Tests', () => {
     const invalidToken = token ? token.slice(0, -1) + 'x' : 'invalidToken';
 
     const response = await request(app)
-      .get('/get_completion')
+      .get('/api/get_completion')
       .set('Authorization', `Bearer ${invalidToken}`);
     expect(response.status).toBe(403);
+  });
+
+  it('should generate a completion for a valid message', async () => {
+    const signInResponse = await request(app)
+      .post('/api/signin')
+      .send({ username: 'user1', password: 'password1' });
+    const token = signInResponse.body.token;
+
+    const response = await request(app)
+      .post('/api/get_completion_for_message')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ messageId: 1, model: 'test-model', temperature: 0.5 });
+    expect(response.status).toBe(201);
+    expect(response.body.id).toBeDefined();
+    expect(response.body.content).toBe('Mocked completion response');
+  });
+
+  it('should return 400 for invalid messageId', async () => {
+    const signInResponse = await request(app)
+      .post('/api/signin')
+      .send({ username: 'user1', password: 'password1' });
+    const token = signInResponse.body.token;
+
+    const response = await request(app)
+      .post('/api/get_completion_for_message')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ messageId: 'invalid', model: 'test-model', temperature: 0.5 });
+    expect(response.status).toBe(400);
   });
 
   // Add new test cases for conversations and messages routes
   describe('Conversations and Messages Routes', () => {
     let token: string;
-
     beforeAll(async () => {
       const signInResponse = await request(app)
-        .post('/signin')
+        .post('/api/signin')
         .send({ username: 'user1', password: 'password1' });
       token = signInResponse.body.token;
     });
@@ -137,7 +178,7 @@ describe('Server Tests', () => {
     describe('Add Message and Get Completion for Message Endpoints', () => {
       it('should add a new message', async () => {
         const response = await request(app)
-          .post('/add_message')
+          .post('/api/add_message')
           .set('Authorization', `Bearer ${token}`)
           .send({ content: 'New Test Message', conversationId: 1, parentId: 1 });
         expect(response.status).toBe(201);
@@ -146,7 +187,7 @@ describe('Server Tests', () => {
 
       it('should return 400 for invalid add_message request', async () => {
         const response = await request(app)
-          .post('/add_message')
+          .post('/api/add_message')
           .set('Authorization', `Bearer ${token}`)
           .send({ content: '', conversationId: 'invalid', parentId: null });
         expect(response.status).toBe(400);
@@ -154,7 +195,7 @@ describe('Server Tests', () => {
 
       it('should get completion for a message', async () => {
         const response = await request(app)
-          .post('/get_completion_for_message')
+          .post('/api/get_completion_for_message')
           .set('Authorization', `Bearer ${token}`)
           .send({ messageId: 1, model: 'test-model', temperature: 0.5 });
         expect(response.status).toBe(201);
@@ -163,7 +204,7 @@ describe('Server Tests', () => {
 
       it('should return 400 for invalid get_completion_for_message request', async () => {
         const response = await request(app)
-          .post('/get_completion_for_message')
+          .post('/api/get_completion_for_message')
           .set('Authorization', `Bearer ${token}`)
           .send({ messageId: 'invalid', model: '', temperature: 'invalid' });
         expect(response.status).toBe(400);

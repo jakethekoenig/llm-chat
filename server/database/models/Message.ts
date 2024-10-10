@@ -23,7 +23,7 @@ Message.init({
     type: DataTypes.INTEGER,
     allowNull: true,
     references: {
-      model: 'Messages', // self-reference
+      model: 'Messages',
       key: 'id',
     },
   },
