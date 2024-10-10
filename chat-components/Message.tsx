@@ -22,7 +22,7 @@ interface MessageProps extends MessageType {
   onNext?: () => void;
 }
 
-const NavigationButtons = ({ onPrev, onNext, hasSiblings, currentIndex = 0, totalSiblings = 0 }: { onPrev: () => void, onNext: () => void, hasSiblings: boolean | undefined, currentIndex: number, totalSiblings: number }) => (
+const NavigationButtons = ({ onPrev, onNext, hasSiblings, currentIndex, totalSiblings }: { onPrev: () => void, onNext: () => void, hasSiblings: boolean | undefined, currentIndex: number, totalSiblings: number }) => (
   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
     {hasSiblings && <Button onClick={onPrev} disabled={currentIndex === 0}>&lt;</Button>}
     {hasSiblings && <span>{currentIndex + 1} / {totalSiblings}</span>}
@@ -38,7 +38,11 @@ const MessageContainer = styled.div.attrs<{ 'data-testid': string }>(props => ({
   margin: 8px 0;
   border-radius: 8px;
   background-color: ${props => props.$isAuthor ? '#e0f7fa' : (props.theme.mode === 'light' ? '#FFFFFF' : '#333333')}; 
-  // Using $isAuthor as a transient prop to prevent it from being passed to the DOM
+  /**
+   * The `$isAuthor` prop is a transient prop used by styled-components to apply conditional styling
+   * without passing the prop to the underlying DOM element. This prevents React from issuing warnings
+   * about unrecognized props on DOM elements.
+   */
   color: ${props => props.theme.mode === 'light' ? '#000000' : '#FFFFFF'};
   text-align: ${props => props.$isAuthor ? 'right' : 'left'}; // Right-justify if $isAuthor
 `;
@@ -61,8 +65,8 @@ const ButtonContainer = styled.div`
   gap: 8px;
 `;
 
-const Message: React.FC<MessageProps> = (props) => {
-  const { isAuthor, content, author, timestamp, buttons, onCopy, onShare, onDelete, onEdit, onClick, onPrev, onNext, hasSiblings, currentIndex, totalSiblings, renderers, ...filteredProps } = props;
+const Message: React.FC<MessageProps> = ({ renderers = [], currentIndex = 0, totalSiblings = 0, ...props }) => {
+  const { isAuthor, content, author, timestamp, buttons, onCopy, onShare, onDelete, onEdit, onClick, onPrev, onNext, hasSiblings, ...filteredProps } = props;
   const globalConfig = useMessageConfig();
   const [displayedContent, setDisplayedContent] = useState<string>('');
   const isMountedRef = useRef(true);
@@ -112,7 +116,7 @@ const Message: React.FC<MessageProps> = (props) => {
     while (start < content.length) {
       let matchedRenderer = null;
       let startSeq: [number, number] | null = null;
-      for (const renderer of renderers) {
+      for (const renderer of renderers || []) {
         startSeq = renderer.detectStartSequence(content, start) as [number, number] | null;
         if (startSeq) {
           matchedRenderer = renderer;

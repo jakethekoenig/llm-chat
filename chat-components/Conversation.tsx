@@ -101,7 +101,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages, author }) => {
   const parentMessages = getChildren(messages, null);
   const hasSiblings = parentMessages.length > 1;
 
-  return <div>{renderMessages(messages, parentMessages[0]?.id, null)}</div>;
+  return <div>{renderMessages(messages, parentMessages[0]?.id || '', null)}</div>;
 };
 
 export default Conversation;
