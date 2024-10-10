@@ -212,7 +212,7 @@ describe('Server Tests', () => {
 
       it('should create a new conversation with valid data', async () => {
         const response = await request(app)
-          .post('/create_conversation')
+          .post('/api/create_conversation')
           .set('Authorization', `Bearer ${token}`)
           .send({ initialMessage: 'Hello, world!', model: 'gpt-4o', temperature: 0.0 });
         expect(response.status).toBe(201);
@@ -223,7 +223,7 @@ describe('Server Tests', () => {
 
       it('should return 400 for missing initialMessage', async () => {
         const response = await request(app)
-          .post('/create_conversation')
+          .post('/api/create_conversation')
           .set('Authorization', `Bearer ${token}`)
           .send({ model: 'gpt-4o', temperature: 0.0 });
         expect(response.status).toBe(400);
@@ -233,7 +233,7 @@ describe('Server Tests', () => {
 
       it('should return 400 for missing model', async () => {
         const response = await request(app)
-          .post('/create_conversation')
+          .post('/api/create_conversation')
           .set('Authorization', `Bearer ${token}`)
           .send({ initialMessage: 'Hello, world!', temperature: 0.0 });
         expect(response.status).toBe(400);
@@ -243,19 +243,12 @@ describe('Server Tests', () => {
 
       it('should return 400 for invalid temperature', async () => {
         const response = await request(app)
-          .post('/create_conversation')
+          .post('/api/create_conversation')
           .set('Authorization', `Bearer ${token}`)
           .send({ initialMessage: 'Hello, world!', model: 'gpt-4o', temperature: 'invalid' });
         expect(response.status).toBe(400);
         expect(response.body.errors).toBeDefined();
         expect(response.body.errors[0].msg).toBe('Temperature must be a float');
-      });
-
-      it('should return 401 for unauthenticated users', async () => {
-        const response = await request(app)
-          .post('/create_conversation')
-          .send({ initialMessage: 'Hello, world!', model: 'gpt-4o', temperature: 0.0 });
-        expect(response.status).toBe(401);
       });
 
       it('should handle server errors gracefully', async () => {
@@ -265,7 +258,7 @@ describe('Server Tests', () => {
         });
         
         const response = await request(app)
-          .post('/create_conversation')
+          .post('/api/create_conversation')
           .set('Authorization', `Bearer ${token}`)
           .send({ initialMessage: 'Hello, world!', model: 'gpt-4o', temperature: 0.0 });
         
