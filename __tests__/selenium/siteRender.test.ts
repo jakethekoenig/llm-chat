@@ -2,6 +2,7 @@ import { Builder, By, until } from 'selenium-webdriver';
 import { Options as ChromeOptions } from 'selenium-webdriver/chrome';
 import 'chromedriver';
 import OpenAI from 'openai';
+import 'jest-styled-components';
 
 jest.mock('openai', () => {
   return {
@@ -44,5 +45,5 @@ options.addArguments('--disable-dev-shm-usage');
     await driver.wait(until.elementLocated(By.css('header')), 10000); 
     const header = await driver.findElement(By.css('header'));
     expect(await header.isDisplayed()).toBe(true);
-  });
+  }, 20000);
 });

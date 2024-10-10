@@ -6,6 +6,7 @@ import { up, down } from '../../server/database/seeders/20240827043208-seed-test
 import { Conversation } from '../../server/database/models/Conversation';
 import { Message } from '../../server/database/models/Message';
 import { OpenAI } from 'openai';
+import 'jest-styled-components';
 
 jest.mock('openai', () => {
   return {
