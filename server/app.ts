@@ -189,7 +189,6 @@ app.get('/api/conversations/:conversationId/messages', authenticateToken, async 
 
 // Create conversation with initial message endpoint
 app.post('/create_conversation', authenticateToken, [
-  body('title').notEmpty().withMessage('Title is required'),
   body('initialMessage').notEmpty().withMessage('Initial message is required'),
   body('model').notEmpty().withMessage('Model is required'),
   body('temperature').isFloat().withMessage('Temperature must be a float')
@@ -199,11 +198,12 @@ app.post('/create_conversation', authenticateToken, [
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { title, initialMessage, model, temperature } = req.body;
+  const { initialMessage, model, temperature } = req.body;
   const userId = (req as any).user.id;
 
   try {
-    const conversation = await Conversation.create({ title, user_id: userId });
+    const defaultTitle = 'New Conversation';
+    const conversation = await Conversation.create({ title: defaultTitle, user_id: userId });
     const message = await addMessage(initialMessage, conversation.get('id') as number, null, userId);
     const completionMessage = await generateCompletion(message.get('id') as number, model, temperature);
     res.status(201).json({ conversationId: conversation.get('id'), initialMessageId: message.get('id'), completionMessageId: completionMessage.get('id') });

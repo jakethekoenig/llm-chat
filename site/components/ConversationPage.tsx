@@ -7,10 +7,9 @@ import '../App.css';
 const ConversationPage: React.FC = () => {
   const { conversationId } = useParams<{ conversationId: string }>();
   const [messages, setMessages] = useState<MessageType[]>([]);
-  const [title, setTitle] = useState('');
   const [initialMessage, setInitialMessage] = useState('');
-  const [model, setModel] = useState('');
-  const [temperature, setTemperature] = useState(0.7);
+  const [model, setModel] = useState('gpt-4o');
+  const [temperature, setTemperature] = useState(0.0);
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -33,7 +32,7 @@ const ConversationPage: React.FC = () => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       },
-      body: JSON.stringify({ title, initialMessage, model, temperature })
+      body: JSON.stringify({ initialMessage, model, temperature })
     });
     const data = await response.json();
     if (response.ok) {
@@ -47,7 +46,6 @@ const ConversationPage: React.FC = () => {
     <div>
       <h2>Conversation</h2>
       <form onSubmit={handleCreateConversation}>
-        <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" required />
         <input type="text" value={initialMessage} onChange={(e) => setInitialMessage(e.target.value)} placeholder="Initial Message" required />
         <input type="text" value={model} onChange={(e) => setModel(e.target.value)} placeholder="Model" required />
         <input type="number" value={temperature} onChange={(e) => setTemperature(parseFloat(e.target.value))} placeholder="Temperature" required />
