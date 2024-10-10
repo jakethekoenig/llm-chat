@@ -1,7 +1,7 @@
 // server/helpers/messageHelpers.ts
-import { Message as MessageModel } from '../database/models/Message';
+import { Message } from '../database/models/Message';
 import 'openai/shims/node'
-import OpenAI from 'openai';
+import { OpenAI } from 'openai';
 import { createLogger, transports, format } from 'winston';
 
 const logger = createLogger({
@@ -15,15 +15,6 @@ const logger = createLogger({
   ]
 });
 
-interface Message {
-  id: number;
-  content: string;
-  conversation_id: number;
-  parent_id: number | null;
-  user_id: number;
-  model?: string;
-  temperature?: number;
-}
 interface CompletionResponse {
   choices: { text: string }[];
 }
@@ -39,9 +30,15 @@ export const addMessage = async (content: string, conversationId: number, parent
 };
 
 export const generateCompletion = async (messageId: number, model: string, temperature: number) => {
-  const parentMessage: MessageModel | null = await MessageModel.findByPk(messageId);
+  const parentMessage: Message | null = await Message.findByPk(messageId);
   if (!parentMessage) {
     throw new Error(`Parent message with ID ${messageId} not found`);
+  }
+
+  const content = parentMessage.get('content') as string;
+
+  if (!content) {
+    throw new Error('Parent message has no content');
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
@@ -49,12 +46,12 @@ export const generateCompletion = async (messageId: number, model: string, tempe
     throw new Error('OpenAI API key is not set');
   }
 
-  const openai = new OpenAI(apiKey);
+  const openai = new OpenAI({ apiKey: apiKey});
 
   try {
     const response: CompletionResponse = await openai.completions.create({
       model,
-      prompt: parentMessage.get('content'),
+      prompt: content,
       temperature,
     });
 
@@ -62,8 +59,8 @@ export const generateCompletion = async (messageId: number, model: string, tempe
     const completionMessage: Message = await Message.create({
       content: completionContent,
       parent_id: messageId,
-      conversation_id: parentMessage.conversation_id,
-      user_id: parentMessage.user_id,
+      conversation_id: parentMessage.get('conversation_id'),
+      user_id: parentMessage.get('user_id'),
       model,
       temperature,
     });

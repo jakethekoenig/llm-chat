@@ -3,17 +3,17 @@ import { Options as ChromeOptions } from 'selenium-webdriver/chrome';
 import 'chromedriver';
 import OpenAI from 'openai';
 
-jest.mock('openai');
-
-const mockOpenAI = {
-  completions: {
-    create: jest.fn().mockResolvedValue({
-      choices: [{ text: 'Mocked completion response' }]
-    })
-  }
-};
-
-OpenAI.mockImplementation(() => mockOpenAI);
+jest.mock('openai', () => {
+  return {
+    OpenAI: jest.fn().mockImplementation(() => ({
+      completions: {
+        create: jest.fn().mockResolvedValue({
+          choices: [{ text: 'Mocked completion response' }]
+        })
+      }
+    }))
+  };
+});
 
 describe('Site Render Tests', () => {
   let driver: any;

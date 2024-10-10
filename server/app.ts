@@ -106,14 +106,14 @@ app.post('/api/get_completion_for_message', authenticateToken, [
 
   try {
     const completionMessage = await generateCompletion(messageId, model, temperature);
-    res.status(201).json({ id: completionMessage.get('id') });
+    res.status(201).json({ id: completionMessage.get('id'), content: completionMessage.get('content')});
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // Streaming endpoint with validation
-app.post('/get_completion', authenticateToken, [
+app.post('/api/get_completion', authenticateToken, [
   body('model').notEmpty().withMessage('Model is required'),
   body('parentId').isInt().withMessage('Parent ID must be an integer'),
   body('temperature').isFloat().withMessage('Temperature must be a float')
@@ -131,7 +131,7 @@ app.post('/get_completion', authenticateToken, [
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    const streamData = JSON.stringify({ id: completionMessage.get('id') });
+    const streamData = JSON.stringify({ id: completionMessage.get('id'), content: completionMessage.get('content')});
     res.write(`data: ${streamData}\n\n`);
 
     // Placeholder for actual streaming logic

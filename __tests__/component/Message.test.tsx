@@ -7,17 +7,17 @@ import { Renderer } from '../../chat-components/renderers/Renderer';
 import { MessageConfigProvider, MessageConfig, defaultConfig } from '../../chat-components/MessageConfigContext';
 import OpenAI from 'openai';
 
-jest.mock('openai');
-
-const mockOpenAI = {
-  completions: {
-    create: jest.fn().mockResolvedValue({
-      choices: [{ text: 'Mocked completion response' }]
-    })
-  }
-};
-
-OpenAI.mockImplementation(() => mockOpenAI);
+jest.mock('openai', () => {
+  return {
+    OpenAI: jest.fn().mockImplementation(() => ({
+      completions: {
+        create: jest.fn().mockResolvedValue({
+          choices: [{ text: 'Mocked completion response' }]
+        })
+      }
+    }))
+  };
+});
 
 beforeAll(() => {
   Object.assign(navigator, {
