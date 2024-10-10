@@ -5,6 +5,22 @@ import { Message as MessageType } from '../../chat-components/types/Message';
 import NewMessage from './NewMessage';
 import '../App.css';
 
+// TODO: Refactor interface so this co-ercion isn't necessary.
+function snakeToCamelCase(obj) {
+  if (typeof obj !== 'object' || obj === null) {
+    return obj;
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(snakeToCamelCase);
+  }
+
+  return Object.keys(obj).reduce((acc, key) => {
+    const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+    acc[camelKey] = snakeToCamelCase(obj[key]);
+    return acc;
+  }, {});
+}
 const ConversationPage: React.FC = () => {
   const { conversationId } = useParams<{ conversationId: string }>();
   const [messages, setMessages] = useState<MessageType[]>([]);
@@ -17,7 +33,7 @@ const ConversationPage: React.FC = () => {
         }
       });
       const data = await response.json();
-      setMessages(data);
+      setMessages(snakeToCamelCase(data));
     };
     fetchMessages();
   }, [conversationId]);

@@ -10,9 +10,19 @@ interface MessageProps extends MessageType {
   hasSiblings?: boolean;
   currentIndex?: number;
   totalSiblings?: number;
+  $isAuthor?: boolean; // Marked as transient prop
+
+  // Event handlers
+  onCopy?: () => void;
+  onShare?: () => void;
+  onDelete?: () => void;
+  onEdit?: () => void;
+  onClick?: () => void;
+  onPrev?: () => void;
+  onNext?: () => void;
 }
 
-const NavigationButtons = ({ onPrev, onNext, hasSiblings, currentIndex = 0, totalSiblings = 0 }: { onPrev: () => void, onNext: () => void, hasSiblings: boolean | undefined, currentIndex: number, totalSiblings: number }) => (
+const NavigationButtons = ({ onPrev, onNext, hasSiblings, currentIndex, totalSiblings }: { onPrev: () => void, onNext: () => void, hasSiblings: boolean | undefined, currentIndex: number, totalSiblings: number }) => (
   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
     {hasSiblings && <Button onClick={onPrev} disabled={currentIndex === 0}>&lt;</Button>}
     {hasSiblings && <span>{currentIndex + 1} / {totalSiblings}</span>}
@@ -22,19 +32,19 @@ const NavigationButtons = ({ onPrev, onNext, hasSiblings, currentIndex = 0, tota
 
 const MessageContainer = styled.div.attrs<{ 'data-testid': string }>(props => ({
   'data-testid': props['data-testid'],
-}))<{ theme: { primaryColor: string; secondaryColor: string; mode: 'light' | 'dark' } }>`
+}))<{ theme: { primaryColor: string; secondaryColor: string; mode: 'light' | 'dark' }, $isAuthor?: boolean }>`
   border: 1px solid ${props => props.theme.primaryColor};
   padding: 16px;
   margin: 8px 0;
   border-radius: 8px;
-  background-color: ${props => props.theme.mode === 'light' ? '#FFFFFF' : '#333333'};
+  background-color: ${props => props.$isAuthor ? '#e0f7fa' : (props.theme.mode === 'light' ? '#FFFFFF' : '#333333')}; 
   color: ${props => props.theme.mode === 'light' ? '#000000' : '#FFFFFF'};
+  text-align: ${props => props.$isAuthor ? 'right' : 'left'}; // Right-justify if $isAuthor
 `;
 
 const MessageContent = styled.span`
   margin: 0;
 `;
-
 const MessageAuthor = styled.span`
   font-weight: bold;
 `;
@@ -50,7 +60,8 @@ const ButtonContainer = styled.div`
   gap: 8px;
 `;
 
-const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons = {}, onCopy, onShare, onDelete, onEdit, renderers = [], onClick, onPrev, onNext, hasSiblings, currentIndex = 0, totalSiblings = 0 }) => {
+const Message: React.FC<MessageProps> = ({ renderers = [], currentIndex = 0, totalSiblings = 0, ...props }) => {
+  const { $isAuthor, content, author, timestamp, buttons, onCopy, onShare, onDelete, onEdit, onClick, onPrev, onNext, hasSiblings, ...filteredProps } = props;
   const globalConfig = useMessageConfig();
   const [displayedContent, setDisplayedContent] = useState<string>('');
   const isMountedRef = useRef(true);
@@ -100,7 +111,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
     while (start < content.length) {
       let matchedRenderer = null;
       let startSeq: [number, number] | null = null;
-      for (const renderer of renderers) {
+      for (const renderer of renderers || []) {
         startSeq = renderer.detectStartSequence(content, start) as [number, number] | null;
         if (startSeq) {
           matchedRenderer = renderer;
@@ -139,7 +150,7 @@ const Message: React.FC<MessageProps> = ({ content, author, timestamp, buttons =
   };
 
   return (
-    <MessageContainer theme={globalConfig.theme} data-testid="message-container" onClick={onClick}>
+    <MessageContainer theme={globalConfig.theme} data-testid="message-container" onClick={onClick} {...filteredProps} $isAuthor={$isAuthor}>
       <MessageContent>{renderContent(displayedContent)}</MessageContent>
       {author && <><br></br><MessageAuthor>{author}</MessageAuthor></>}
       {timestamp && <MessageTimestamp>{new Date(timestamp).toLocaleString()}</MessageTimestamp>}
