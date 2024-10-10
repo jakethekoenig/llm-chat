@@ -82,13 +82,16 @@ const Conversation: React.FC<ConversationProps> = ({ messages, author }) => {
 
     return (<>
         <Message
-          {...currentMessage}
+          content={currentMessage.content}
+          author={currentMessage.author}
+          timestamp={currentMessage.timestamp}
+          id={currentMessage.id}
           onPrev={() => decrementSelectedChildIndex(currentMessage.parentId)}
           onNext={() => incrementSelectedChildIndex(currentMessage.parentId)}
           hasSiblings={totalSiblings > 1}
           currentIndex={currentIndex}
           totalSiblings={totalSiblings}
-          isAuthor={currentMessage.author === author} // Pass isAuthor prop
+          isAuthor={currentMessage.author === author}
         />
         {renderMessages(messages, selectedChildIndex[currentId], currentId)}
     </>);

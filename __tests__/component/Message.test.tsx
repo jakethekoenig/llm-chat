@@ -222,7 +222,7 @@ test('renders menu-ed buttons and triggers respective actions', async () => {
 });
 
 test('renders message with right justification and different background for author', () => {
-  renderWithConfig(<Message id="test-id-17" content="Test message" author="Test Author" isAuthor={true} />);
+  renderWithConfig(<Message id="test-id-17" content="Test message" author="Test Author" $isAuthor={true} />);
   const messageContainer = screen.getByTestId('message-container');
   expect(messageContainer).toHaveStyle('text-align: right');
   expect(messageContainer).toHaveStyle('background-color: #e0f7fa');

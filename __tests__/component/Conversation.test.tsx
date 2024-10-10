@@ -109,3 +109,15 @@ test('renders author messages with right justification and different background'
     expect(message.parentElement).toHaveStyle('background-color: #e0f7fa');
   });
 });
+
+test('passes isAuthor prop correctly to Message components', () => {
+  const messages = [
+    { id: '1', content: 'Hello from User', author: 'User', timestamp: new Date().toISOString(), parentId: null },
+    { id: '2', content: 'Hello from User2', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
+  ];
+  render(<Conversation messages={messages} author="User" />);
+  const userMessage = screen.getByText('Hello from User').parentElement;
+  const user2Message = screen.getByText('Hello from User2').parentElement;
+  expect(userMessage).toHaveStyle('text-align: right');
+  expect(user2Message).toHaveStyle('text-align: left');
+});
