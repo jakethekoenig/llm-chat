@@ -25,7 +25,7 @@ const messages = [
 
 test('renders author messages with correct styles', async () => {
   render(<Conversation messages={messages} author="User" />);
-  const authorMessage = await (await screen.findByText('Hello, world!')).parentElement;
+  const authorMessage = await screen.findByTestId('message-container', { name: /Hello, world!/i });
   expect(authorMessage).toHaveStyle('text-align: right');
   expect(authorMessage).toHaveStyle('background-color: #e0f7fa');
 });
