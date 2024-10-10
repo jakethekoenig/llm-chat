@@ -188,7 +188,7 @@ app.get('/api/conversations/:conversationId/messages', authenticateToken, async 
 });
 
 // Create conversation with initial message endpoint
-app.post('/create_conversation', authenticateToken, [
+app.post('/api/create_conversation', authenticateToken, [
   body('initialMessage').notEmpty().withMessage('Initial message is required'),
   body('model').notEmpty().withMessage('Model is required'),
   body('temperature').isFloat().withMessage('Temperature must be a float')
