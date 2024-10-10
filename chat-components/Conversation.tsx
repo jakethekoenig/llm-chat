@@ -79,22 +79,25 @@ const Conversation: React.FC<ConversationProps> = ({ messages, author }) => {
     const totalSiblings = childMessages.length;
     const currentMessage = getMessage(_messages, currentId) as MessageType;
     const childrenHaveSiblings = getChildren(_messages, currentId).length > 1;
-
-    return (<>
-        <Message
-          content={currentMessage.content}
-          author={currentMessage.author}
-          timestamp={currentMessage.timestamp}
-          id={currentMessage.id}
-          onPrev={() => decrementSelectedChildIndex(currentMessage.parentId)}
-          onNext={() => incrementSelectedChildIndex(currentMessage.parentId)}
-          hasSiblings={totalSiblings > 1}
-          currentIndex={currentIndex}
-          totalSiblings={totalSiblings}
-          $isAuthor={currentMessage.author === author}
-        />
-        {renderMessages(_messages, selectedChildIndex[currentId], currentId)}
-    </>);
+    if (!currentMessage) {
+      return (<></>);
+    } else {
+        return (<>
+            <Message
+              content={currentMessage.content}
+              author={currentMessage.author}
+              timestamp={currentMessage.timestamp}
+              id={currentMessage.id}
+              onPrev={() => decrementSelectedChildIndex(currentMessage.parentId)}
+              onNext={() => incrementSelectedChildIndex(currentMessage.parentId)}
+              hasSiblings={totalSiblings > 1}
+              currentIndex={currentIndex}
+              totalSiblings={totalSiblings}
+              $isAuthor={currentMessage.author === author}
+            />
+            {renderMessages(_messages, selectedChildIndex[currentId], currentId)}
+        </>);
+    }
   };
 
   // TODO: Enforce that there is always at least one parent

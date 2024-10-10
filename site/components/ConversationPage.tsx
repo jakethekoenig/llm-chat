@@ -40,7 +40,7 @@ const ConversationPage: React.FC = () => {
   return (
     <div>
       <h2>Conversation</h2>
-      <Conversation messages={messages} />
+      <Conversation messages={messages} author="" />
     </div>
   );
 };
