@@ -10,10 +10,12 @@ import { OpenAI } from 'openai';
 jest.mock('openai', () => {
   return {
     OpenAI: jest.fn().mockImplementation(() => ({
-      completions: {
-        create: jest.fn().mockResolvedValue({
-          choices: [{ text: 'Mocked completion response' }]
-        })
+      chat: {
+        completions: {
+          create: jest.fn().mockResolvedValue({
+            choices: [{message: { role: "assistant", content: 'Mocked completion response' }}]
+          })
+        }
       }
     }))
   };
