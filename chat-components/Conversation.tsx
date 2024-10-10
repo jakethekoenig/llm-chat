@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Message from './Message';
+import NewMessage from './NewMessage'; // Add this import at the top
 import { Message as MessageType } from './types/Message';
 
 interface ConversationProps {
@@ -108,7 +109,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages, onSubmit, author 
   return (
     <div>
       {renderMessages(messages, parentMessages[0]?.id || '', null)}
-      <NewMessage onSubmit={onSubmit} />
+      <NewMessage onSubmit={onSubmit} /> {/* Ensure NewMessage is rendered correctly */}
     </div>
   );
 };

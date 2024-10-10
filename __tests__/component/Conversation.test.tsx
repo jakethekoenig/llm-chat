@@ -17,6 +17,10 @@ jest.mock('openai', () => {
   };
 });
 
+const mockOnSubmit = jest.fn(async function* (message: string) {
+  yield `You typed: ${message}\nProcessing...\nDone!\n`;
+});
+
 const messages = [
   { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
   { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
@@ -24,11 +28,11 @@ const messages = [
 ];
 
 test('renders conversation messages', () => {
-  render(<Conversation messages={messages} onSubmit={async function* (message: string) { yield `You typed: ${message}\nProcessing...\nDone!\n`; }} />);
+  render(<Conversation messages={messages} onSubmit={mockOnSubmit} author="TestUser" />);
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
 });
 test('renders author messages with correct styles', async () => {
-  render(<Conversation messages={messages} author="User" />);
+  render(<Conversation messages={messages} author="User" onSubmit={mockOnSubmit} />);
   const authorMessage = await screen.findAllByTestId('message-container');
   expect(authorMessage[0]).toHaveStyle('text-align: right');
   expect(authorMessage[0]).toHaveStyle('background-color: #e0f7fa');
@@ -39,7 +43,7 @@ test('renders conversation with navigation and selection', async () => {
     { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
     { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
   ];
-  render(<Conversation messages={messages} onSubmit={async function* (message: string) { yield `You typed: ${message}\nProcessing...\nDone!\n`; }} />);
+  render(<Conversation messages={messages} onSubmit={mockOnSubmit} author="TestUser" />);
   expect(screen.getByText('Hello, world!')).toBeInTheDocument();
   fireEvent.click(screen.getByText('Hello, world!'));
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
@@ -62,7 +66,7 @@ test('selects the first child by default', () => {
     { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
     { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
   ];
-  render(<Conversation messages={messages} author="User" />);
+  render(<Conversation messages={messages} author="User" onSubmit={mockOnSubmit} />);
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
 });
 
@@ -113,6 +117,26 @@ test('submits a new message and updates the conversation', async () => {
     const text = Array.from(element.childNodes).reduce((acc, node) => acc + (node.textContent || ''), '');
     return text.includes('You typed:') && text.includes('New message');
   })).toBeInTheDocument();
+});
+
+test('handles new message input and submission', async () => {
+  render(<Conversation messages={messages} author="TestUser" onSubmit={mockOnSubmit} />);
+  
+  const input = screen.getByPlaceholderText('Type your message...');
+  const sendButton = screen.getByText('Send');
+
+  // Simulate user typing a new message
+  fireEvent.change(input, { target: { value: 'Test message' } });
+  expect(input).toHaveValue('Test message');
+
+  // Simulate clicking the send button
+  fireEvent.click(sendButton);
+  
+  // Verify that onSubmit was called with the correct message
+  await waitFor(() => expect(mockOnSubmit).toHaveBeenCalledWith('Test message'));
+  
+  // Verify that the streaming content is displayed
+  expect(screen.getByText('You typed: Test message\nProcessing...\nDone!\n')).toBeInTheDocument();
 });
 
 test('renders author messages with right justification and different background', () => {
