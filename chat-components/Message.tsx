@@ -11,6 +11,15 @@ interface MessageProps extends MessageType {
   currentIndex?: number;
   totalSiblings?: number;
   isAuthor?: boolean; // Retain for logic
+
+  // Event handlers
+  onCopy?: () => void;
+  onShare?: () => void;
+  onDelete?: () => void;
+  onEdit?: () => void;
+  onClick?: () => void;
+  onPrev?: () => void;
+  onNext?: () => void;
 }
 
 const NavigationButtons = ({ onPrev, onNext, hasSiblings, currentIndex = 0, totalSiblings = 0 }: { onPrev: () => void, onNext: () => void, hasSiblings: boolean | undefined, currentIndex: number, totalSiblings: number }) => (
@@ -53,7 +62,7 @@ const ButtonContainer = styled.div`
 `;
 
 const Message: React.FC<MessageProps> = (props) => {
-  const { isAuthor, ...filteredProps } = props;
+  const { isAuthor, content, author, timestamp, buttons, onCopy, onShare, onDelete, onEdit, onClick, onPrev, onNext, hasSiblings, currentIndex, totalSiblings, renderers, ...filteredProps } = props;
   const globalConfig = useMessageConfig();
   const [displayedContent, setDisplayedContent] = useState<string>('');
   const isMountedRef = useRef(true);

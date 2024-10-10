@@ -226,10 +226,12 @@ test('renders message with right justification and different background for auth
   const messageContainer = screen.getByTestId('message-container');
   expect(messageContainer).toHaveStyle('text-align: right');
   expect(messageContainer).toHaveStyle('background-color: #e0f7fa');
+  // Ensure isAuthor is not passed to DOM
+  expect(messageContainer).not.toHaveAttribute('isAuthor');
 });
 
-test('does not pass isAuthor prop to DOM element', () => {
-  renderWithConfig(<Message id="test-id-18" content="Test message" author="Test Author" isAuthor={true} />);
+test('does not pass transient props to DOM elements', () => {
+  renderWithConfig(<Message id="test-id-19" content="Test message" isAuthor={true} />);
   const messageContainer = screen.getByTestId('message-container');
-  expect(messageContainer).not.toHaveAttribute('isAuthor');
+  expect(messageContainer).not.toHaveAttribute('$isAuthor');
 });

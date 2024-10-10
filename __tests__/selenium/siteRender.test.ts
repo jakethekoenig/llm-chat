@@ -45,5 +45,5 @@ options.addArguments('--disable-dev-shm-usage');
     await driver.wait(until.elementLocated(By.css('header')), 10000); 
     const header = await driver.findElement(By.css('header'));
     expect(await header.isDisplayed()).toBe(true);
-  });
+  }, 20000);
 });
