@@ -4,9 +4,10 @@ import { Message as MessageType } from './types/Message';
 
 interface ConversationProps {
   messages: MessageType[];
+  author: string; // New prop
 }
 
-const Conversation: React.FC<ConversationProps> = ({ messages }) => {
+const Conversation: React.FC<ConversationProps> = ({ messages, author }) => {
   // TODO: Refactor messages to be a map
   const getChildren = (messages: MessageType[], parentId: string | null): MessageType[] => {
     return messages.filter(message => message.parentId === parentId);
@@ -81,12 +82,16 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
 
     return (<>
         <Message
-          {...currentMessage}
+          content={currentMessage.content}
+          author={currentMessage.author}
+          timestamp={currentMessage.timestamp}
+          id={currentMessage.id}
           onPrev={() => decrementSelectedChildIndex(currentMessage.parentId)}
           onNext={() => incrementSelectedChildIndex(currentMessage.parentId)}
           hasSiblings={totalSiblings > 1}
           currentIndex={currentIndex}
           totalSiblings={totalSiblings}
+          $isAuthor={currentMessage.author === author}
         />
         {renderMessages(messages, selectedChildIndex[currentId], currentId)}
     </>);
@@ -96,7 +101,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages }) => {
   const parentMessages = getChildren(messages, null);
   const hasSiblings = parentMessages.length > 1;
 
-  return <div>{renderMessages(messages, parentMessages[0]?.id, null)}</div>;
+  return <div>{renderMessages(messages, parentMessages[0]?.id || '', null)}</div>;
 };
 
 export default Conversation;

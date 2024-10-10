@@ -23,9 +23,11 @@ const messages = [
   { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
 ];
 
-test('renders conversation messages', () => {
-  render(<Conversation messages={messages} />);
-  expect(screen.getByText('Hi there!')).toBeInTheDocument();
+test('renders author messages with correct styles', async () => {
+  render(<Conversation messages={messages} author="User" />);
+  const authorMessage = await screen.findAllByTestId('message-container');
+  expect(authorMessage[0]).toHaveStyle('text-align: right');
+  expect(authorMessage[0]).toHaveStyle('background-color: #e0f7fa');
 });
 test('renders conversation with navigation and selection', async () => {
   const messages = [
@@ -33,7 +35,7 @@ test('renders conversation with navigation and selection', async () => {
     { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
     { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
   ];
-  render(<Conversation messages={messages} />);
+  render(<Conversation messages={messages} author="User" />);
   expect(screen.getByText('Hello, world!')).toBeInTheDocument();
   fireEvent.click(screen.getByText('Hello, world!'));
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
@@ -56,7 +58,7 @@ test('selects the first child by default', () => {
     { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
     { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
   ];
-  render(<Conversation messages={messages} />);
+  render(<Conversation messages={messages} author="User" />);
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
 });
 
@@ -69,7 +71,7 @@ test('renders conversation with recursive navigation and selection', () => {
     { id: '5', content: 'What about you?', author: 'User2', timestamp: new Date().toISOString(), parentId: '2' },
     { id: '6', content: 'I am doing well!', author: 'User', timestamp: new Date().toISOString(), parentId: '3' },
   ];
-  render(<Conversation messages={messages} />);
+  render(<Conversation messages={messages} author="User" />);
   expect(screen.getByText('Hello, world!')).toBeInTheDocument();
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
   fireEvent.click(screen.getAllByText('>')[0]);
@@ -92,4 +94,30 @@ test('renders conversation list', () => {
   render(<ConversationList conversations={conversations} onConversationClick={() => {}} />);
   expect(screen.getByText('Conversation 1 - User1')).toBeInTheDocument();
   expect(screen.getByText('Conversation 2 - User2')).toBeInTheDocument();
+});
+
+test('renders author messages with right justification and different background', () => {
+  const messages = [
+    { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
+    { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
+    { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
+  ];
+  render(<Conversation messages={messages} author="User" />);
+  const authorMessages = screen.getAllByText('User');
+  authorMessages.forEach(message => {
+    expect(message.parentElement).toHaveStyle('text-align: right');
+    expect(message.parentElement).toHaveStyle('background-color: #e0f7fa');
+  });
+});
+
+test('passes isAuthor prop correctly to Message components', () => {
+  const messages = [
+    { id: '1', content: 'Hello from User', author: 'User', timestamp: new Date().toISOString(), parentId: null },
+    { id: '2', content: 'Hello from User2', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
+  ];
+  render(<Conversation messages={messages} author="User" />);
+  const userMessage = screen.getByText('Hello from User').parentElement?.parentElement;
+  const user2Message = screen.getByText('Hello from User2').parentElement?.parentElement;
+  expect(userMessage).toHaveStyle('text-align: right');
+  expect(user2Message).toHaveStyle('text-align: left');
 });
