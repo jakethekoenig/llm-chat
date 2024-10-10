@@ -8,10 +8,12 @@ import OpenAI from 'openai';
 jest.mock('openai', () => {
   return {
     OpenAI: jest.fn().mockImplementation(() => ({
-      completions: {
-        create: jest.fn().mockResolvedValue({
-          choices: [{ text: 'Mocked completion response' }]
-        })
+      chat: {
+        completions: {
+          create: jest.fn().mockResolvedValue({
+            choices: [{ message: { role: "assistant", content: 'Mocked completion response' }}]
+          })
+        }
       }
     }))
   };
@@ -108,7 +110,7 @@ test('submits a new message and updates the conversation', async () => {
   const mockOnSubmit = jest.fn(async function* (message: string) {
     yield `You typed: ${message}\nProcessing...\nDone!\n`;
   });
-  render(<Conversation messages={messages} onSubmit={mockOnSubmit} />);
+  render(<Conversation messages={messages} onSubmit={mockOnSubmit} author="TestUser" />);
   fireEvent.change(screen.getByPlaceholderText('Type your message...'), { target: { value: 'New message' } });
   fireEvent.click(screen.getByText('Send'));
   await waitFor(() => expect(mockOnSubmit).toHaveBeenCalledWith('New message'));
@@ -137,6 +139,18 @@ test('handles new message input and submission', async () => {
   
   // Verify that the streaming content is displayed
   expect(screen.getByText('You typed: Test message\nProcessing...\nDone!\n')).toBeInTheDocument();
+});
+
+test('submits a new message and updates the conversation', async () => {
+  render(<Conversation messages={messages} onSubmit={mockOnSubmit} author="TestUser" />);
+  fireEvent.change(screen.getByPlaceholderText('Type your message...'), { target: { value: 'New message' } });
+  fireEvent.click(screen.getByText('Send'));
+  await waitFor(() => expect(mockOnSubmit).toHaveBeenCalledWith('New message'));
+  expect(screen.getByText((content, element) => {
+    if (!element) return false;
+    const text = Array.from(element.childNodes).reduce((acc, node) => acc + (node.textContent || ''), '');
+    return text.includes('You typed:') && text.includes('New message');
+  })).toBeInTheDocument();
 });
 
 test('renders author messages with right justification and different background', () => {

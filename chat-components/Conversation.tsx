@@ -109,7 +109,9 @@ const Conversation: React.FC<ConversationProps> = ({ messages, onSubmit, author 
   return (
     <div>
       {renderMessages(messages, parentMessages[0]?.id || '', null)}
-      <NewMessage onSubmit={onSubmit} /> {/* Ensure NewMessage is rendered correctly */}
+      <div style={{ marginTop: '16px' }}>
+        <NewMessage onSubmit={onSubmit} />
+      </div>
     </div>
   );
 };
