@@ -159,7 +159,7 @@ test('renders author messages with right justification and different background'
     { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
     { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
   ];
-  render(<Conversation messages={messages} author="User" />);
+  render(<Conversation messages={messages} author="User" onSubmit={mockOnSubmit} />);
   const authorMessages = screen.getAllByText('User');
   authorMessages.forEach(message => {
     expect(message.parentElement).toHaveStyle('text-align: right');
@@ -172,11 +172,20 @@ test('passes isAuthor prop correctly to Message components', () => {
     { id: '1', content: 'Hello from User', author: 'User', timestamp: new Date().toISOString(), parentId: null },
     { id: '2', content: 'Hello from User2', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
   ];
-  render(<Conversation messages={messages} author="User" />);
+  render(<Conversation messages={messages} author="User" onSubmit={mockOnSubmit} />);
   const userMessage = screen.getByText('Hello from User').parentElement?.parentElement;
   const user2Message = screen.getByText('Hello from User2').parentElement?.parentElement;
   expect(userMessage).toHaveStyle('text-align: right');
   expect(userMessage).toHaveStyle('background-color: #e0f7fa');
   expect(user2Message).toHaveStyle('text-align: left');
   expect(user2Message).toHaveStyle('background-color: #fff');
+});
+
+test('renders NewMessage component within Conversation', () => {
+  render(<Conversation messages={messages} author="User" onSubmit={mockOnSubmit} />);
+  const newMessageInput = screen.getByPlaceholderText('Type your message...');
+  const sendButton = screen.getByText('Send');
+
+  expect(newMessageInput).toBeInTheDocument();
+  expect(sendButton).toBeInTheDocument();
 });

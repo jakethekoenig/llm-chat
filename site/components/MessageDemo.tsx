@@ -5,7 +5,6 @@ import Conversation from '../../chat-components/Conversation';
 import ConversationList from '../../chat-components/ConversationList';
 import { CodeBlockRenderer } from '../../chat-components/renderers/CodeBlockRenderer';
 import { LatexRenderer } from '../../chat-components/renderers/LatexRenderer';
-import NewMessage from '../../chat-components/NewMessage';
 import { MessageConfigProvider } from '../../chat-components/MessageConfigContext';
 import { Message as MessageType } from '../../chat-components/types/Message';
 
@@ -71,7 +70,9 @@ const MessageDemo = () => {
           {streamingContent && <Message id="3" content={streamingContent} author="Streamer" timestamp={new Date().toISOString()} renderers={renderers} buttons={{ copy: 'enabled', share: 'menu-ed', delete: 'menu-ed', edit: 'menu-ed' }} />}
         </>
       )}
-      {tab === 'conversation' && <Conversation messages={messages} author="User" onSubmit={handleNewMessageSubmit} />}
+      {tab === 'conversation' && (
+        <Conversation messages={messages} author="User" onSubmit={handleNewMessageSubmit} />
+      )}
       {tab === 'conversationList' && <ConversationList conversations={conversations} />}
     </div>
   </MessageConfigProvider>
