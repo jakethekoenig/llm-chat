@@ -131,8 +131,11 @@ app.post('/api/get_completion', authenticateToken, [
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const stream = await openai.chat.completions.create({
+    const configuration = new Configuration({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+    const openai = new OpenAIApi(configuration);
+    const stream = await openai.createChatCompletion({
       model,
       messages: [{ role: 'user', content: completionMessage.content }],
       temperature,
