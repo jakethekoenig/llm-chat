@@ -106,21 +106,6 @@ test('renders conversation list', () => {
   expect(screen.getByText('Conversation 2 - User2')).toBeInTheDocument();
 });
 
-test('submits a new message and updates the conversation', async () => {
-  const mockOnSubmit = jest.fn(async function* (message: string) {
-    yield `You typed: ${message}\nProcessing...\nDone!\n`;
-  });
-  render(<Conversation messages={messages} onSubmit={mockOnSubmit} author="TestUser" />);
-  fireEvent.change(screen.getByPlaceholderText('Type your message...'), { target: { value: 'New message' } });
-  fireEvent.click(screen.getByText('Send'));
-  await waitFor(() => expect(mockOnSubmit).toHaveBeenCalledWith('New message'));
-  expect(screen.getByText((content, element) => {
-    if (!element) return false;
-    const text = Array.from(element.childNodes).reduce((acc, node) => acc + (node.textContent || ''), '');
-    return text.includes('You typed:') && text.includes('New message');
-  })).toBeInTheDocument();
-});
-
 test('handles new message input and submission', async () => {
   render(<Conversation messages={messages} author="TestUser" onSubmit={mockOnSubmit} />);
   

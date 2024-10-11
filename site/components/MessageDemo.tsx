@@ -4,11 +4,10 @@ import Message from '../../chat-components/Message';
 import Conversation from '../../chat-components/Conversation';
 import ConversationList from '../../chat-components/ConversationList';
 import { CodeBlockRenderer } from '../../chat-components/renderers/CodeBlockRenderer';
-import NewMessage from '../chat-components/NewMessage';
+import NewMessage from '../../chat-components/NewMessage';
 import { LatexRenderer } from '../../chat-components/renderers/LatexRenderer';
 import { MessageConfigProvider } from '../../chat-components/MessageConfigContext';
 import { Message as MessageType } from '../../chat-components/types/Message';
-import NewMessage from './NewMessage';
 
 const MessageDemo = () => {
   const [streamingContent, setStreamingContent] = useState<AsyncIterable<string> | null>(null);
