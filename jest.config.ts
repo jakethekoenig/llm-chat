@@ -13,6 +13,10 @@ export default {
   coverageDirectory: 'coverage',
   testMatch: ['**/?(*.)+(spec|test).[jt]s?(x)'],
   coverageReporters: ['text', 'lcov'],
+  collectCoverageFrom: [
+    "server/**/*.ts",
+    "!server/**/*.d.ts"
+  ],
   coverageThreshold: {
     global: {
       statements: 95,
