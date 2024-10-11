@@ -7,7 +7,7 @@ import { User } from './database/models/User';
 import { Op } from 'sequelize';
 import { Conversation } from './database/models/Conversation';
 import { Message } from './database/models/Message';
-import OpenAI from 'openai';
+import { Configuration, OpenAIApi } from 'openai';
 import { addMessage, generateCompletion } from './helpers/messageHelpers';
 import { body, validationResult } from 'express-validator';
 
@@ -86,7 +86,7 @@ app.post('/api/add_message', authenticateToken, [
 
   try {
     const message = await addMessage(content, conversationId, parentId, userId);
-    res.status(201).json({ id: message.get('id') });
+    res.status(201).json({ id: message.id });
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }
