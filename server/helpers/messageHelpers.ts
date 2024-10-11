@@ -1,7 +1,7 @@
 // server/helpers/messageHelpers.ts
 import { Message } from '../database/models/Message';
 import 'openai/shims/node';
-import OpenAI from 'openai';
+import { Configuration, OpenAIApi } from 'openai';
 import { createLogger, transports, format } from 'winston';
 
 const logger = createLogger({
@@ -60,8 +60,8 @@ export const generateCompletion = async (messageId: number, model: string, tempe
     const completionMessage: Message = await Message.create({
       content: completionContent,
       parent_id: messageId,
-      conversation_id: parentMessage.conversation_id as number,
-      user_id: parentMessage.user_id as number,
+      conversation_id: parentMessage.conversation_id,
+      user_id: parentMessage.user_id,
       model,
       temperature,
     });

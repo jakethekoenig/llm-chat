@@ -12,6 +12,7 @@ interface MessageAttributes {
   user_id: number;
   model: string;
   temperature: number;
+  timestamp: Date;
   // Add other existing fields
 }
 class Message extends Model<MessageAttributes> {}

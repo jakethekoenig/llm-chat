@@ -11,6 +11,8 @@ import { Configuration, OpenAIApi } from 'openai';
 import { addMessage, generateCompletion } from './helpers/messageHelpers';
 import { body, validationResult } from 'express-validator';
 
+import 'server/types/openai.d.ts';
+
 const app = express();
 const SECRET_KEY = process.env.SECRET_KEY || 'fallback-secret-key';
 
