@@ -4,6 +4,14 @@ import app, { authenticateToken } from '../../server/app';
 import { sequelize } from '../../server/database/models';
 import { up, down } from '../../server/database/seeders/20240827043208-seed-test-data';
 import { Conversation } from '../../server/database/models/Conversation';
+
+beforeAll(() => {
+  process.env.OPENAI_API_KEY = 'test-api-key';
+});
+
+afterAll(() => {
+  delete process.env.OPENAI_API_KEY;
+});
 import { Message } from '../../server/database/models/Message';
 import { OpenAI } from 'openai';
 import 'jest-styled-components';
@@ -267,6 +275,110 @@ describe('Server Tests', () => {
         
         expect(response.status).toBe(500);
         expect(response.body.error).toBe('Internal server error');
+      });
+
+      // New test for handling missing environment variables
+      it('should return 500 if OPENAI_API_KEY is not set', async () => {
+        // Temporarily unset the API key
+        const originalApiKey = process.env.OPENAI_API_KEY;
+        delete process.env.OPENAI_API_KEY;
+
+        const signInResponse = await request(app)
+          .post('/api/signin')
+          .send({ username: 'user1', password: 'password1' });
+        const token = signInResponse.body.token;
+
+        const response = await request(app)
+          .post('/api/get_completion_for_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ messageId: 1, model: 'test-model', temperature: 0.5 });
+
+        expect(response.status).toBe(500);
+        expect(response.body.error).toBe('Internal server error');
+
+        // Restore the API key
+        process.env.OPENAI_API_KEY = originalApiKey;
+      });
+
+      // New test for invalid model parameter
+      it('should return 400 for invalid model parameter', async () => {
+        const signInResponse = await request(app)
+          .post('/api/signin')
+          .send({ username: 'user1', password: 'password1' });
+        const token = signInResponse.body.token;
+
+        const response = await request(app)
+          .post('/api/get_completion_for_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ messageId: 1, model: '', temperature: 0.5 });
+
+        expect(response.status).toBe(400);
+        expect(response.body.errors).toBeDefined();
+        expect(response.body.errors[0].msg).toBe('Model is required');
+      });
+
+      // New test for generating completion with non-existent messageId
+      it('should return 500 when parent message is not found', async () => {
+        const signInResponse = await request(app)
+          .post('/api/signin')
+          .send({ username: 'user1', password: 'password1' });
+        const token = signInResponse.body.token;
+
+        const response = await request(app)
+          .post('/api/get_completion_for_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ messageId: 9999, model: 'test-model', temperature: 0.5 });
+
+        expect(response.status).toBe(500);
+        expect(response.body.error).toBe('Internal server error');
+      });
+
+      // New test for invalid temperature parameter
+      it('should return 400 for invalid temperature parameter', async () => {
+        const signInResponse = await request(app)
+          .post('/api/signin')
+          .send({ username: 'user1', password: 'password1' });
+        const token = signInResponse.body.token;
+
+        const response = await request(app)
+          .post('/api/get_completion_for_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ messageId: 1, model: 'test-model', temperature: 'invalid' });
+
+        expect(response.status).toBe(400);
+        expect(response.body.errors).toBeDefined();
+        expect(response.body.errors[0].msg).toBe('Temperature must be a float');
+      });
+
+      // New test for missing content in parent message
+      it('should return 500 when parent message has no content', async () => {
+        // Mock Message.findByPk to return a message with empty content
+        jest.spyOn(Message, 'findByPk').mockResolvedValueOnce({
+          get: (field: string) => {
+            if (field === 'content') return '';
+            if (field === 'conversation_id') return 1;
+            if (field === 'user_id') return 1;
+            return null;
+          },
+        } as any);
+
+        const signInResponse = await request(app)
+          .post('/api/signin')
+          .send({ username: 'user1', password: 'password1' });
+        const token = signInResponse.body.token;
+
+        const response = await request(app)
+          .post('/api/get_completion_for_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ messageId: 1, model: 'test-model', temperature: 0.5 });
+
+        expect(response.status).toBe(500);
+        expect(response.body.error).toBe('Internal server error');
+      });
+
+      // Restore original mocks after tests
+      afterEach(() => {
+        jest.restoreAllMocks();
       });
     });
   });
