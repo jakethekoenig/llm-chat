@@ -7,6 +7,7 @@ import { CodeBlockRenderer } from '../../chat-components/renderers/CodeBlockRend
 import { LatexRenderer } from '../../chat-components/renderers/LatexRenderer';
 import { MessageConfigProvider } from '../../chat-components/MessageConfigContext';
 import { Message as MessageType } from '../../chat-components/types/Message';
+import NewMessage from './NewMessage';
 
 const MessageDemo = () => {
   const [streamingContent, setStreamingContent] = useState<AsyncIterable<string> | null>(null);

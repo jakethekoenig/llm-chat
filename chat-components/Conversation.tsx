@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Message from './Message';
-import NewMessage from './NewMessage';
 import { Message as MessageType } from './types/Message';
 
 interface ConversationProps {
   messages: MessageType[];
   onSubmit: (message: string) => AsyncIterable<string>;
-  author: string; // New prop
+  author: string;
 }
 
 const Conversation: React.FC<ConversationProps> = ({ messages, onSubmit, author }) => {
