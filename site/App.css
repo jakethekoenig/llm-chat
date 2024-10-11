@@ -1,4 +1,5 @@
 @import './components/Header.css';
+@import './components/ConversationList.css';
 
 body {
   font-family: Arial, sans-serif;
@@ -53,6 +54,7 @@ body {
 .form-container p {
   text-align: center;
   color: red;
+}
 }
 
 h1, h2 {
