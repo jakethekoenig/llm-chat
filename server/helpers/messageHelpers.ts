@@ -15,7 +15,7 @@ const logger = createLogger({
   ]
 });
 
-export { logger }; // Export the logger for use in tests
+export { logger, generateCompletion }; // Ensure all necessary exports are available
 
 export const addMessage = async (content: string, conversationId: number, parentId: number | null, userId: number) => {
   const message = await Message.create({

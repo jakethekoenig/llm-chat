@@ -5,6 +5,13 @@ import { sequelize } from '../../server/database/models';
 import { up, down } from '../../server/database/seeders/20240827043208-seed-test-data';
 import { Conversation } from '../../server/database/models/Conversation';
 
+const obtainAuthToken = async () => {
+  const response = await request(app)
+    .post('/api/signin')
+    .send({ username: 'user1', password: 'password1' });
+  return response.body.token;
+};
+
 beforeAll(() => {
   process.env.OPENAI_API_KEY = 'test-api-key';
 });
@@ -103,6 +110,11 @@ describe('Server Tests', () => {
       expect(envResponse.status).toBe(400);
       expect(envResponse.body.errors[0].msg).toBe('Parent ID must be an integer');
     });
+
+    const missingContentResponse = await request(app)
+      .post('/api/add_message')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content: '', conversationId: 1 });
     expect(missingContentResponse.text).toContain('data: Example stream data part 1');
     expect(missingContentResponse.text).toContain('data: Example stream data part 2');
     expect(missingContentResponse.text).toContain('data: Example stream data part 3');
@@ -129,6 +141,8 @@ describe('Server Tests', () => {
   });
 
   it('should handle missing content in add_message', async () => {
+    const token = await obtainAuthToken(); // Implement a helper to retrieve a valid token
+
     const response = await request(app)
       .post('/api/add_message')
       .set('Authorization', `Bearer ${token}`)
@@ -393,7 +407,7 @@ describe('Server Tests', () => {
           .send({ username: 'user1', password: 'password1' });
         const token = signInResponse.body.token;
 
-        const response = await request(app)
+        let response = await request(app)
           .post('/api/get_completion_for_message')
           .set('Authorization', `Bearer ${token}`)
           .send({ messageId: 1, model: 'test-model', temperature: 'invalid' });
@@ -402,21 +416,14 @@ describe('Server Tests', () => {
         expect(response.body.errors).toBeDefined();
         expect(response.body.errors[0].msg).toBe('Temperature must be a float');
 
-        const response = await request(app)
-          .post('/api/get_completion_for_message')
-          .set('Authorization', `Bearer ${token}`)
-          .send({ messageId: 1, model: 'test-model', temperature: 'invalid' });
-
-        expect(response.status).toBe(400);
-        expect(response.body.errors).toBeDefined();
-        expect(response.body.errors[0].msg).toBe('Temperature must be a float');
+        // Removed duplicate test case
       });
 
       // New test for missing content in parent message
       it('should return 500 when parent message has no content', async () => {
         // Mock Message.findByPk to return a message with empty content
         jest.spyOn(Message, 'findByPk').mockResolvedValueOnce({
-          get: (field: string) => {
+          get: (field: keyof Message) => {
             if (field === 'content') return '';
             if (field === 'conversation_id') return 1;
             if (field === 'user_id') return 1;
