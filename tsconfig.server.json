@@ -9,7 +9,7 @@
     "moduleResolution": "node",
     "skipLibCheck": true,
     "sourceMap": true,
-    "types": ["node", "sequelize", "bcrypt", "jest"]
+    "types": ["node", "sequelize", "bcrypt", "jest", "openai"]
   },
   "include": ["server/**/*.ts", "server/types/**/*.d.ts", "node_modules/@types/config/index.d.ts"],
   "exclude": ["node_modules", "dist-server"]
