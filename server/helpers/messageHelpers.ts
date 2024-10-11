@@ -15,7 +15,7 @@ const logger = createLogger({
   ]
 });
 
-export { logger, generateCompletion }; // Ensure all necessary exports are available
+export { logger }; // Removed generateCompletion to prevent duplicate export
 
 export const addMessage = async (content: string, conversationId: number, parentId: number | null, userId: number) => {
   const message = await Message.create({
