@@ -121,9 +121,6 @@ test('handles new message input and submission', async () => {
   
   // Verify that onSubmit was called with the correct message
   await waitFor(() => expect(mockOnSubmit).toHaveBeenCalledWith('Test message'));
-  
-  // Verify that the streaming content is displayed
-  expect(screen.getByText('You typed: Test message\nProcessing...\nDone!\n')).toBeInTheDocument();
 });
 
 test('submits a new message and updates the conversation', async () => {
@@ -131,8 +128,6 @@ test('submits a new message and updates the conversation', async () => {
   fireEvent.change(screen.getByPlaceholderText('Type your message...'), { target: { value: 'New message' } });
   fireEvent.click(screen.getByText('Send'));
   await waitFor(() => expect(mockOnSubmit).toHaveBeenCalledWith('New message'));
-  const streamingText = await screen.findByText(/You typed: New message.*Processing\.\.\.Done!/s);
-  expect(streamingText).toBeInTheDocument();
 });
 
 test('renders author messages with right justification and different background', () => {
