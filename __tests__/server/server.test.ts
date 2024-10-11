@@ -359,15 +359,6 @@ describe('Server Tests', () => {
         expect(response.body.errors).toBeDefined();
         expect(response.body.errors[0].msg).toBe('Model is required');
       });
-        const response = await request(app)
-          .post('/api/get_completion_for_message')
-          .set('Authorization', `Bearer ${token}`)
-          .send({ messageId: 1, model: '', temperature: 0.5 });
-
-        expect(response.status).toBe(400);
-        expect(response.body.errors).toBeDefined();
-        expect(response.body.errors[0].msg).toBe('Model is required');
-      });
 
       // New test for generating completion with non-existent messageId
       it('should return 500 when parent message is not found', async () => {
@@ -445,21 +436,7 @@ describe('Server Tests', () => {
         expect(response.body.error).toBe('Internal server error');
       }); // Close the it block properly
           },
-        } as any);
-
-        const signInResponse = await request(app)
-          .post('/api/signin')
-          .send({ username: 'user1', password: 'password1' });
-        const token = signInResponse.body.token;
-
-        const response = await request(app)
-          .post('/api/get_completion_for_message')
-          .set('Authorization', `Bearer ${token}`)
-          .send({ messageId: 1, model: 'test-model', temperature: 0.5 });
-
-        expect(response.status).toBe(500);
-        expect(response.body.error).toBe('Internal server error');
-      }); // Close the it block properly
+        } as any); // Fix syntax errors and ensure proper closure
 
       // Restore original mocks after tests
       afterEach(() => {
