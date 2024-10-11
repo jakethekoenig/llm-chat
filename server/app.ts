@@ -106,7 +106,7 @@ app.post('/api/get_completion_for_message', authenticateToken, [
 
   try {
     const completionMessage = await generateCompletion(messageId, model, temperature);
-    res.status(201).json({ id: completionMessage.get('id'), content: completionMessage.get('content')});
+    res.status(201).json({ id: completionMessage.id, content: completionMessage.content });
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -203,9 +203,9 @@ app.post('/api/create_conversation', authenticateToken, [
   try {
     const defaultTitle = 'New Conversation';
     const conversation = await Conversation.create({ title: defaultTitle, user_id: userId });
-    const message = await addMessage(initialMessage, conversation.get('id') as number, null, userId);
-    const completionMessage = await generateCompletion(message.get('id') as number, model, temperature);
-    res.status(201).json({ conversationId: conversation.get('id'), initialMessageId: message.get('id'), completionMessageId: completionMessage.get('id') });
+    const message = await addMessage(initialMessage, conversation.id as number, null, userId);
+    const completionMessage = await generateCompletion(message.id as number, model, temperature);
+    res.status(201).json({ conversationId: conversation.id, initialMessageId: message.id, completionMessageId: completionMessage.id });
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }

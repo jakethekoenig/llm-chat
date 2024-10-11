@@ -57,15 +57,15 @@ export const generateCompletion = async (messageId: number, model: string, tempe
     const completionMessage: Message = await Message.create({
       content: completionContent,
       parent_id: messageId,
-      conversation_id: parentMessage.get('conversation_id') as number,
-      user_id: parentMessage.get('user_id') as number,
+      conversation_id: parentMessage.conversation_id as number,
+      user_id: parentMessage.user_id as number,
       model,
       temperature,
     });
     return { id: completionMessage.id, content: completionContent };
   } catch (error) {
     if (error instanceof Error) {
-      logger.error('Error generating completion:', { message: error.message });
+      logger.error('Error generating completion:', { error: error.message });
     } else {
       logger.error('Error generating completion:', { error });
     }
