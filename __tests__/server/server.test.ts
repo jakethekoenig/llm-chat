@@ -103,9 +103,9 @@ describe('Server Tests', () => {
       expect(envResponse.status).toBe(400);
       expect(envResponse.body.errors[0].msg).toBe('Parent ID must be an integer');
     });
-    expect(response.text).toContain('data: Example stream data part 1');
-    expect(response.text).toContain('data: Example stream data part 2');
-    expect(response.text).toContain('data: Example stream data part 3');
+    expect(missingContentResponse.text).toContain('data: Example stream data part 1');
+    expect(missingContentResponse.text).toContain('data: Example stream data part 2');
+    expect(missingContentResponse.text).toContain('data: Example stream data part 3');
   });
 
   it('should return 401 for unauthenticated users', async () => {
@@ -367,21 +367,23 @@ describe('Server Tests', () => {
           .send({ username: 'user1', password: 'password1' });
         const token = signInResponse.body.token;
 
-        const response = await request(app)
+        const invalidMessageResponse = await request(app)
           .post('/api/get_completion_for_message')
           .set('Authorization', `Bearer ${token}`)
           .send({ messageId: 9999, model: 'test-model', temperature: 0.5 });
 
-        expect(response.status).toBe(500);
-        expect(response.body.error).toBe('Internal server error');
+        expect(invalidMessageResponse.status).toBe(500);
+        expect(invalidMessageResponse.body.error).toBe('Internal server error');
+      });
 
-        const response = await request(app)
+      it('should return 500 when generating completion with non-existent messageId', async () => {
+        const invalidMessageResponse = await request(app)
           .post('/api/get_completion_for_message')
           .set('Authorization', `Bearer ${token}`)
           .send({ messageId: 9999, model: 'test-model', temperature: 0.5 });
 
-        expect(response.status).toBe(500);
-        expect(response.body.error).toBe('Internal server error');
+        expect(invalidMessageResponse.status).toBe(500);
+        expect(invalidMessageResponse.body.error).toBe('Internal server error');
       });
 
       // New test for invalid temperature parameter
@@ -420,7 +422,7 @@ describe('Server Tests', () => {
             if (field === 'user_id') return 1;
             return null;
           },
-        } as any);
+        });
 
         const signInResponse = await request(app)
           .post('/api/signin')
@@ -434,9 +436,7 @@ describe('Server Tests', () => {
 
         expect(response.status).toBe(500);
         expect(response.body.error).toBe('Internal server error');
-      }); // Close the it block properly
-          },
-        } as any); // Fix syntax errors and ensure proper closure
+      });
 
       // Restore original mocks after tests
       afterEach(() => {
