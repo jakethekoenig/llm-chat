@@ -4,6 +4,16 @@ import db from '../index';
 import { User } from './User';
 import { Conversation } from './Conversation';
 
+interface MessageAttributes {
+  id: number;
+  content: string;
+  conversation_id: number;
+  parent_id: number | null;
+  user_id: number;
+  model: string;
+  temperature: number;
+  // Add other existing fields
+}
 class Message extends Model {}
 
 Message.init({
