@@ -4,6 +4,7 @@ import Message from '../../chat-components/Message';
 import Conversation from '../../chat-components/Conversation';
 import ConversationList from '../../chat-components/ConversationList';
 import { CodeBlockRenderer } from '../../chat-components/renderers/CodeBlockRenderer';
+import NewMessage from '../../chat-components/NewMessage';
 import { LatexRenderer } from '../../chat-components/renderers/LatexRenderer';
 import { MessageConfigProvider } from '../../chat-components/MessageConfigContext';
 import { Message as MessageType } from '../../chat-components/types/Message';
@@ -67,10 +68,12 @@ const MessageDemo = () => {
           <Message id="1" content={exampleMessage} author="John Doe" timestamp={new Date().toISOString()} renderers={renderers} buttons={{ copy: 'enabled', share: 'enabled', delete: 'enabled', edit: 'enabled' }} />
           <Message id="2" content="No buttons example" author="Jane Doe" timestamp={new Date().toISOString()} buttons={{ copy: 'disabled', share: 'disabled', delete: 'disabled', edit: 'disabled' }} />
           <button onClick={() => setStreamingContent(startStreaming())}>Start Streaming</button>
-          {streamingContent && <Message id="3" content={streamingContent} author="AuthorUser" timestamp={new Date().toISOString()} renderers={renderers} buttons={{ copy: 'enabled', share: 'menu-ed', delete: 'menu-ed', edit: 'menu-ed' }} />}
+          {streamingContent && <Message id="3" content={streamingContent} author="Streamer" timestamp={new Date().toISOString()} renderers={renderers} buttons={{ copy: 'enabled', share: 'menu-ed', delete: 'menu-ed', edit: 'menu-ed' }} />}
         </>
       )}
-      {tab === 'conversation' && <Conversation messages={messages} author="User" />}
+      {tab === 'conversation' && (
+        <Conversation messages={messages} author="User" onSubmit={handleNewMessageSubmit} />
+      )}
       {tab === 'conversationList' && <ConversationList conversations={conversations} />}
     </div>
   </MessageConfigProvider>

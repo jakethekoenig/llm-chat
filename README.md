@@ -4,6 +4,34 @@
 
 Note to LLM agents working on this with me: You likely cannot run commands yourself such as `npm i`. If you need more dependencies list them in your PR description and I will add them.
 
+## Integration
+
+The `NewMessage` component is integrated within the `Conversation` component to allow users to submit new messages seamlessly. Ensure that any usage of the `Conversation` component includes the necessary `onSubmit` and `author` props.
+
+## Integration Example
+
+Below is a brief example of how to use the `Conversation` component with the required `onSubmit` and `author` props:
+
+```tsx
+import React from 'react';
+import Conversation from './chat-components/Conversation';
+
+const handleSubmit = async function* (message: string): AsyncIterable<string> {
+  yield `You typed: ${message}\nProcessing...\nDone!\n`;
+};
+
+const App = () => {
+  const messages = [
+    { id: '1', content: 'Hello!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
+  ];
+
+  return (
+    <Conversation messages={messages} onSubmit={handleSubmit} author="User" />
+  );
+};
+export default App;
+```
+
 ## Testing
 
 We utilize Jest for testing, along with `jest-styled-components` to enable testing of styled-components. Ensure all dependencies are installed correctly.

@@ -37,12 +37,27 @@ const ConversationPage: React.FC = () => {
     fetchMessages();
   }, [conversationId]);
 
+  const handleNewMessageSubmit = async function* (message: string): AsyncIterable<string> {
+    const mostRecentMessageId = messages.length > 0 ? messages[messages.length - 1].id : null;
+    const response = await fetch(`/api/add_message`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ content: message, conversationId: conversationId, parentId: mostRecentMessageId })
+    });
+    const data = await response.json();
+    setMessages(prevMessages => [...prevMessages, { id: data.id, content: message, author: 'User', timestamp: new Date().toISOString(), parentId: mostRecentMessageId }]);
+    yield `You typed: ${message}\nProcessing...\nDone!\n`;
+  };
+
   return (
     <div>
       <h2>Conversation</h2>
-      <Conversation messages={messages} author="" />
+      <Conversation messages={messages} onSubmit={handleNewMessageSubmit} author="User" />
     </div>
   );
-};
+}
 
 export default ConversationPage;

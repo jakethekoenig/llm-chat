@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import Message from './Message';
 import { Message as MessageType } from './types/Message';
+import NewMessage from './NewMessage'; // Ensure this path is correct
 
 interface ConversationProps {
   messages: MessageType[];
-  author: string; // New prop
+  onSubmit: (message: string) => AsyncIterable<string>;
+  author: string;
 }
 
-const Conversation: React.FC<ConversationProps> = ({ messages, author }) => {
+const Conversation: React.FC<ConversationProps> = ({ messages, onSubmit, author }) => {
   // TODO: Refactor messages to be a map
   const getChildren = (_messages: MessageType[], parentId: string | null): MessageType[] => {
     return _messages.filter(message => message.parentId === parentId);
@@ -104,7 +106,14 @@ const Conversation: React.FC<ConversationProps> = ({ messages, author }) => {
   const parentMessages = getChildren(messages, null);
   const hasSiblings = parentMessages.length > 1;
 
-  return <div>{renderMessages(messages, parentMessages[0]?.id || '', null)}</div>;
+  return (
+    <div>
+      {renderMessages(messages, parentMessages[0]?.id || '', null)}
+      <div style={{ marginTop: '16px' }}>
+        <NewMessage onSubmit={onSubmit} />
+      </div>
+    </div>
+  );
 };
 
 export default Conversation;

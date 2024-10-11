@@ -69,7 +69,7 @@ app.post('/api/register', async (req: express.Request, res: express.Response) =>
   }
 });
 
-// Add message endpoint with validation
+// Add message submission endpoint
 app.post('/api/add_message', authenticateToken, [
   body('content').notEmpty().withMessage('Content is required'),
   body('conversationId').isInt().withMessage('Conversation ID must be an integer'),
