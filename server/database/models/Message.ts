@@ -14,7 +14,7 @@ interface MessageAttributes {
   temperature: number;
   // Add other existing fields
 }
-class Message extends Model {}
+class Message extends Model<MessageAttributes> {}
 
 Message.init({
   id: {

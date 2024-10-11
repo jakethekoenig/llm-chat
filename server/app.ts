@@ -7,7 +7,7 @@ import { User } from './database/models/User';
 import { Op } from 'sequelize';
 import { Conversation } from './database/models/Conversation';
 import { Message } from './database/models/Message';
-import { Configuration, OpenAIApi } from 'openai';
+import OpenAI from 'openai';
 import { addMessage, generateCompletion } from './helpers/messageHelpers';
 import { body, validationResult } from 'express-validator';
 

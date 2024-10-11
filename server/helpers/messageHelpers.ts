@@ -1,7 +1,7 @@
 // server/helpers/messageHelpers.ts
 import { Message } from '../database/models/Message';
 import 'openai/shims/node';
-import { Configuration, OpenAIApi } from 'openai';
+import OpenAI from 'openai';
 import { createLogger, transports, format } from 'winston';
 
 const logger = createLogger({
