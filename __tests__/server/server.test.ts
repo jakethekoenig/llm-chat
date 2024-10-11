@@ -423,7 +423,7 @@ describe('Server Tests', () => {
       it('should return 500 when parent message has no content', async () => {
         // Mock Message.findByPk to return a message with empty content
         jest.spyOn(Message, 'findByPk').mockResolvedValueOnce({
-          get: (field: keyof Message) => {
+          get: (field: keyof Message, options?: { plain?: boolean; clone?: boolean }) => {
             if (field === 'content') return '';
             if (field === 'conversation_id') return 1;
             if (field === 'user_id') return 1;
