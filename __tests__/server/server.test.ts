@@ -4,6 +4,7 @@ import app, { authenticateToken } from '../../server/app';
 import { sequelize } from '../../server/database/models';
 import { up, down } from '../../server/database/seeders/20240827043208-seed-test-data';
 import { Conversation } from '../../server/database/models/Conversation';
+import Anthropic from '@anthropic-ai/sdk';
 import { Message } from '../../server/database/models/Message';
 import { OpenAI } from 'openai';
 import 'jest-styled-components';
