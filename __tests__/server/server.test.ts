@@ -15,8 +15,8 @@ afterAll(() => {
 import { Message } from '../../server/database/models/Message';
 import { OpenAI } from 'openai';
 import 'jest-styled-components';
-import * as messageHelpers from '../../server/helpers/messageHelpers';
 import { logger } from '../../server/helpers/messageHelpers';
+import * as messageHelpers from '../../server/helpers/messageHelpers';
 
 jest.mock('openai', () => {
   return {
@@ -96,12 +96,12 @@ describe('Server Tests', () => {
       .expect(200);
 
     it('should return 400 for invalid parentId in add_message', async () => {
-      const response = await request(app)
+      const envResponse = await request(app)
         .post('/api/add_message')
         .set('Authorization', `Bearer ${token}`)
         .send({ content: 'Test message', conversationId: 1, parentId: 'invalid' });
-      expect(response.status).toBe(400);
-      expect(response.body.errors[0].msg).toBe('Parent ID must be an integer');
+      expect(envResponse.status).toBe(400);
+      expect(envResponse.body.errors[0].msg).toBe('Parent ID must be an integer');
     });
     expect(response.text).toContain('data: Example stream data part 1');
     expect(response.text).toContain('data: Example stream data part 2');
@@ -443,7 +443,7 @@ describe('Server Tests', () => {
 
         expect(response.status).toBe(500);
         expect(response.body.error).toBe('Internal server error');
-      });
+      }); // Close the it block properly
           },
         } as any);
 
@@ -459,7 +459,7 @@ describe('Server Tests', () => {
 
         expect(response.status).toBe(500);
         expect(response.body.error).toBe('Internal server error');
-      });
+      }); // Close the it block properly
 
       // Restore original mocks after tests
       afterEach(() => {
