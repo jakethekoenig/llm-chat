@@ -62,7 +62,7 @@ export const generateCompletion = async (messageId: number, model: string, tempe
       model,
       temperature,
     });
-    return completionMessage;
+    return { id: completionMessage.id, content: completionContent };
   } catch (error) {
     if (error instanceof Error) {
       logger.error('Error generating completion:', { message: error.message });

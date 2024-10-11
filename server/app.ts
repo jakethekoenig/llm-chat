@@ -127,31 +127,30 @@ app.post('/api/get_completion', authenticateToken, [
 
   try {
     const completionMessage = await generateCompletion(parentId, model, temperature);
-    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    const streamData = JSON.stringify({ id: completionMessage.get('id'), content: completionMessage.get('content')});
-    res.write(`data: ${streamData}\n\n`);
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const stream = await openai.chat.completions.create({
+      model,
+      messages: [{ role: 'user', content: completionMessage.content }],
+      temperature,
+      stream: true,
+    });
 
-    // Placeholder for actual streaming logic
-    const messages = [
-      { chunk: 'Example stream data part 1' },
-      { chunk: 'Example stream data part 2' },
-      { chunk: 'Example stream data part 3' }
-    ];
+    for await (const chunk of stream) {
+      const data = JSON.stringify({ content: chunk.choices[0]?.delta?.content || '' });
+      res.write(`data: ${data}\n\n`);
+    }
 
-    let index = 0;
-    const interval = setInterval(() => {
-      if (index < messages.length) {
-        const chunkData = JSON.stringify(messages[index]);
-        res.write(`data: ${chunkData}\n\n`);
-        index++;
-      } else {
-        clearInterval(interval);
-        res.end();
-      }
-    }, 1000);
+    // After streaming is complete, save the full response to the database
+    await Message.update(
+      { content: completionMessage.content },
+      { where: { id: completionMessage.id } }
+    );
+
+    res.end();
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }
