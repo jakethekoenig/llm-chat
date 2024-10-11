@@ -64,7 +64,8 @@
     "sequelize": "^6.37.3",
     "styled-components": "^6.1.12",
     "vite": "^5.4.0",
-    "winston": "^3.15.0"
+    "winston": "^3.15.0",
+    "@anthropic-ai/sdk": "^0.1.0" // Add the correct version as per the latest release
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.4.8",
