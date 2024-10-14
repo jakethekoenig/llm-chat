@@ -70,15 +70,8 @@ const Message: React.FC<MessageProps> = ({ renderers = [], currentIndex = 0, tot
   useEffect(() => {
     isMountedRef.current = true;
     setDisplayedContent(''); // Reset content when prop changes
-    const processContent = async () => {
-      if (typeof content === 'string') {
-        setDisplayedContent(content);
-      } else {
-        for await (const chunk of content) {
-          if (!isMountedRef.current) break;
-          setDisplayedContent(prev => prev + chunk);
-        }
-      }
+    const processContent = () => {
+      setDisplayedContent(content);
     };
 
     processContent();
