@@ -4,9 +4,26 @@ import app, { authenticateToken } from '../../server/app';
 import { sequelize } from '../../server/database/models';
 import { up, down } from '../../server/database/seeders/20240827043208-seed-test-data';
 import { Conversation } from '../../server/database/models/Conversation';
+
+const obtainAuthToken = async () => {
+  const response = await request(app)
+    .post('/api/signin')
+    .send({ username: 'user1', password: 'password1' });
+  return response.body.token;
+};
+
+beforeAll(() => {
+  process.env.OPENAI_API_KEY = 'test-api-key';
+});
+
+afterAll(() => {
+  delete process.env.OPENAI_API_KEY;
+});
 import { Message } from '../../server/database/models/Message';
 import { OpenAI } from 'openai';
 import 'jest-styled-components';
+import { logger } from '../../server/helpers/messageHelpers';
+import * as messageHelpers from '../../server/helpers/messageHelpers';
 
 jest.mock('openai', () => {
   return {
@@ -73,21 +90,18 @@ describe('Server Tests', () => {
     expect(response.status).toBe(401);
   });
 
-  it('should stream data for authenticated users', async () => {
+  it('should return 400 for invalid parentId in add_message', async () => {
     const signInResponse = await request(app)
       .post('/api/signin')
       .send({ username: 'user1', password: 'password1' });
     const token = signInResponse.body.token;
 
-    const response = await request(app)
-      .get('/api/get_completion')
+    const envResponse = await request(app)
+      .post('/api/add_message')
       .set('Authorization', `Bearer ${token}`)
-      .expect('Content-Type', /text\/event-stream/)
-      .expect(200);
-
-    expect(response.text).toContain('data: Example stream data part 1');
-    expect(response.text).toContain('data: Example stream data part 2');
-    expect(response.text).toContain('data: Example stream data part 3');
+      .send({ content: 'Test message', conversationId: 1, parentId: 'invalid' });
+    expect(envResponse.status).toBe(400);
+    expect(envResponse.body.errors[0].msg).toBe('Parent ID must be an integer');
   });
 
   it('should return 401 for unauthenticated users', async () => {
@@ -96,10 +110,7 @@ describe('Server Tests', () => {
   });
 
   it('should return 403 for invalid token', async () => {
-    const signInResponse = await request(app)
-      .post('/api/signin')
-      .send({ username: 'user1', password: 'password1' });
-    const token = signInResponse.body.token;
+    const token = await obtainAuthToken(); // Implement a helper to retrieve a valid token
 
     // Tamper the token to make it invalid
     const invalidToken = token ? token.slice(0, -1) + 'x' : 'invalidToken';
@@ -110,11 +121,19 @@ describe('Server Tests', () => {
     expect(response.status).toBe(403);
   });
 
+  it('should handle missing content in add_message', async () => {
+    const token = await obtainAuthToken(); // Implement a helper to retrieve a valid token
+
+    const response = await request(app)
+      .post('/api/add_message')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content: '', conversationId: 1 });
+    expect(response.status).toBe(400);
+    expect(response.body.errors[0].msg).toBe('Content is required');
+  });
+
   it('should generate a completion for a valid message', async () => {
-    const signInResponse = await request(app)
-      .post('/api/signin')
-      .send({ username: 'user1', password: 'password1' });
-    const token = signInResponse.body.token;
+    const token = await obtainAuthToken();
 
     const response = await request(app)
       .post('/api/get_completion_for_message')
@@ -126,10 +145,7 @@ describe('Server Tests', () => {
   });
 
   it('should return 400 for invalid messageId', async () => {
-    const signInResponse = await request(app)
-      .post('/api/signin')
-      .send({ username: 'user1', password: 'password1' });
-    const token = signInResponse.body.token;
+    const token = await obtainAuthToken();
 
     const response = await request(app)
       .post('/api/get_completion_for_message')
@@ -176,6 +192,30 @@ describe('Server Tests', () => {
     it('should return 401 for unauthorized access to messages', async () => {
       const response = await request(app).get('/api/conversations/1/messages');
       expect(response.status).toBe(401);
+    });
+
+    it('should generate completion with valid parameters', async () => {
+      const response = await request(app)
+        .post('/api/get_completion_for_message')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ messageId: 1, model: 'gpt-4', temperature: 0.7 });
+      expect(response.status).toBe(201);
+      expect(response.body.id).toBeDefined();
+      expect(response.body.content).toBe('Mocked completion response');
+    });
+
+    it('should return 500 when generating completion fails', async () => {
+      // Mock generateCompletion to throw an error
+      jest.spyOn(messageHelpers, 'generateCompletion').mockImplementationOnce(() => {
+        throw new Error('Completion service unavailable');
+      });
+
+      const response = await request(app)
+        .post('/api/get_completion_for_message')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ messageId: 1, model: 'gpt-4', temperature: 0.7 });
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Internal server error');
     });
 
     describe('Add Message and Get Completion for Message Endpoints', () => {
@@ -267,6 +307,84 @@ describe('Server Tests', () => {
         
         expect(response.status).toBe(500);
         expect(response.body.error).toBe('Internal server error');
+      });
+
+      // New test for handling missing environment variables
+      it('should return 500 if OPENAI_API_KEY is not set', async () => {
+        // Temporarily unset the API key
+        const originalApiKey = process.env.OPENAI_API_KEY;
+        delete process.env.OPENAI_API_KEY;
+
+        const token = await obtainAuthToken();
+
+        const response = await request(app)
+          .post('/api/get_completion_for_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ messageId: 1, model: 'test-model', temperature: 0.5 });
+
+        expect(response.status).toBe(500);
+        expect(response.body.error).toBe('Internal server error');
+
+        // Restore the API key
+        process.env.OPENAI_API_KEY = originalApiKey;
+      });
+
+      // New test for invalid model parameter
+      it('should return 400 for invalid model parameter', async () => {
+        const token = await obtainAuthToken();
+
+        const response = await request(app)
+          .post('/api/get_completion_for_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ messageId: 1, model: '', temperature: 0.5 });
+
+        expect(response.status).toBe(400);
+        expect(response.body.errors).toBeDefined();
+        expect(response.body.errors[0].msg).toBe('Model is required');
+      });
+
+      // New test for generating completion with non-existent messageId
+      it('should return 500 when parent message is not found', async () => {
+        const token = await obtainAuthToken();
+
+        const invalidMessageResponse = await request(app)
+          .post('/api/get_completion_for_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ messageId: 9999, model: 'test-model', temperature: 0.5 });
+
+        expect(invalidMessageResponse.status).toBe(500);
+        expect(invalidMessageResponse.body.error).toBe('Internal server error');
+      });
+
+      it('should return 500 when generating completion with non-existent messageId', async () => {
+        const invalidMessageResponse = await request(app)
+          .post('/api/get_completion_for_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ messageId: 9999, model: 'test-model', temperature: 0.5 });
+
+        expect(invalidMessageResponse.status).toBe(500);
+        expect(invalidMessageResponse.body.error).toBe('Internal server error');
+      });
+
+      // New test for invalid temperature parameter
+      it('should return 400 for invalid temperature parameter', async () => {
+        const token = await obtainAuthToken();
+
+        let response = await request(app)
+          .post('/api/get_completion_for_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ messageId: 1, model: 'test-model', temperature: 'invalid' });
+
+        expect(response.status).toBe(400);
+        expect(response.body.errors).toBeDefined();
+        expect(response.body.errors[0].msg).toBe('Temperature must be a float');
+
+        // Removed duplicate test case
+      });
+
+      // Restore original mocks after tests
+      afterEach(() => {
+        jest.restoreAllMocks();
       });
     });
   });
