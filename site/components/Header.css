@@ -22,6 +22,18 @@
   color: #007bff;
 }
 
+.toggle-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #007bff;
+}
+
+.toggle-button:hover {
+  color: #0056b3;
+}
+
 .site-header nav ul li a:hover {
   text-decoration: underline;
 }

@@ -3,7 +3,6 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Conversation from '../../chat-components/Conversation';
 import ConversationList from '../../chat-components/ConversationList';
-import OpenAI from 'openai';
 
 jest.mock('openai', () => {
   return {

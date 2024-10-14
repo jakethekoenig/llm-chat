@@ -37,19 +37,20 @@ const ConversationPage: React.FC = () => {
     fetchMessages();
   }, [conversationId]);
 
-  const handleNewMessageSubmit = async function* (message: string): AsyncIterable<string> {
+  const handleNewMessageSubmit = (message: string) => {
     const mostRecentMessageId = messages.length > 0 ? messages[messages.length - 1].id : null;
-    const response = await fetch(`/api/add_message`, {
+    fetch(`/api/add_message`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       },
       body: JSON.stringify({ content: message, conversationId: conversationId, parentId: mostRecentMessageId })
+    })
+    .then(response => response.json())
+    .then(data => {
+      setMessages(prevMessages => [...prevMessages, { id: data.id, content: message, author: 'User', timestamp: new Date().toISOString(), parentId: mostRecentMessageId }]);
     });
-    const data = await response.json();
-    setMessages(prevMessages => [...prevMessages, { id: data.id, content: message, author: 'User', timestamp: new Date().toISOString(), parentId: mostRecentMessageId }]);
-    yield `You typed: ${message}\nProcessing...\nDone!\n`;
   };
 
   return (

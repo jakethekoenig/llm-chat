@@ -3,7 +3,7 @@ import { Message } from '../database/models/Message';
 import 'openai/shims/node';
 import { OpenAI } from 'openai';
 import { createLogger, transports, format } from 'winston';
-
+import * as messageHelpers from './messageHelpers';
 const logger = createLogger({
   level: 'error',
   format: format.combine(
