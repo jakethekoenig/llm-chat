@@ -1,8 +1,12 @@
 // server/helpers/messageHelpers.ts
 import { Message } from '../database/models/Message';
+import { User } from '../database/models/User';
 import 'openai/shims/node';
 import { OpenAI } from 'openai';
 import { createLogger, transports, format } from 'winston';
+
+const ASSISTANT_USER_ID = 2; // Replace with the actual assistant user ID from your database
+const USER_ID = 1; // Replace with the actual user ID or fetch dynamically as needed
 
 const logger = createLogger({
   level: 'error',
@@ -99,6 +103,8 @@ export const generateCompletionFromConversation = async (
   model: string,
   temperature: number
 ) => {
+  const conversationId = /* Fetch or pass the conversation ID */;
+  const userId = /* Determine the user ID based on roles */;
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error('OpenAI API key is not set');
@@ -115,13 +121,13 @@ export const generateCompletionFromConversation = async (
 
     const completionContent = response.choices[0].message?.content || '';
     const lastUserMessage = conversation[conversation.length - 1];
-    const userId = lastUserMessage.role === 'assistant' ? /* assistant user ID */ : /* user ID */;
+    const userId = lastUserMessage.role === 'assistant' ? ASSISTANT_USER_ID : USER_ID;
 
     const completionMessage: Message = await Message.create({
       content: completionContent,
       parent_id: lastUserMessage.id, // Ensure this links correctly
-      conversation_id: /* conversation ID */,
-      user_id: /* assistant user ID */,
+      conversation_id: conversationId,
+      user_id: ASSISTANT_USER_ID,
       model,
       temperature,
     });

@@ -27,6 +27,8 @@ describe('Message Helpers', () => {
       { role: 'assistant', content: 'Hi there!' }
     ];
     // Mock generateCompletionFromConversation implementation as needed
-    // Assertions based on mocked behavior
+    const completion = await generateCompletionFromConversation(conversation, 'gpt-3', 0.7);
+    expect(completion).toEqual(expect.any(String));
+    expect(completion.length).toBeGreaterThan(0);
   });
 });
