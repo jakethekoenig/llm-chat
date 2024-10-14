@@ -46,7 +46,7 @@ const ConversationListPage: React.FC = () => {
       });
       const data = await response.json();
       if (response.ok) {
-        setConversations([...conversations, { id: data.conversationId, content: initialMessage }]);
+        setConversations([...conversations, { id: data.conversationId, content: initialMessage as string }]);
         navigate(`/conversations/${data.conversationId}`);
       } else {
         setError(`Error creating conversation: ${data.error || 'Unknown error'}`);

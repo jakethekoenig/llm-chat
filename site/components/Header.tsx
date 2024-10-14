@@ -13,7 +13,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidePane }) => { // Modify this
     <header className="site-header">
       <nav>
         <ul>
-          <li><button className="toggle-button" onClick={onToggleSidePane}><FaBars /></button></li> {/* Add this line */}
+          <li><button className="toggle-button" onClick={onToggleSidePane} aria-label="Toggle Conversation List"><FaBars /></button></li>
           <li><Link to="/signin">Sign In</Link></li>
           <li><Link to="/register">Register</Link></li>
         </ul>

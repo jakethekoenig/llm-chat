@@ -3,7 +3,7 @@ import { Renderer } from '../renderers/Renderer';
 
 export interface Message {
   id: string;
-  content: string | AsyncIterable<string>;
+  content: string;
   author?: string;
   timestamp?: string;
   buttons?: {

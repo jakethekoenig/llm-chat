@@ -15,7 +15,7 @@ const ConversationList: React.FC<ConversationListProps> = ({ conversations, onCo
         {conversations.map(conversation => (
           <li key={conversation.id} onClick={() => onConversationClick(conversation.id)}>
             <div className="conversation-item">
-              <span className="conversation-title">{conversation.content}</span>
+              <span className="conversation-title">{typeof conversation.content === 'string' ? conversation.content : 'Loading...'}</span>
               <span className="conversation-author">{conversation.author}</span>
             </div>
           </li>
