@@ -1,7 +1,6 @@
 import { Builder, By, until } from 'selenium-webdriver';
 import { Options as ChromeOptions } from 'selenium-webdriver/chrome';
 import 'chromedriver';
-import OpenAI from 'openai';
 import 'jest-styled-components';
 
 jest.mock('openai', () => {

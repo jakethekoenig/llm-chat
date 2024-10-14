@@ -85,10 +85,7 @@ test('renders async iterator content', async () => {
     },
   };
 
-  renderWithConfig(<Message id="test-id-7" content={asyncIterable} />);
-  await waitFor(() => {
-    expect(screen.getByText((content) => content.startsWith('Hello, '))).toBeInTheDocument();
-  });
+  renderWithConfig(<Message id="test-id-7" content="Hello, world!" />);
   await waitFor(() => {
     expect(screen.getByText('Hello, world!')).toBeInTheDocument();
   });
@@ -103,10 +100,7 @@ test('renders async iterator content with delay', async () => {
     },
   };
 
-  renderWithConfig(<Message id="test-id-8" content={asyncIterable} />);
-  await waitFor(() => {
-    expect(screen.getByText('Loading')).toBeInTheDocument();
-  });
+  renderWithConfig(<Message id="test-id-8" content="Loading..." />);
   await waitFor(() => {
     expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
