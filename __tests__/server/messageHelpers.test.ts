@@ -34,4 +34,12 @@ describe('Message Helpers', () => {
     expect(completion.get('conversation_id')).toBe(conversationId);
     expect(completion.get('user_id')).toBe(ASSISTANT_USER_ID); // Ensure it uses the assistant user ID
   });
+
+  test('generateCompletionFromConversation should throw error if message id is missing', async () => {
+    const conversation = [
+      { role: 'user', content: 'Hello' },
+      { role: 'assistant', content: 'Hi there!' }
+    ];
+    await expect(generateCompletionFromConversation(conversation, 'gpt-3', 0.7, 1, 1)).rejects.toThrow('lastUserMessage.id is undefined');
+  });
 });

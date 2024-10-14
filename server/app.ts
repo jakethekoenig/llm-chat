@@ -7,7 +7,7 @@ import { User } from './database/models/User';
 import { Op } from 'sequelize';
 import { Conversation } from './database/models/Conversation';
 import { Message } from './database/models/Message';
-import { addMessage, generateCompletion, buildConversation } from './helpers/messageHelpers';
+import { addMessage, generateCompletion, buildConversation, generateCompletionFromConversation } from './helpers/messageHelpers';
 import { body, validationResult } from 'express-validator';
 
 const app = express();
@@ -128,7 +128,7 @@ app.post('/api/get_completion', authenticateToken, [
 
   try {
     const conversation = await buildConversation(parentId);
-    const completionMessage = await generateCompletionFromConversation(conversation, model, temperature, parentId, userId);
+    const completionMessage = await generateCompletionFromConversation(conversation, model, temperature, Number(conversationId), userId);
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');

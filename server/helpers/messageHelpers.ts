@@ -77,14 +77,15 @@ export const generateCompletion = async (messageId: number, model: string, tempe
   }
 };
 
-export const buildConversation = async (messageId: number): Promise<Array<{ role: string, content: string }>> => {
-  const conversation: Array<{ role: string, content: string }> = [];
+export const buildConversation = async (messageId: number): Promise<Array<{ id: number, role: string, content: string }>> => {
+  const conversation: Array<{ id: number, role: string, content: string }> = [];
   let currentMessage = await Message.findByPk(messageId, { include: [{ model: User }] });
   
   while (currentMessage) {
     const user = await User.findByPk(currentMessage.get('user_id'));
     const isAssistant = user?.username === 'LLM_Model_Username'; // Replace with actual LLM model identifier
     conversation.unshift({
+      id: currentMessage.get('id') as number, // Include ID
       role: isAssistant ? 'assistant' : 'user',
       content: currentMessage.get('content') as string,
     });
@@ -99,7 +100,7 @@ export const buildConversation = async (messageId: number): Promise<Array<{ role
 };
 
 export const generateCompletionFromConversation = async (
-  conversation: Array<{ role: string, content: string }>,
+  conversation: Array<{ id: number, role: string, content: string }>, // Include 'id'
   model: string,
   temperature: number,
   conversationId: number,
