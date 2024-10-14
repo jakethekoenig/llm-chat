@@ -25,19 +25,20 @@ const mathjaxConfig = {
 };
 
 const App = () => {
+  // State to track the visibility of the side pane
   const [isSidePaneOpen, setIsSidePaneOpen] = React.useState(true);
+  // Function to toggle the side pane's visibility
   const toggleSidePane = () => { setIsSidePaneOpen(!isSidePaneOpen); };
 
   return (
     <MathJaxContext config={mathjaxConfig as any}>
       <div className="app-container">
         <Header onToggleSidePane={toggleSidePane} />
-        <div className={`main-content ${isSidePaneOpen ? 'side-pane-open' : 'side-pane-closed'}`}>
+        <div className={`main-content`}>
           {isSidePaneOpen && <ConversationListPage />}
           <div className="page-content">
             <h1>LLM Chat Component Showcase</h1>
             <Routes>
-              <Route path="/" element={<ConversationListPage />} />
               <Route path="/signin" element={<SignIn />} />
               <Route path="/register" element={<Register />} />
               <Route path="/showcase" element={<MessageDemo />} />

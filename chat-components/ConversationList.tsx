@@ -14,9 +14,10 @@ const ConversationList: React.FC<ConversationListProps> = ({ conversations, onCo
       <ul>
         {conversations.map(conversation => (
           <li key={conversation.id} onClick={() => onConversationClick(conversation.id)}>
-            <>
-              {conversation.content} - {conversation.author}
-            </>
+            <div className="conversation-item">
+              <span className="conversation-title">{conversation.content}</span>
+              <span className="conversation-author">{conversation.author}</span>
+            </div>
           </li>
         ))}
       </ul>

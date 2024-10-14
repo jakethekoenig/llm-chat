@@ -56,6 +56,31 @@ body {
   color: red;
 }
 
+@media (max-width: 768px) {
+  .side-pane-open {
+    width: 200px;
+  }
+
+  .page-content {
+    padding: 10px;
+  }
+
+  .toggle-button {
+    font-size: 1.2rem;
+  }
+
+  .conversation-list {
+    padding: 15px;
+  }
+
+  .form-container {
+    max-width: 100%;
+    padding: 15px;
+  }
+}
+  color: red;
+}
+
 h1, h2 {
   text-align: center;
 }

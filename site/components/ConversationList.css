@@ -25,3 +25,19 @@
 .conversation-list li:hover {
   background-color: #e0e0e0;
 }
+
+/* Add visual separation within conversation items */
+.conversation-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.conversation-title {
+  font-weight: bold;
+}
+
+.conversation-author {
+  font-size: 0.9em;
+  color: #555;
+}

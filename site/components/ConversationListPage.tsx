@@ -65,9 +65,30 @@ const ConversationListPage: React.FC = () => {
       {error && <p className="error-message">{error}</p>}
       <form onSubmit={handleCreateConversation}>
         {isLoading && <p>Creating conversation...</p>}
-        <input type="text" value={initialMessage} onChange={(e) => setInitialMessage(e.target.value)} placeholder="Initial Message" required />
-        <input type="text" value={model} onChange={(e) => setModel(e.target.value)} placeholder="Model" required />
-        <input type="number" value={temperature} onChange={(e) => setTemperature(parseFloat(e.target.value))} placeholder="Temperature" required />
+        <input
+          type="text"
+          value={initialMessage}
+          onChange={(e) => setInitialMessage(e.target.value)}
+          placeholder="Initial Message"
+          required
+          className="form-input"
+        />
+        <input
+          type="text"
+          value={model}
+          onChange={(e) => setModel(e.target.value)}
+          placeholder="Model"
+          required
+          className="form-input"
+        />
+        <input
+          type="number"
+          value={temperature}
+          onChange={(e) => setTemperature(parseFloat(e.target.value))}
+          placeholder="Temperature"
+          required
+          className="form-input"
+        />
         <button type="submit" disabled={isLoading}>Create Conversation</button>
       </form>
       <ConversationList conversations={conversations} onConversationClick={handleConversationClick} />
