@@ -37,7 +37,7 @@ const ConversationPage: React.FC = () => {
     fetchMessages();
   }, [conversationId]);
 
-  const handleNewMessageSubmit = async function* (message: string): AsyncIterable<string> {
+  const handleNewMessageSubmit = async (message: string) => {
     const mostRecentMessageId = messages.length > 0 ? messages[messages.length - 1].id : null;
     const response = await fetch(`/api/add_message`, {
       method: 'POST',

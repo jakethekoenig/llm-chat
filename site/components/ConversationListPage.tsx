@@ -20,7 +20,10 @@ const ConversationListPage: React.FC = () => {
         }
       });
       const data = await response.json();
-      setConversations(data);
+      setConversations(data.map((conversation: any) => ({
+        id: conversation.id,
+        content: conversation.content as string
+      })));
     };
     fetchConversations();
   }, []);

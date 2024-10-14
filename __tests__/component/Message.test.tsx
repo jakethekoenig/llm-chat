@@ -78,13 +78,6 @@ test('renders edit button and triggers onEdit', async () => {
 });
 
 test('renders async iterator content', async () => {
-  const asyncIterable = {
-    async *[Symbol.asyncIterator]() {
-      yield 'Hello, ';
-      yield 'world!';
-    },
-  };
-
   renderWithConfig(<Message id="test-id-7" content="Hello, world!" />);
   await waitFor(() => {
     expect(screen.getByText('Hello, world!')).toBeInTheDocument();
@@ -92,14 +85,6 @@ test('renders async iterator content', async () => {
 });
 
 test('renders async iterator content with delay', async () => {
-  const asyncIterable = {
-    async *[Symbol.asyncIterator]() {
-      yield 'Loading';
-      await new Promise(resolve => setTimeout(resolve, 100));
-      yield '...';
-    },
-  };
-
   renderWithConfig(<Message id="test-id-8" content="Loading..." />);
   await waitFor(() => {
     expect(screen.getByText('Loading...')).toBeInTheDocument();
