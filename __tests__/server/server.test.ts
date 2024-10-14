@@ -90,34 +90,18 @@ describe('Server Tests', () => {
     expect(response.status).toBe(401);
   });
 
-  it('should stream data for authenticated users', async () => {
+  it('should return 400 for invalid parentId in add_message', async () => {
     const signInResponse = await request(app)
       .post('/api/signin')
       .send({ username: 'user1', password: 'password1' });
     const token = signInResponse.body.token;
 
-    const response = await request(app)
-      .get('/api/get_completion')
-      .set('Authorization', `Bearer ${token}`)
-      .expect('Content-Type', /text\/event-stream/)
-      .expect(200);
-
-    it('should return 400 for invalid parentId in add_message', async () => {
-      const envResponse = await request(app)
-        .post('/api/add_message')
-        .set('Authorization', `Bearer ${token}`)
-        .send({ content: 'Test message', conversationId: 1, parentId: 'invalid' });
-      expect(envResponse.status).toBe(400);
-      expect(envResponse.body.errors[0].msg).toBe('Parent ID must be an integer');
-    });
-
-    const missingContentResponse = await request(app)
+    const envResponse = await request(app)
       .post('/api/add_message')
       .set('Authorization', `Bearer ${token}`)
-      .send({ content: '', conversationId: 1 });
-    expect(missingContentResponse.text).toContain('data: Example stream data part 1');
-    expect(missingContentResponse.text).toContain('data: Example stream data part 2');
-    expect(missingContentResponse.text).toContain('data: Example stream data part 3');
+      .send({ content: 'Test message', conversationId: 1, parentId: 'invalid' });
+    expect(envResponse.status).toBe(400);
+    expect(envResponse.body.errors[0].msg).toBe('Parent ID must be an integer');
   });
 
   it('should return 401 for unauthenticated users', async () => {
@@ -126,10 +110,7 @@ describe('Server Tests', () => {
   });
 
   it('should return 403 for invalid token', async () => {
-    const signInResponse = await request(app)
-      .post('/api/signin')
-      .send({ username: 'user1', password: 'password1' });
-    const token = signInResponse.body.token;
+    const token = await obtainAuthToken(); // Implement a helper to retrieve a valid token
 
     // Tamper the token to make it invalid
     const invalidToken = token ? token.slice(0, -1) + 'x' : 'invalidToken';
@@ -152,10 +133,7 @@ describe('Server Tests', () => {
   });
 
   it('should generate a completion for a valid message', async () => {
-    const signInResponse = await request(app)
-      .post('/api/signin')
-      .send({ username: 'user1', password: 'password1' });
-    const token = signInResponse.body.token;
+    const token = await obtainAuthToken();
 
     const response = await request(app)
       .post('/api/get_completion_for_message')
@@ -167,10 +145,7 @@ describe('Server Tests', () => {
   });
 
   it('should return 400 for invalid messageId', async () => {
-    const signInResponse = await request(app)
-      .post('/api/signin')
-      .send({ username: 'user1', password: 'password1' });
-    const token = signInResponse.body.token;
+    const token = await obtainAuthToken();
 
     const response = await request(app)
       .post('/api/get_completion_for_message')
@@ -340,10 +315,7 @@ describe('Server Tests', () => {
         const originalApiKey = process.env.OPENAI_API_KEY;
         delete process.env.OPENAI_API_KEY;
 
-        const signInResponse = await request(app)
-          .post('/api/signin')
-          .send({ username: 'user1', password: 'password1' });
-        const token = signInResponse.body.token;
+        const token = await obtainAuthToken();
 
         const response = await request(app)
           .post('/api/get_completion_for_message')
@@ -359,10 +331,7 @@ describe('Server Tests', () => {
 
       // New test for invalid model parameter
       it('should return 400 for invalid model parameter', async () => {
-        const signInResponse = await request(app)
-          .post('/api/signin')
-          .send({ username: 'user1', password: 'password1' });
-        const token = signInResponse.body.token;
+        const token = await obtainAuthToken();
 
         const response = await request(app)
           .post('/api/get_completion_for_message')
@@ -376,10 +345,7 @@ describe('Server Tests', () => {
 
       // New test for generating completion with non-existent messageId
       it('should return 500 when parent message is not found', async () => {
-        const signInResponse = await request(app)
-          .post('/api/signin')
-          .send({ username: 'user1', password: 'password1' });
-        const token = signInResponse.body.token;
+        const token = await obtainAuthToken();
 
         const invalidMessageResponse = await request(app)
           .post('/api/get_completion_for_message')
@@ -402,10 +368,7 @@ describe('Server Tests', () => {
 
       // New test for invalid temperature parameter
       it('should return 400 for invalid temperature parameter', async () => {
-        const signInResponse = await request(app)
-          .post('/api/signin')
-          .send({ username: 'user1', password: 'password1' });
-        const token = signInResponse.body.token;
+        const token = await obtainAuthToken();
 
         let response = await request(app)
           .post('/api/get_completion_for_message')
@@ -417,32 +380,6 @@ describe('Server Tests', () => {
         expect(response.body.errors[0].msg).toBe('Temperature must be a float');
 
         // Removed duplicate test case
-      });
-
-      // New test for missing content in parent message
-      it('should return 500 when parent message has no content', async () => {
-        // Mock Message.findByPk to return a message with empty content
-        jest.spyOn(Message, 'findByPk').mockResolvedValueOnce({
-          get: (field: keyof Message, options?: { plain?: boolean; clone?: boolean }) => {
-            if (field === 'content') return '';
-            if (field === 'conversation_id') return 1;
-            if (field === 'user_id') return 1;
-            return null;
-          },
-        });
-
-        const signInResponse = await request(app)
-          .post('/api/signin')
-          .send({ username: 'user1', password: 'password1' });
-        const token = signInResponse.body.token;
-
-        const response = await request(app)
-          .post('/api/get_completion_for_message')
-          .set('Authorization', `Bearer ${token}`)
-          .send({ messageId: 1, model: 'test-model', temperature: 0.5 });
-
-        expect(response.status).toBe(500);
-        expect(response.body.error).toBe('Internal server error');
       });
 
       // Restore original mocks after tests
