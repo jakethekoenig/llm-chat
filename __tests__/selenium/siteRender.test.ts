@@ -30,7 +30,7 @@ options.addArguments('--disable-dev-shm-usage');
   });
   afterAll(async () => {
     await driver.quit();
-  });
+  }, 20000);
 
   test('should open the site and check for console errors', async () => {
     await driver.get('http://localhost:5173/showcase');
