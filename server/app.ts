@@ -128,7 +128,11 @@ app.post('/api/get_completion', authenticateToken, [
 
   try {
     const conversation = await buildConversation(parentId);
-    const completionMessage = await generateCompletionFromConversation(conversation, model, temperature, Number(conversationId), userId);
+    const conversationId = conversation.length > 0 ? conversation[0].conversationId : null;
+    if (!conversationId) {
+      return res.status(400).json({ error: 'Conversation ID could not be determined.' });
+    }
+    const completionMessage = await generateCompletionFromConversation(conversation, model, temperature, conversationId, userId);
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');

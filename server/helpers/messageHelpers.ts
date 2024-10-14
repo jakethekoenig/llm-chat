@@ -77,8 +77,8 @@ export const generateCompletion = async (messageId: number, model: string, tempe
   }
 };
 
-export const buildConversation = async (messageId: number): Promise<Array<{ id: number, role: string, content: string }>> => {
-  const conversation: Array<{ id: number, role: string, content: string }> = [];
+export const buildConversation = async (messageId: number): Promise<Array<{ id: number, role: string, content: string, conversationId: number }>> => {
+  const conversation: Array<{ id: number, role: string, content: string, conversationId: number }> = [];
   let currentMessage = await Message.findByPk(messageId, { include: [{ model: User }] });
   
   while (currentMessage) {
@@ -88,6 +88,7 @@ export const buildConversation = async (messageId: number): Promise<Array<{ id: 
       id: currentMessage.get('id') as number, // Include ID
       role: isAssistant ? 'assistant' : 'user',
       content: currentMessage.get('content') as string,
+      conversationId: currentMessage.get('conversation_id') as number,
     });
     if (currentMessage.get('parent_id')) {
       currentMessage = await Message.findByPk(currentMessage.get('parent_id'), { include: [{ model: User }] });

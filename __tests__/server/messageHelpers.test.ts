@@ -23,8 +23,8 @@ describe('Message Helpers', () => {
   test('generateCompletionFromConversation should create a completion message', async () => {
     // Mock OpenAI response and create conversation array
     const conversation = [
-      { role: 'user', content: 'Hello' },
-      { role: 'assistant', content: 'Hi there!' }
+      { role: 'user', content: 'Hello', conversationId: 1 },
+      { role: 'assistant', content: 'Hi there!', conversationId: 1 }
     ];
     const conversationId = 1; // Example conversation ID
     const userId = 1; // Example user ID
