@@ -14,22 +14,31 @@ const ConversationListPage: React.FC = () => {
 
   useEffect(() => {
     const fetchConversations = async () => {
-      const response = await fetch('/api/conversations', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      setConversations(data.map((conversation: any) => ({
-        id: conversation.id,
-        content: conversation.content as string
-      })));
+      try {
+        const response = await fetch('/api/conversations', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        const data = await response.json();
+        setConversations(data.map((conversation: any) => ({
+          id: conversation.id,
+          content: conversation.content as string,
+          author: conversation.author || 'Unknown'
+        })));
+      } catch (error) {
+        console.error('Error fetching conversations:', error);
+        setError('Failed to load conversations.');
+      }
     };
     fetchConversations();
   }, []);
 
+  // State to store the initial message for a new conversation
   const [initialMessage, setInitialMessage] = useState('');
+  // State to store the model type
   const [model, setModel] = useState('gpt-4o');
+  // State to store the temperature setting
   const [temperature, setTemperature] = useState(0.0);
   const [isLoading, setIsLoading] = useState(false);
 
