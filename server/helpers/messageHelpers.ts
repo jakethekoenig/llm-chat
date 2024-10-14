@@ -1,8 +1,12 @@
 // server/helpers/messageHelpers.ts
 import { Message } from '../database/models/Message';
+import { User } from '../database/models/User';
 import 'openai/shims/node';
 import { OpenAI } from 'openai';
 import { createLogger, transports, format } from 'winston';
+
+const ASSISTANT_USER_ID = 2; // Replace with the actual assistant user ID from your database
+const USER_ID = 1; // Replace with the actual user ID or fetch dynamically as needed
 
 const logger = createLogger({
   level: 'error',
@@ -65,6 +69,76 @@ export const generateCompletion = async (messageId: number, model: string, tempe
       parent_id: messageId,
       conversation_id: parentMessage.get('conversation_id') as number,
       user_id: parentMessage.get('user_id') as number,
+      model,
+      temperature,
+    });
+    return completionMessage;
+  } catch (error) {
+    if (error instanceof Error) {
+      logger.error('Error generating completion:', { message: error.message });
+    } else {
+      logger.error('Error generating completion:', { error });
+    }
+    throw new Error('Failed to generate completion');
+  }
+};
+
+export const buildConversation = async (messageId: number): Promise<Array<{ id: number, role: string, content: string, conversationId: number }>> => {
+  const conversation: Array<{ id: number, role: string, content: string, conversationId: number }> = [];
+  let currentMessage = await Message.findByPk(messageId, { include: [{ model: User }] });
+  
+  while (currentMessage) {
+    const user = await User.findByPk(currentMessage.get('user_id'));
+    const isAssistant = user?.username === 'LLM_Model_Username'; // Replace with actual LLM model identifier
+    conversation.unshift({
+      id: currentMessage.get('id') as number, // Include ID
+      role: isAssistant ? 'assistant' : 'user',
+      content: currentMessage.get('content') as string,
+      conversationId: currentMessage.get('conversation_id') as number,
+    });
+    if (currentMessage.get('parent_id')) {
+      currentMessage = await Message.findByPk(currentMessage.get('parent_id'), { include: [{ model: User }] });
+    } else {
+      currentMessage = null;
+    }
+  }
+  
+  return conversation;
+};
+
+export const generateCompletionFromConversation = async (
+  conversation: Array<{ id: number, role: string, content: string }>, // Include 'id'
+  model: string,
+  temperature: number,
+  conversationId: number,
+  userId: number
+) => {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OpenAI API key is not set');
+  }
+
+  const openai = new OpenAI({ apiKey: apiKey });
+
+  try {
+    const response = await openai.chat.completions.create({
+      model,
+      messages: conversation.map(msg => ({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content
+      })),
+      temperature,
+    });
+
+    const completionContent = response.choices[0].message?.content || '';
+    const lastUserMessage = conversation[conversation.length - 1];
+    const userId = lastUserMessage.role === 'assistant' ? ASSISTANT_USER_ID : USER_ID;
+
+    const completionMessage: Message = await Message.create({
+      content: completionContent,
+      parent_id: lastUserMessage.id, // Ensure this links correctly
+      conversation_id: conversationId,
+      user_id: userId,
       model,
       temperature,
     });

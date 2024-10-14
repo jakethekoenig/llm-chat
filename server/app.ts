@@ -7,7 +7,7 @@ import { User } from './database/models/User';
 import { Op } from 'sequelize';
 import { Conversation } from './database/models/Conversation';
 import { Message } from './database/models/Message';
-import { addMessage, generateCompletion } from './helpers/messageHelpers';
+import { addMessage, generateCompletion, buildConversation, generateCompletionFromConversation } from './helpers/messageHelpers';
 import { body, validationResult } from 'express-validator';
 
 const app = express();
@@ -124,9 +124,15 @@ app.post('/api/get_completion', authenticateToken, [
   }
 
   const { model, parentId, temperature } = req.body;
+  const userId = (req as any).user.id; // Retrieve user ID from authenticated request
 
   try {
-    const completionMessage = await generateCompletion(parentId, model, temperature);
+    const conversation = await buildConversation(parentId);
+    const conversationId = conversation.length > 0 ? conversation[0].conversationId : null;
+    if (!conversationId) {
+      return res.status(400).json({ error: 'Conversation ID could not be determined.' });
+    }
+    const completionMessage = await generateCompletionFromConversation(conversation, model, temperature, conversationId, userId);
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
