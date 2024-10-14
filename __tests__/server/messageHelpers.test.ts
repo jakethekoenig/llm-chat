@@ -26,6 +26,7 @@ describe('Message Helpers', () => {
       { role: 'user', content: 'Hello', conversationId: 1 },
       { role: 'assistant', content: 'Hi there!', conversationId: 1 }
     ];
+    // Additional assertions can be added here to verify the completion message
     const conversationId = 1; // Example conversation ID
     const userId = 1; // Example user ID
     const completion = await generateCompletionFromConversation(conversation, 'gpt-3', 0.7, conversationId, userId);
