@@ -72,3 +72,66 @@ export const generateCompletion = async (messageId: number, model: string, tempe
     throw new Error('Failed to generate completion');
   }
 };
+
+export const buildConversation = async (messageId: number): Promise<Array<{ role: string, content: string }>> => {
+  const conversation: Array<{ role: string, content: string }> = [];
+  let currentMessage = await Message.findByPk(messageId, { include: [{ model: User }] });
+  
+  while (currentMessage) {
+    const user = await User.findByPk(currentMessage.get('user_id'));
+    const isAssistant = user?.username === 'LLM_Model_Username'; // Replace with actual LLM model identifier
+    conversation.unshift({
+      role: isAssistant ? 'assistant' : 'user',
+      content: currentMessage.get('content') as string,
+    });
+    if (currentMessage.get('parent_id')) {
+      currentMessage = await Message.findByPk(currentMessage.get('parent_id'), { include: [{ model: User }] });
+    } else {
+      currentMessage = null;
+    }
+  }
+  
+  return conversation;
+};
+
+export const generateCompletionFromConversation = async (
+  conversation: Array<{ role: string, content: string }>,
+  model: string,
+  temperature: number
+) => {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OpenAI API key is not set');
+  }
+
+  const openai = new OpenAI({ apiKey: apiKey });
+
+  try {
+    const response = await openai.chat.completions.create({
+      model,
+      messages: conversation,
+      temperature,
+    });
+
+    const completionContent = response.choices[0].message?.content || '';
+    const lastUserMessage = conversation[conversation.length - 1];
+    const userId = lastUserMessage.role === 'assistant' ? /* assistant user ID */ : /* user ID */;
+
+    const completionMessage: Message = await Message.create({
+      content: completionContent,
+      parent_id: lastUserMessage.id, // Ensure this links correctly
+      conversation_id: /* conversation ID */,
+      user_id: /* assistant user ID */,
+      model,
+      temperature,
+    });
+    return completionMessage;
+  } catch (error) {
+    if (error instanceof Error) {
+      logger.error('Error generating completion:', { message: error.message });
+    } else {
+      logger.error('Error generating completion:', { error });
+    }
+    throw new Error('Failed to generate completion');
+  }
+};
