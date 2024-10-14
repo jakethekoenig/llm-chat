@@ -34,9 +34,11 @@ const App = () => {
     <MathJaxContext config={mathjaxConfig as any}>
       <div className="app-container">
         <Header onToggleSidePane={toggleSidePane} />
-        <div className={`main-content`}>
-          {isSidePaneOpen && <ConversationListPage />}
-          <div className="page-content">
+        <div className="main-content">
+          <aside className={`side-pane ${isSidePaneOpen ? 'open' : 'closed'}`}>
+            <ConversationListPage />
+          </aside>
+          <main className="page-content">
             <h1>LLM Chat Component Showcase</h1>
             <Routes>
               <Route path="/signin" element={<SignIn />} />
@@ -45,7 +47,7 @@ const App = () => {
               <Route path="/conversations/:conversationId" element={<ConversationPage />} />
               <Route path="*" element={<div>Page Not Found</div>} />
             </Routes>
-          </div>
+          </main>
         </div>
       </div>
     </MathJaxContext>

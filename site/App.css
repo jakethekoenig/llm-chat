@@ -37,6 +37,39 @@ body {
   border-radius: 4px;
 }
 
+.side-pane {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 250px;
+  background-color: #f1f1f1;
+  overflow-x: hidden;
+  transition: transform 0.3s ease;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+  z-index: 1000;
+}
+
+.side-pane.closed {
+  transform: translateX(-100%);
+}
+
+.side-pane.open {
+  transform: translateX(0);
+}
+
+.page-content {
+  margin-left: 250px;
+}
+
+@media (max-width: 768px) {
+  .side-pane {
+    width: 200px;
+  }
+  .page-content {
+    margin-left: 0;
+  }
+}
 .form-container button {
   width: 100%;
   padding: 10px;

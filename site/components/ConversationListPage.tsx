@@ -4,8 +4,11 @@ import '../App.css'; // Correct the import path
 import ConversationList from '../../chat-components/ConversationList';
 import { Message as MessageType } from '../../chat-components/types/Message';
 
+// Component to display the list of conversations
 const ConversationListPage: React.FC = () => {
+  // State to store the list of conversations
   const [conversations, setConversations] = useState<MessageType[]>([]);
+  // State to store any error messages
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
@@ -45,7 +48,7 @@ const ConversationListPage: React.FC = () => {
         body: JSON.stringify({ initialMessage, model, temperature })
       });
       const data = await response.json();
-      if (response.ok) {
+      if (response.ok && data.conversationId) {
         setConversations([...conversations, { id: data.conversationId, content: initialMessage as string }]);
         navigate(`/conversations/${data.conversationId}`);
       } else {
@@ -94,6 +97,6 @@ const ConversationListPage: React.FC = () => {
       <ConversationList conversations={conversations} onConversationClick={handleConversationClick} />
     </div>
   );
-};
+}; // End of ConversationListPage
 
 export default ConversationListPage;
