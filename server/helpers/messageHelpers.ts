@@ -117,7 +117,10 @@ export const generateCompletionFromConversation = async (
   try {
     const response = await openai.chat.completions.create({
       model,
-      messages: conversation,
+      messages: conversation.map(msg => ({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content
+      })),
       temperature,
     });
 
@@ -129,7 +132,7 @@ export const generateCompletionFromConversation = async (
       content: completionContent,
       parent_id: lastUserMessage.id, // Ensure this links correctly
       conversation_id: conversationId,
-      user_id: ASSISTANT_USER_ID,
+      user_id: userId,
       model,
       temperature,
     });

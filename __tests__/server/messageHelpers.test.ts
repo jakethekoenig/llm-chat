@@ -4,6 +4,7 @@ import { Message } from '../../server/database/models/Message';
 import { User } from '../../server/database/models/User';
 
 describe('Message Helpers', () => {
+  const ASSISTANT_USER_ID = 2; // Add missing constant
   test('buildConversation should retrieve the full conversation chain', async () => {
     // Setup mock messages and users
     const user = await User.create({ username: 'testUser', email: 'test@example.com', hashed_password: 'hashed' });
