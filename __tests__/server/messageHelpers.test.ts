@@ -26,9 +26,12 @@ describe('Message Helpers', () => {
       { role: 'user', content: 'Hello' },
       { role: 'assistant', content: 'Hi there!' }
     ];
-    // Mock generateCompletionFromConversation implementation as needed
-    const completion = await generateCompletionFromConversation(conversation, 'gpt-3', 0.7);
-    expect(completion).toEqual(expect.any(String));
-    expect(completion.length).toBeGreaterThan(0);
+    const conversationId = 1; // Example conversation ID
+    const userId = 1; // Example user ID
+    const completion = await generateCompletionFromConversation(conversation, 'gpt-3', 0.7, conversationId, userId);
+    expect(completion).toEqual(expect.any(Object)); // Assuming it returns a Message instance
+    expect(completion.get('content')).toBeDefined();
+    expect(completion.get('conversation_id')).toBe(conversationId);
+    expect(completion.get('user_id')).toBe(ASSISTANT_USER_ID); // Ensure it uses the assistant user ID
   });
 });

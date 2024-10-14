@@ -124,10 +124,11 @@ app.post('/api/get_completion', authenticateToken, [
   }
 
   const { model, parentId, temperature } = req.body;
+  const userId = (req as any).user.id; // Retrieve user ID from authenticated request
 
   try {
     const conversation = await buildConversation(parentId);
-    const completionMessage = await generateCompletionFromConversation(conversation, model, temperature);
+    const completionMessage = await generateCompletionFromConversation(conversation, model, temperature, parentId, userId);
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');

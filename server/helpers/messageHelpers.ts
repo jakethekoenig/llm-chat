@@ -101,10 +101,10 @@ export const buildConversation = async (messageId: number): Promise<Array<{ role
 export const generateCompletionFromConversation = async (
   conversation: Array<{ role: string, content: string }>,
   model: string,
-  temperature: number
+  temperature: number,
+  conversationId: number,
+  userId: number
 ) => {
-  const conversationId = /* Fetch or pass the conversation ID */;
-  const userId = /* Determine the user ID based on roles */;
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error('OpenAI API key is not set');
