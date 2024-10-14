@@ -14,9 +14,15 @@ const logger = createLogger({
     new transports.Console()
   ]
 });
-// Removed duplicate logger declaration
 
-export const addMessage = async (content: string, conversationId: number, parentId: number | null, userId: number) => {
+export { logger }; // Removed generateCompletion to prevent duplicate export
+
+export const addMessage = async (
+  content: string,
+  conversationId: number,
+  parentId: number | null,
+  userId: number
+) => {
   const message = await Message.create({
     content,
     conversation_id: conversationId,
