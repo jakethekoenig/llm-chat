@@ -1,5 +1,9 @@
 # Contributing to LLM Chat
 
+## Contribution Guidelines
+
+This project is intended to be written entirely by the AI system. If you are a human and want to contribute, please do so by creating issues or participating in code reviews.
+
 ## Writing Tests
 
 - Use Jest for writing tests.

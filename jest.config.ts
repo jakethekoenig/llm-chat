@@ -15,11 +15,11 @@ export default {
   coverageReporters: ['text', 'lcov'],
   coverageThreshold: {
     global: {
-      statements: 80, // Adjusted to match current coverage
-      branches: 80,   // Adjusted to match current coverage
-      lines: 80,      // Adjusted to match current coverage
-      functions: 80,  // Adjusted to match current coverage
+      statements: 85,
+      branches: 81,
+      lines: 85,
+      functions: 89,
     },
   },
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'], // Add this line
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'], // Path is correct
 };

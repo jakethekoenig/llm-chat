@@ -4,6 +4,7 @@ import Message from '../../chat-components/Message';
 import Conversation from '../../chat-components/Conversation';
 import ConversationList from '../../chat-components/ConversationList';
 import { CodeBlockRenderer } from '../../chat-components/renderers/CodeBlockRenderer';
+import NewMessage from '../../chat-components/NewMessage';
 import { LatexRenderer } from '../../chat-components/renderers/LatexRenderer';
 import { ArtifactRenderer } from '../../chat-components/renderers/ArtifactRenderer';
 import { MessageConfigProvider } from '../../chat-components/MessageConfigContext';
@@ -48,6 +49,7 @@ const MessageDemo = () => {
     { id: '5', content: 'What about you?', author: 'User2', timestamp: new Date().toISOString(), parentId: '2' },
     { id: '6', content: 'I am doing well!', author: 'User', timestamp: new Date().toISOString(), parentId: '3' },
     { id: '7', content: 'Great to hear!', author: 'User2', timestamp: new Date().toISOString(), parentId: '6' },
+    { id: '8', content: 'User-specific message for demonstration.', author: 'User', timestamp: new Date().toISOString(), parentId: '7' },
   ];
 
   const conversations: MessageType[] = [
@@ -70,7 +72,9 @@ const MessageDemo = () => {
           {streamingContent && <Message id="3" content={streamingContent} author="Streamer" timestamp={new Date().toISOString()} renderers={renderers} buttons={{ copy: 'enabled', share: 'enabled', delete: 'enabled', edit: 'enabled' }} />}
         </>
       )}
-      {tab === 'conversation' && <Conversation messages={messages} />}
+      {tab === 'conversation' && (
+        <Conversation messages={messages} author="User" onSubmit={handleNewMessageSubmit} />
+      )}
       {tab === 'conversationList' && <ConversationList conversations={conversations} />}
     </div>
   </MessageConfigProvider>

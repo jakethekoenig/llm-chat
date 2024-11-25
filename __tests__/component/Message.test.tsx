@@ -6,6 +6,19 @@ import { CodeBlockRenderer } from '../../chat-components/renderers/CodeBlockRend
 import { ArtifactRenderer } from '../../chat-components/renderers/ArtifactRenderer';
 import { MessageConfigProvider, MessageConfig, defaultConfig } from '../../chat-components/MessageConfigContext';
 import { Renderer } from '../../chat-components/renderers/Renderer';
+import OpenAI from 'openai';
+
+jest.mock('openai', () => {
+  return {
+    OpenAI: jest.fn().mockImplementation(() => ({
+      completions: {
+        create: jest.fn().mockResolvedValue({
+          choices: [{ text: 'Mocked completion response' }]
+        })
+      }
+    }))
+  };
+});
 
 beforeAll(() => {
   Object.assign(navigator, {
@@ -15,7 +28,6 @@ beforeAll(() => {
     },
   });
 });
-
 beforeEach(() => {
   jest.clearAllMocks();
 });
@@ -229,4 +241,25 @@ test('renders menu-ed buttons and triggers respective actions', async () => {
     expect(screen.getByText('Delete')).toBeInTheDocument();
     expect(screen.getByText('Edit')).toBeInTheDocument();
   });
+});
+
+test('renders message with right justification and different background for author', () => {
+  renderWithConfig(<Message id="test-id-17" content="Test message" author="Test Author" $isAuthor={true} />);
+  const messageContainer = screen.getByTestId('message-container');
+  expect(messageContainer).toHaveStyle('text-align: right');
+  expect(messageContainer).toHaveStyle('background-color: #e0f7fa');
+  // Ensure $isAuthor is not passed to DOM
+  expect(messageContainer).not.toHaveAttribute('$isAuthor');
+});
+
+test('does not pass $isAuthor prop to DOM', () => {
+  renderWithConfig(<Message id="test-id-20" content="Another test message" author="AuthorUser" $isAuthor={true} />);
+  const messageContainer = screen.getByTestId('message-container');
+  expect(messageContainer).not.toHaveAttribute('$isAuthor');
+});
+
+test('does not pass transient props to DOM elements', () => {
+  renderWithConfig(<Message id="test-id-19" content="Test message" $isAuthor={true} />);
+  const messageContainer = screen.getByTestId('message-container');
+  expect(messageContainer).not.toHaveAttribute('$isAuthor');
 });
