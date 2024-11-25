@@ -36,9 +36,13 @@ export class ArtifactRenderer implements Renderer {
 
   render(content: string, startIndex: number, endIndex: number): React.ReactNode {
     const artifactContent = content.slice(startIndex, endIndex);
+    // Ensure content is safe before rendering
+    const sanitizedContent = artifactContent
+      .replace(/[<>]/g, '') // Remove any HTML tags
+      .trim(); // Remove whitespace
     return (
-      <span className="artifact-content" data-content={artifactContent}>
-        {this.subRenderer ? this.subRenderer.render(artifactContent, 0, artifactContent.length) : <div dangerouslySetInnerHTML={{ __html: artifactContent }} />}
+      <span className="artifact-content" data-content={sanitizedContent}>
+        {this.subRenderer ? this.subRenderer.render(sanitizedContent, 0, sanitizedContent.length) : <div dangerouslySetInnerHTML={{ __html: sanitizedContent }} />}
       </span>
     );
   }

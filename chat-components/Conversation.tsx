@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Message from './Message';
 import { Message as MessageType } from './types/Message';
 import NewMessage from './NewMessage'; // Ensure this path is correct
+import { ArtifactRenderer } from './renderers/ArtifactRenderer';
 
 interface ConversationProps {
   messages: MessageType[];
@@ -10,6 +11,7 @@ interface ConversationProps {
 }
 
 const Conversation: React.FC<ConversationProps> = ({ messages, onSubmit, author }) => {
+  const renderers = [new ArtifactRenderer({ tagName: 'artifact' })];
   // TODO: Refactor messages to be a map
   const getChildren = (_messages: MessageType[], parentId: string | null): MessageType[] => {
     return _messages.filter(message => message.parentId === parentId);

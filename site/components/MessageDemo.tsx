@@ -56,6 +56,7 @@ const MessageDemo = () => {
     { id: '1', content: 'Conversation 1', author: 'User1', timestamp: new Date().toISOString(), parentId: null },
     { id: '2', content: 'Conversation 2', author: 'User2', timestamp: new Date().toISOString(), parentId: null },
     { id: '3', content: exampleMessage, author: 'User3', timestamp: new Date().toISOString(), parentId: '1' },
+    { id: '4', content: '<artifact><canvas id="demoCanvas"></canvas></artifact>', author: 'User4', timestamp: new Date().toISOString(), parentId: '2' },
   ];
   return (
     <MessageConfigProvider config={{ buttons: { copy: 'enabled', share: 'enabled', delete: 'enabled', edit: 'enabled' }, theme: { primaryColor: '#007BFF', secondaryColor: '#6C757D', mode: 'light' } }}>
