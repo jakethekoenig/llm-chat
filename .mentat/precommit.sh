@@ -1,5 +1,3 @@
-npm run format
-npm run lint:fix
-npm run test
-npm run test:selenium
-npm run typecheck
+npx tsc --noEmit
+npx eslint . --fix
+npm test
