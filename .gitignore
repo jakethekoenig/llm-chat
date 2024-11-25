@@ -5,3 +5,7 @@ dist-server
 todo
 database_development.sqlite
 config/config.json
+# SQLite database files
+*.sqlite
+*.sqlite3
+database_test.sqlite
