@@ -67,6 +67,8 @@ const Message: React.FC<MessageProps> = ({ renderers = [], currentIndex = 0, tot
   const [displayedContent, setDisplayedContent] = useState<string>('');
   const isMountedRef = useRef(true);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const [isSidePanelOpen, setIsSidePanelOpen] = useState<boolean>(false);
+  const [artifactContent, setArtifactContent] = useState<string | null>(null);
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
   const [artifactContent, setArtifactContent] = useState<string | null>(null);
 
@@ -136,6 +138,8 @@ const Message: React.FC<MessageProps> = ({ renderers = [], currentIndex = 0, tot
       if (!endSeq) {
         if (startSeq) {
           elements.push(<span key={`rendered-${startSeq[0]}`} onClick={() => handleArtifactClick(content.slice(startSeq[1], content.length))}>{matchedRenderer.render(content, startSeq[0], content.length)}</span>);
+        } else {
+          elements.push(<span key={`rendered-${start}`} />);
         }
         break;
       }

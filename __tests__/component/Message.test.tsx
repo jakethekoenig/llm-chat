@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Message from '../../chat-components/Message';
@@ -175,6 +175,7 @@ test('copies message content to clipboard', async () => {
 });
 
 test('renders menu-ed buttons and triggers respective actions', async () => {
+  jest.useFakeTimers();
   renderWithConfig(<Message id="test-id-11" content="Test message" buttons={{ copy: 'menu-ed', share: 'menu-ed', delete: 'menu-ed', edit: 'menu-ed' }} />);
   expect(screen.getByText('Menu')).toBeInTheDocument();
   fireEvent.click(screen.getByText('Menu'));

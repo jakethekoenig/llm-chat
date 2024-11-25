@@ -46,4 +46,5 @@ export class ArtifactRenderer implements Renderer {
       </span>
     );
   }
+  // TODO: Replace dangerouslySetInnerHTML with sanitized content using DOMPurify
 }
