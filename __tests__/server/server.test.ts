@@ -445,10 +445,14 @@ describe('Server Tests', () => {
             parentId: 1,
             temperature: 0.5
           });
-        expect(response.status).toBe(201);
-        expect(response.headers['content-type']).toMatch(/application\/json/);
+        
+        expect(response.status).toBe(200);
+        expect(response.headers['content-type']).toBe('text/event-stream');
         expect(response.headers['cache-control']).toBe('no-cache');
         expect(response.headers['connection']).toBe('keep-alive');
+        
+        // Check if the response body contains the streamed data
+        expect(response.text).toContain('data: ');
       });
 
       it('should return 400 for invalid streaming parameters', async () => {
