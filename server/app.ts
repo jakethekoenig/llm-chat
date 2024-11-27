@@ -127,25 +127,24 @@ app.post('/api/get_completion', authenticateToken, [
 
   try {
     const completionMessage = await generateCompletion(parentId, model, temperature);
-    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    const streamData = JSON.stringify({ id: completionMessage.get('id'), content: completionMessage.get('content')});
-    res.write(`data: ${streamData}\n\n`);
+    // Send initial completion message
+    res.write(`data: ${completionMessage.get('content')}\n\n`);
 
     // Placeholder for actual streaming logic
     const messages = [
-      { chunk: 'Example stream data part 1' },
-      { chunk: 'Example stream data part 2' },
-      { chunk: 'Example stream data part 3' }
+      'Example stream data part 1',
+      'Example stream data part 2',
+      'Example stream data part 3'
     ];
 
     let index = 0;
     const interval = setInterval(() => {
       if (index < messages.length) {
-        const chunkData = JSON.stringify(messages[index]);
-        res.write(`data: ${chunkData}\n\n`);
+        res.write(`data: ${messages[index]}\n\n`);
         index++;
       } else {
         clearInterval(interval);

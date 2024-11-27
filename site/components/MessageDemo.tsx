@@ -6,6 +6,7 @@ import ConversationList from '../../chat-components/ConversationList';
 import { CodeBlockRenderer } from '../../chat-components/renderers/CodeBlockRenderer';
 import NewMessage from '../../chat-components/NewMessage';
 import { LatexRenderer } from '../../chat-components/renderers/LatexRenderer';
+import { ArtifactRenderer } from '../../chat-components/renderers/ArtifactRenderer';
 import { MessageConfigProvider } from '../../chat-components/MessageConfigContext';
 import { Message as MessageType } from '../../chat-components/types/Message';
 
@@ -36,9 +37,9 @@ const MessageDemo = () => {
     }
   };
 
-  const exampleMessage = `\`\`\`python\nprint(1)\nprint(2)\n\`\`\`\nHere's an example with inline math \\(E=mc^2\\), display math $$\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2},$$ and bracketed math \\[\\sum_{n=1}^\\infty \\frac{1}{n^2} = \\frac{\\pi^2}{6}.\\] \nAnd one more final formula: \\(\\frac{d}{dx}\\left(\\int_{0}^{x} f(u) \\, du\\right) = f(x)\\).`;
+  const exampleMessage = `<artifact><canvas id="myCanvas"></canvas></artifact>\nHere's an example with inline math \\(E=mc^2\\), display math $$\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2},$$ and bracketed math \\[\\sum_{n=1}^\\infty \\frac{\\pi^2}{6}.\\] \nAnd one more final formula: \\(\\frac{d}{dx}\\left(\\int_{0}^{x} f(u) \\, du\\right) = f(x)\\).`;
 
-  const renderers = [new CodeBlockRenderer(), new LatexRenderer()];
+  const renderers = [new CodeBlockRenderer(), new LatexRenderer(), new ArtifactRenderer({ tagName: 'artifact' })];
 
   const messages: MessageType[] = [
     { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
@@ -54,8 +55,9 @@ const MessageDemo = () => {
   const conversations: MessageType[] = [
     { id: '1', content: 'Conversation 1', author: 'User1', timestamp: new Date().toISOString(), parentId: null },
     { id: '2', content: 'Conversation 2', author: 'User2', timestamp: new Date().toISOString(), parentId: null },
+    { id: '3', content: exampleMessage, author: 'User3', timestamp: new Date().toISOString(), parentId: '1' },
+    { id: '4', content: '<artifact><canvas id="demoCanvas"></canvas></artifact>', author: 'User4', timestamp: new Date().toISOString(), parentId: '2' },
   ];
-
   return (
     <MessageConfigProvider config={{ buttons: { copy: 'enabled', share: 'enabled', delete: 'enabled', edit: 'enabled' }, theme: { primaryColor: '#007BFF', secondaryColor: '#6C757D', mode: 'light' } }}>
       <div>
@@ -68,7 +70,7 @@ const MessageDemo = () => {
           <Message id="1" content={exampleMessage} author="John Doe" timestamp={new Date().toISOString()} renderers={renderers} buttons={{ copy: 'enabled', share: 'enabled', delete: 'enabled', edit: 'enabled' }} />
           <Message id="2" content="No buttons example" author="Jane Doe" timestamp={new Date().toISOString()} buttons={{ copy: 'disabled', share: 'disabled', delete: 'disabled', edit: 'disabled' }} />
           <button onClick={() => setStreamingContent(startStreaming())}>Start Streaming</button>
-          {streamingContent && <Message id="3" content={streamingContent} author="Streamer" timestamp={new Date().toISOString()} renderers={renderers} buttons={{ copy: 'enabled', share: 'menu-ed', delete: 'menu-ed', edit: 'menu-ed' }} />}
+          {streamingContent && <Message id="3" content={streamingContent} author="Streamer" timestamp={new Date().toISOString()} renderers={renderers} buttons={{ copy: 'enabled', share: 'enabled', delete: 'enabled', edit: 'enabled' }} />}
         </>
       )}
       {tab === 'conversation' && (

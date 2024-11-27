@@ -1,10 +1,11 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import React, { useCallback } from 'react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Message from '../../chat-components/Message';
 import { CodeBlockRenderer } from '../../chat-components/renderers/CodeBlockRenderer';
-import { Renderer } from '../../chat-components/renderers/Renderer';
+import { ArtifactRenderer } from '../../chat-components/renderers/ArtifactRenderer';
 import { MessageConfigProvider, MessageConfig, defaultConfig } from '../../chat-components/MessageConfigContext';
+import { Renderer } from '../../chat-components/renderers/Renderer';
 import OpenAI from 'openai';
 
 jest.mock('openai', () => {
@@ -44,6 +45,53 @@ test('renders author and timestamp', () => {
   renderWithConfig(<Message id="test-id-2" content="Test message" author="Test Author" timestamp="2023-01-01T00:00:00Z" currentIndex={0} totalSiblings={2} />);
   expect(screen.getByText('Test Author')).toBeInTheDocument();
   expect(screen.getByText(new Date('2023-01-01T00:00:00Z').toLocaleString())).toBeInTheDocument();
+});
+
+test('renders artifact content and opens side panel', async () => {
+  const content = '<artifact>Artifact Content</artifact>';
+  const renderers = [new ArtifactRenderer({ tagName: 'artifact' })];
+  renderWithConfig(<Message id="test-id-17" content={content} renderers={renderers} />);
+  
+  const artifactElement = screen.getByText(/Artifact Content/);
+  expect(artifactElement.closest('.artifact-content')).toBeInTheDocument();
+  
+  fireEvent.click(artifactElement);
+  
+  const sidePanel = screen.getByRole('complementary', { name: /artifact content/i });
+  expect(sidePanel).toHaveClass('side-panel');
+  
+  const backdrop = screen.getByTestId('side-panel-backdrop');
+  expect(backdrop).toBeInTheDocument();
+  
+  const closeButton = screen.getByRole('button', { name: /close/i });
+  fireEvent.click(closeButton);
+  
+  await waitFor(() => {
+    expect(sidePanel).not.toBeInTheDocument();
+    expect(backdrop).not.toBeInTheDocument();
+  });
+});
+
+test('renders HTML content in artifact safely', () => {
+  const htmlContent = '<artifact><div>Safe <b>HTML</b></div><script>alert("unsafe")</script></artifact>';
+  const renderers = [new ArtifactRenderer({ tagName: 'artifact' })];
+  renderWithConfig(<Message id="test-id-18" content={htmlContent} renderers={renderers} />);
+  
+  const artifactContainer = screen.getByTestId('message-container');
+  const artifactContent = artifactContainer.querySelector('.artifact-rendered-content');
+  expect(artifactContent).toBeInTheDocument();
+  expect(artifactContent?.textContent).toMatch(/Safe HTML/);
+  
+  const artifactWrapper = artifactContainer.querySelector('.artifact-content');
+  expect(artifactWrapper).toBeInTheDocument();
+  fireEvent.click(artifactWrapper!);
+  
+  const sidePanel = screen.getByRole('complementary', { name: /artifact content/i });
+  const renderedContent = sidePanel.querySelector('.artifact-rendered-content');
+  
+  expect(renderedContent).toHaveTextContent(/Safe HTML/);
+  expect(renderedContent?.innerHTML).not.toContain('script');
+  expect(renderedContent?.innerHTML).toContain('<b>HTML</b>');
 });
 
 test('renders control buttons based on props', async () => {
@@ -153,6 +201,7 @@ test('copies message content to clipboard', async () => {
 });
 
 test('renders menu-ed buttons and triggers respective actions', async () => {
+  jest.useFakeTimers();
   renderWithConfig(<Message id="test-id-11" content="Test message" buttons={{ copy: 'menu-ed', share: 'menu-ed', delete: 'menu-ed', edit: 'menu-ed' }} />);
   expect(screen.getByText('Menu')).toBeInTheDocument();
   fireEvent.click(screen.getByText('Menu'));

@@ -22,16 +22,23 @@ describe('Site Render Tests', () => {
   beforeAll(async () => {
     const options = new ChromeOptions();
     options.addArguments('--headless');
-options.addArguments('--no-sandbox');
-options.addArguments('--disable-dev-shm-usage');
-    driver = await new Builder()
-      .forBrowser('chrome')
-      .setChromeOptions(options)
-      .build();
-  });
+    options.addArguments('--no-sandbox');
+    options.addArguments('--disable-dev-shm-usage');
+    try {
+      driver = await new Builder()
+        .forBrowser('chrome')
+        .setChromeOptions(options)
+        .build();
+    } catch (error) {
+      console.error('Failed to initialize WebDriver:', error);
+      throw error;
+    }
+  }, 30000);
   afterAll(async () => {
-    await driver.quit();
-  });
+    if (driver) {
+      await driver.quit();
+    }
+  }, 10000);
 
   test('should open the site and check for console errors', async () => {
     await driver.get('http://localhost:5173/showcase');

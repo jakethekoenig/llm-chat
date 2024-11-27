@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import DOMPurify from 'dompurify';
 import styled from 'styled-components';
 import { Button, Menu, MenuItem } from '@mui/material';
 import { ContentCopy as CopyIcon, Share as ShareIcon, Delete as DeleteIcon, Edit as EditIcon, MoreVert as MoreVertIcon } from '@mui/icons-material';
 import { useMessageConfig } from './MessageConfigContext';
 import { Renderer } from './renderers/Renderer';
+import { ArtifactRenderer } from './renderers/ArtifactRenderer';
 import { Message as MessageType } from './types/Message';
 
 interface MessageProps extends MessageType {
@@ -66,7 +68,21 @@ const Message: React.FC<MessageProps> = ({ renderers = [], currentIndex = 0, tot
   const [displayedContent, setDisplayedContent] = useState<string>('');
   const isMountedRef = useRef(true);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const [isSidePanelOpen, setIsSidePanelOpen] = useState<boolean>(false);
+  const [artifactContent, setArtifactContent] = useState<string | null>(null);
 
+  const handleArtifactClick = useCallback((content: string) => {
+    setArtifactContent(content);
+    setIsSidePanelOpen(true);
+  }, [setArtifactContent, setIsSidePanelOpen]);
+
+  const getArtifactContent = useCallback((start: number, end: number) => {
+    if (typeof content === 'string') {
+      return content.slice(start, end);
+    }
+    // For AsyncIterable, we should be working with displayedContent which is already a string
+    return displayedContent.slice(start, end);
+  }, [content, displayedContent]);
   useEffect(() => {
     isMountedRef.current = true;
     setDisplayedContent(''); // Reset content when prop changes
@@ -127,11 +143,27 @@ const Message: React.FC<MessageProps> = ({ renderers = [], currentIndex = 0, tot
       }
       const endSeq = matchedRenderer.detectEndSequence(content, startSeq[1]) as [number, number] | null;
       if (!endSeq) {
-        elements.push(<span key={`rendered-${startSeq[0]}`}>{matchedRenderer.render(content, startSeq[0], content.length)}</span>);
+        if (startSeq) {
+          const renderedContent = matchedRenderer.render(content, startSeq[0], content.length);
+          if (renderedContent && typeof renderedContent === 'object' && 'props' in renderedContent) {
+            elements.push(
+              <span key={`rendered-${startSeq[0]}`} onClick={() => handleArtifactClick(renderedContent.props['data-content'])}>
+                {renderedContent}
+              </span>
+            );
+          }
+        }
         break;
       }
-      if (endSeq !== null) {
-        elements.push(<span key={`rendered-${startSeq[0]}`}>{matchedRenderer.render(content, startSeq[0], endSeq[1])}</span>);
+      if (startSeq && endSeq !== null) {
+        const renderedContent = matchedRenderer.render(content, startSeq[0], endSeq[1]);
+        if (renderedContent && typeof renderedContent === 'object' && 'props' in renderedContent) {
+          elements.push(
+            <span key={`rendered-${startSeq[0]}`} onClick={() => handleArtifactClick(renderedContent.props['data-content'])}>
+              {renderedContent}
+            </span>
+          );
+        }
         start = endSeq[1];
       } else {
         elements.push(<span key={`plain-${start}`}>{content.slice(start)}</span>);
@@ -175,6 +207,40 @@ const Message: React.FC<MessageProps> = ({ renderers = [], currentIndex = 0, tot
       </ButtonContainer>
       {onPrev && onNext && (
         <NavigationButtons onPrev={onPrev} onNext={onNext} hasSiblings={hasSiblings} currentIndex={currentIndex} totalSiblings={totalSiblings} />
+      )}
+      {isSidePanelOpen && (
+        <>
+          <div 
+            className="side-panel-backdrop" 
+            onClick={() => setIsSidePanelOpen(false)} 
+            data-testid="side-panel-backdrop"
+            aria-hidden="true"
+          />
+          <div 
+            className="side-panel" 
+            role="complementary" 
+            aria-label="Artifact content"
+          >
+            <button 
+              className="side-panel-close" 
+              onClick={() => setIsSidePanelOpen(false)}
+              aria-label="Close artifact panel"
+            >
+              Close
+            </button>
+            <div 
+              className="artifact-rendered-content"
+              role="article"
+              dangerouslySetInnerHTML={{ 
+                __html: DOMPurify.sanitize(artifactContent || '', {
+                  USE_PROFILES: { html: true },
+                  ADD_TAGS: ['canvas'],
+                  ADD_ATTR: ['id']
+                })
+              }} 
+            />
+          </div>
+        </>
       )}
     </MessageContainer>
   );
