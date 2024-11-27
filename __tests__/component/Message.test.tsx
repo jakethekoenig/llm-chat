@@ -54,18 +54,41 @@ test('renders artifact content and opens side panel', async () => {
   
   const artifactElement = screen.getByText('Artifact Content');
   expect(artifactElement).toBeInTheDocument();
+  expect(artifactElement).toHaveClass('artifact-content');
   
   fireEvent.click(artifactElement);
   
-  const sidePanel = await screen.findByText('Artifact Content');
-  expect(sidePanel).toBeInTheDocument();
+  const sidePanel = screen.getByRole('complementary', { name: /artifact content/i });
+  expect(sidePanel).toHaveClass('side-panel');
   
-  const closeButton = screen.getByText('Close');
+  const backdrop = screen.getByTestId('side-panel-backdrop');
+  expect(backdrop).toBeInTheDocument();
+  
+  const closeButton = screen.getByRole('button', { name: /close/i });
   fireEvent.click(closeButton);
   
   await waitFor(() => {
     expect(sidePanel).not.toBeInTheDocument();
+    expect(backdrop).not.toBeInTheDocument();
   });
+});
+
+test('renders HTML content in artifact safely', () => {
+  const htmlContent = '<artifact><div>Safe <b>HTML</b></div><script>alert("unsafe")</script></artifact>';
+  const renderers = [new ArtifactRenderer({ tagName: 'artifact' })];
+  renderWithConfig(<Message id="test-id-18" content={htmlContent} renderers={renderers} />);
+  
+  const artifactElement = screen.getByText(/Safe HTML/);
+  expect(artifactElement).toBeInTheDocument();
+  
+  fireEvent.click(artifactElement);
+  
+  const sidePanel = screen.getByRole('complementary', { name: /artifact content/i });
+  const renderedContent = sidePanel.querySelector('.artifact-rendered-content');
+  
+  expect(renderedContent).toHaveTextContent(/Safe HTML/);
+  expect(renderedContent?.innerHTML).not.toContain('script');
+  expect(renderedContent?.innerHTML).toContain('<b>HTML</b>');
 });
 
 test('renders control buttons based on props', async () => {

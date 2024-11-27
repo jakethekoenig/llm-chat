@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import DOMPurify from 'dompurify';
 import styled from 'styled-components';
 import { Button, Menu, MenuItem } from '@mui/material';
 import { ContentCopy as CopyIcon, Share as ShareIcon, Delete as DeleteIcon, Edit as EditIcon, MoreVert as MoreVertIcon } from '@mui/icons-material';
@@ -69,13 +70,15 @@ const Message: React.FC<MessageProps> = ({ renderers = [], currentIndex = 0, tot
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [isSidePanelOpen, setIsSidePanelOpen] = useState<boolean>(false);
   const [artifactContent, setArtifactContent] = useState<string | null>(null);
-  const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
-  const [artifactContent, setArtifactContent] = useState<string | null>(null);
 
   const handleArtifactClick = useCallback((content: string) => {
     setArtifactContent(content);
     setIsSidePanelOpen(true);
-  }, []);
+  }, [setArtifactContent, setIsSidePanelOpen]);
+
+  const getArtifactContent = useCallback((start: number, end: number) => {
+    return content.slice(start, end);
+  }, [content]);
   useEffect(() => {
     isMountedRef.current = true;
     setDisplayedContent(''); // Reset content when prop changes
@@ -137,14 +140,19 @@ const Message: React.FC<MessageProps> = ({ renderers = [], currentIndex = 0, tot
       const endSeq = matchedRenderer.detectEndSequence(content, startSeq[1]) as [number, number] | null;
       if (!endSeq) {
         if (startSeq) {
-          elements.push(<span key={`rendered-${startSeq[0]}`} onClick={() => handleArtifactClick(content.slice(startSeq[1], content.length))}>{matchedRenderer.render(content, startSeq[0], content.length)}</span>);
+          const artifactContent = getArtifactContent(startSeq[1], content.length);
+          elements.push(
+            <span key={`rendered-${startSeq[0]}`} onClick={() => handleArtifactClick(artifactContent)}>
+              {matchedRenderer.render(content, startSeq[0], content.length)}
+            </span>
+          );
         } else {
           elements.push(<span key={`rendered-${start}`} />);
         }
         break;
       }
       if (startSeq && endSeq !== null) {
-        const artifactContent = content.slice(startSeq[1], endSeq[0]);
+        const artifactContent = getArtifactContent(startSeq[1], endSeq[0]);
         elements.push(
           <span key={`rendered-${startSeq[0]}`} onClick={() => handleArtifactClick(artifactContent)}>
             {matchedRenderer.render(content, startSeq[0], endSeq[1])}
@@ -195,10 +203,38 @@ const Message: React.FC<MessageProps> = ({ renderers = [], currentIndex = 0, tot
         <NavigationButtons onPrev={onPrev} onNext={onNext} hasSiblings={hasSiblings} currentIndex={currentIndex} totalSiblings={totalSiblings} />
       )}
       {isSidePanelOpen && (
-        <div className="side-panel">
-          <button onClick={() => setIsSidePanelOpen(false)}>Close</button>
-          <div>{artifactContent}</div>
-        </div>
+        <>
+          <div 
+            className="side-panel-backdrop" 
+            onClick={() => setIsSidePanelOpen(false)} 
+            data-testid="side-panel-backdrop"
+            aria-hidden="true"
+          />
+          <div 
+            className="side-panel" 
+            role="complementary" 
+            aria-label="Artifact content"
+          >
+            <button 
+              className="side-panel-close" 
+              onClick={() => setIsSidePanelOpen(false)}
+              aria-label="Close artifact panel"
+            >
+              Close
+            </button>
+            <div 
+              className="artifact-rendered-content"
+              role="article"
+              dangerouslySetInnerHTML={{ 
+                __html: DOMPurify.sanitize(artifactContent || '', {
+                  USE_PROFILES: { html: true },
+                  ADD_TAGS: ['canvas'],
+                  ADD_ATTR: ['id']
+                })
+              }} 
+            />
+          </div>
+        </>
       )}
     </MessageContainer>
   );

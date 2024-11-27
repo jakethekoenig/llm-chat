@@ -1,5 +1,5 @@
-// chat-components/renderers/ArtifactRenderer.tsx
 import React from 'react';
+import DOMPurify from 'dompurify';
 import { Renderer } from './Renderer';
 
 interface ArtifactRendererProps {
@@ -36,15 +36,23 @@ export class ArtifactRenderer implements Renderer {
 
   render(content: string, startIndex: number, endIndex: number): React.ReactNode {
     const artifactContent = content.slice(startIndex, endIndex);
-    // Ensure content is safe before rendering
-    const sanitizedContent = artifactContent
-      .replace(/[<>]/g, '') // Remove any HTML tags
-      .trim(); // Remove whitespace
+    const sanitizedContent = DOMPurify.sanitize(artifactContent.trim(), {
+      USE_PROFILES: { html: true },
+      ADD_TAGS: ['canvas'],
+      ADD_ATTR: ['id']
+    });
+
     return (
       <span className="artifact-content" data-content={sanitizedContent}>
-        {this.subRenderer ? this.subRenderer.render(sanitizedContent, 0, sanitizedContent.length) : <div dangerouslySetInnerHTML={{ __html: sanitizedContent }} />}
+        {this.subRenderer ? (
+          this.subRenderer.render(sanitizedContent, 0, sanitizedContent.length)
+        ) : (
+          <div 
+            className="artifact-rendered-content"
+            dangerouslySetInnerHTML={{ __html: sanitizedContent }} 
+          />
+        )}
       </span>
     );
   }
-  // TODO: Replace dangerouslySetInnerHTML with sanitized content using DOMPurify
 }
