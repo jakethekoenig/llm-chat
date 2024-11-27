@@ -387,5 +387,110 @@ describe('Server Tests', () => {
         jest.restoreAllMocks();
       });
     });
+
+    describe('Registration Endpoint', () => {
+      it('should register a new user successfully', async () => {
+        const response = await request(app)
+          .post('/api/register')
+          .send({
+            username: 'newuser',
+            email: 'newuser@test.com',
+            password: 'password123'
+          });
+        expect(response.status).toBe(201);
+        expect(response.body.username).toBe('newuser');
+        expect(response.body.email).toBe('newuser@test.com');
+      });
+
+      it('should return 400 for missing required fields', async () => {
+        const response = await request(app)
+          .post('/api/register')
+          .send({
+            username: 'newuser'
+          });
+        expect(response.status).toBe(400);
+        expect(response.body.error).toBe('Username, email, and password are required');
+      });
+
+      it('should return 400 for duplicate username', async () => {
+        // First registration
+        await request(app)
+          .post('/api/register')
+          .send({
+            username: 'duplicateuser',
+            email: 'duplicate1@test.com',
+            password: 'password123'
+          });
+
+        // Second registration with same username
+        const response = await request(app)
+          .post('/api/register')
+          .send({
+            username: 'duplicateuser',
+            email: 'duplicate2@test.com',
+            password: 'password123'
+          });
+        expect(response.status).toBe(400);
+        expect(response.body.error).toBe('Username or email already exists');
+      });
+    });
+
+    describe('Streaming Endpoint', () => {
+      it('should stream completion data', async () => {
+        const response = await request(app)
+          .post('/api/get_completion')
+          .set('Authorization', `Bearer ${token}`)
+          .send({
+            model: 'test-model',
+            parentId: 1,
+            temperature: 0.5
+          });
+        expect(response.status).toBe(201);
+        expect(response.headers['content-type']).toMatch(/application\/json/);
+        expect(response.headers['cache-control']).toBe('no-cache');
+        expect(response.headers['connection']).toBe('keep-alive');
+      });
+
+      it('should return 400 for invalid streaming parameters', async () => {
+        const response = await request(app)
+          .post('/api/get_completion')
+          .set('Authorization', `Bearer ${token}`)
+          .send({
+            model: '',
+            parentId: 'invalid',
+            temperature: 'invalid'
+          });
+        expect(response.status).toBe(400);
+        expect(response.body.errors).toBeDefined();
+      });
+    });
+
+    describe('Conversation Retrieval Error Cases', () => {
+      it('should handle database errors in conversation retrieval', async () => {
+        // Mock Conversation.findAll to throw an error
+        jest.spyOn(Conversation, 'findAll').mockImplementationOnce(() => {
+          throw new Error('Database error');
+        });
+
+        const response = await request(app)
+          .get('/api/conversations')
+          .set('Authorization', `Bearer ${token}`);
+        expect(response.status).toBe(500);
+        expect(response.body.error).toBe('Internal server error');
+      });
+
+      it('should handle database errors in message retrieval', async () => {
+        // Mock Message.findAll to throw an error
+        jest.spyOn(Message, 'findAll').mockImplementationOnce(() => {
+          throw new Error('Database error');
+        });
+
+        const response = await request(app)
+          .get('/api/conversations/1/messages')
+          .set('Authorization', `Bearer ${token}`);
+        expect(response.status).toBe(500);
+        expect(response.body.error).toBe('Internal server error');
+      });
+    });
   });
 });
