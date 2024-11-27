@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Message from '../../chat-components/Message';
 import { CodeBlockRenderer } from '../../chat-components/renderers/CodeBlockRenderer';
@@ -52,9 +52,8 @@ test('renders artifact content and opens side panel', async () => {
   const renderers = [new ArtifactRenderer({ tagName: 'artifact' })];
   renderWithConfig(<Message id="test-id-17" content={content} renderers={renderers} />);
   
-  const artifactElement = screen.getByText('Artifact Content');
-  expect(artifactElement).toBeInTheDocument();
-  expect(artifactElement).toHaveClass('artifact-content');
+  const artifactElement = screen.getByText(/Artifact Content/);
+  expect(artifactElement.closest('.artifact-content')).toBeInTheDocument();
   
   fireEvent.click(artifactElement);
   
@@ -78,10 +77,14 @@ test('renders HTML content in artifact safely', () => {
   const renderers = [new ArtifactRenderer({ tagName: 'artifact' })];
   renderWithConfig(<Message id="test-id-18" content={htmlContent} renderers={renderers} />);
   
-  const artifactElement = screen.getByText(/Safe HTML/);
-  expect(artifactElement).toBeInTheDocument();
+  const artifactContainer = screen.getByTestId('message-container');
+  const artifactContent = artifactContainer.querySelector('.artifact-rendered-content');
+  expect(artifactContent).toBeInTheDocument();
+  expect(artifactContent?.textContent).toMatch(/Safe HTML/);
   
-  fireEvent.click(artifactElement);
+  const artifactWrapper = artifactContainer.querySelector('.artifact-content');
+  expect(artifactWrapper).toBeInTheDocument();
+  fireEvent.click(artifactWrapper!);
   
   const sidePanel = screen.getByRole('complementary', { name: /artifact content/i });
   const renderedContent = sidePanel.querySelector('.artifact-rendered-content');

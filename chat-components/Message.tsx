@@ -77,8 +77,12 @@ const Message: React.FC<MessageProps> = ({ renderers = [], currentIndex = 0, tot
   }, [setArtifactContent, setIsSidePanelOpen]);
 
   const getArtifactContent = useCallback((start: number, end: number) => {
-    return content.slice(start, end);
-  }, [content]);
+    if (typeof content === 'string') {
+      return content.slice(start, end);
+    }
+    // For AsyncIterable, we should be working with displayedContent which is already a string
+    return displayedContent.slice(start, end);
+  }, [content, displayedContent]);
   useEffect(() => {
     isMountedRef.current = true;
     setDisplayedContent(''); // Reset content when prop changes
@@ -140,24 +144,26 @@ const Message: React.FC<MessageProps> = ({ renderers = [], currentIndex = 0, tot
       const endSeq = matchedRenderer.detectEndSequence(content, startSeq[1]) as [number, number] | null;
       if (!endSeq) {
         if (startSeq) {
-          const artifactContent = getArtifactContent(startSeq[1], content.length);
-          elements.push(
-            <span key={`rendered-${startSeq[0]}`} onClick={() => handleArtifactClick(artifactContent)}>
-              {matchedRenderer.render(content, startSeq[0], content.length)}
-            </span>
-          );
-        } else {
-          elements.push(<span key={`rendered-${start}`} />);
+          const renderedContent = matchedRenderer.render(content, startSeq[0], content.length);
+          if (renderedContent && typeof renderedContent === 'object' && 'props' in renderedContent) {
+            elements.push(
+              <span key={`rendered-${startSeq[0]}`} onClick={() => handleArtifactClick(renderedContent.props['data-content'])}>
+                {renderedContent}
+              </span>
+            );
+          }
         }
         break;
       }
       if (startSeq && endSeq !== null) {
-        const artifactContent = getArtifactContent(startSeq[1], endSeq[0]);
-        elements.push(
-          <span key={`rendered-${startSeq[0]}`} onClick={() => handleArtifactClick(artifactContent)}>
-            {matchedRenderer.render(content, startSeq[0], endSeq[1])}
-          </span>
-        );
+        const renderedContent = matchedRenderer.render(content, startSeq[0], endSeq[1]);
+        if (renderedContent && typeof renderedContent === 'object' && 'props' in renderedContent) {
+          elements.push(
+            <span key={`rendered-${startSeq[0]}`} onClick={() => handleArtifactClick(renderedContent.props['data-content'])}>
+              {renderedContent}
+            </span>
+          );
+        }
         start = endSeq[1];
       } else {
         elements.push(<span key={`plain-${start}`}>{content.slice(start)}</span>);

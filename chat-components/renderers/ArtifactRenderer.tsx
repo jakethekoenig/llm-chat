@@ -35,8 +35,15 @@ export class ArtifactRenderer implements Renderer {
   }
 
   render(content: string, startIndex: number, endIndex: number): React.ReactNode {
-    const artifactContent = content.slice(startIndex, endIndex);
-    const sanitizedContent = DOMPurify.sanitize(artifactContent.trim(), {
+    // Extract content between tags
+    const startTag = `<${this.tagName}>`;
+    const endTag = `</${this.tagName}>`;
+    const contentBetweenTags = content.substring(
+      content.indexOf(startTag, startIndex) + startTag.length,
+      content.indexOf(endTag, startIndex)
+    );
+    
+    const sanitizedContent = DOMPurify.sanitize(contentBetweenTags.trim(), {
       USE_PROFILES: { html: true },
       ADD_TAGS: ['canvas'],
       ADD_ATTR: ['id']
