@@ -66,7 +66,7 @@ export const generateCompletion = async (messageId: number, model: string, tempe
         messages: [{ role: 'user', content }],
         model,
       });
-      completionContent = response.content;
+      completionContent = response.content[0]?.type === 'text' ? response.content[0].text : '';
     } else {
       if (!openaiApiKey) {
         throw new Error('OpenAI API key is not set');
