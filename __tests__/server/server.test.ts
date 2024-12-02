@@ -1,5 +1,6 @@
 import request from 'supertest';
 import express from 'express';
+import '@anthropic-ai/sdk/shims/node';
 import app, { authenticateToken } from '../../server/app';
 import { sequelize } from '../../server/database/models';
 import { up, down } from '../../server/database/seeders/20240827043208-seed-test-data';
