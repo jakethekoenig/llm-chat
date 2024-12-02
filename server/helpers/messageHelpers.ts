@@ -98,44 +98,4 @@ export const generateCompletion = async (messageId: number, model: string, tempe
     }
     throw new Error('Failed to generate completion');
   }
-}
-  const content = parentMessage.get('content') as string;
-
-  if (!content) {
-    throw new Error('Parent message has no content');
-  }
-
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OpenAI API key is not set');
-  }
-
-  const openai = new OpenAI({ apiKey: apiKey});
-
-  try {
-    const response = await openai.chat.completions.create({
-      model,
-      messages: [{"role": "user", "content": content}],
-      temperature,
-    });
-
-    const completionContent = response.choices[0].message?.content || '';
-    console.log('completionContent:', completionContent);
-    const completionMessage: Message = await Message.create({
-      content: completionContent,
-      parent_id: messageId,
-      conversation_id: parentMessage.get('conversation_id') as number,
-      user_id: parentMessage.get('user_id') as number,
-      model,
-      temperature,
-    });
-    return completionMessage;
-  } catch (error) {
-    if (error instanceof Error) {
-      logger.error('Error generating completion:', { message: error.message });
-    } else {
-      logger.error('Error generating completion:', { error });
-    }
-    throw new Error('Failed to generate completion');
-  }
 };
