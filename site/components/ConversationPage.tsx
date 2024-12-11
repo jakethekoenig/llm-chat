@@ -39,7 +39,9 @@ const ConversationPage: React.FC = () => {
 
   const handleNewMessageSubmit = async function* (message: string): AsyncIterable<string> {
     const mostRecentMessageId = messages.length > 0 ? messages[messages.length - 1].id : null;
-    const response = await fetch(`/api/add_message`, {
+
+    // Submit the new message
+    const addResponse = await fetch(`/api/add_message`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -47,9 +49,45 @@ const ConversationPage: React.FC = () => {
       },
       body: JSON.stringify({ content: message, conversationId: conversationId, parentId: mostRecentMessageId })
     });
-    const data = await response.json();
-    setMessages(prevMessages => [...prevMessages, { id: data.id, content: message, author: 'User', timestamp: new Date().toISOString(), parentId: mostRecentMessageId }]);
-    yield `You typed: ${message}\nProcessing...\nDone!\n`;
+    const addData = await addResponse.json();
+    const newMessage = { id: addData.id, content: message, author: 'User', timestamp: new Date().toISOString(), parentId: mostRecentMessageId };
+    setMessages(prevMessages => [...prevMessages, newMessage]);
+
+    // Connect to the streaming endpoint
+    const streamResponse = await fetch(`/api/get_completion`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ model: 'gpt-4', parentId: addData.id, temperature: 0.7 })
+    });
+
+    if (!streamResponse.body) {
+      throw new Error('No stream available');
+    }
+
+    const reader = streamResponse.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let done = false;
+    let fullContent = '';
+
+    while (!done) {
+      const { value, done: doneReading } = await reader.read();
+      done = doneReading;
+      if (value) {
+        const chunk = decoder.decode(value, { stream: true });
+        fullContent += chunk;
+        setMessages(prevMessages => {
+          const updatedMessages = [...prevMessages];
+          const lastMessage = updatedMessages[updatedMessages.length - 1];
+          if (lastMessage.id === addData.id) {
+            return [...updatedMessages.slice(0, -1), { ...lastMessage, content: lastMessage.content + chunk }];
+          }
+          return updatedMessages;
+        });
+      }
+    }
   };
 
   return (

@@ -1,7 +1,7 @@
 // server/helpers/messageHelpers.ts
 import { Message } from '../database/models/Message';
 import 'openai/shims/node';
-import { OpenAI } from 'openai';
+import { Configuration, OpenAIApi } from 'openai';
 import { createLogger, transports, format } from 'winston';
 
 const logger = createLogger({
@@ -49,10 +49,13 @@ export const generateCompletion = async (messageId: number, model: string, tempe
     throw new Error('OpenAI API key is not set');
   }
 
-  const openai = new OpenAI({ apiKey: apiKey});
+  const configuration = new Configuration({
+    apiKey: apiKey,
+  });
+  const openai = new OpenAIApi(configuration);
 
   try {
-    const response = await openai.chat.completions.create({
+    const response = await openai.createChatCompletion({
       model,
       messages: [{"role": "user", "content": content}],
       temperature,
@@ -63,15 +66,15 @@ export const generateCompletion = async (messageId: number, model: string, tempe
     const completionMessage: Message = await Message.create({
       content: completionContent,
       parent_id: messageId,
-      conversation_id: parentMessage.get('conversation_id') as number,
-      user_id: parentMessage.get('user_id') as number,
+      conversation_id: parentMessage.conversation_id,
+      user_id: parentMessage.user_id,
       model,
       temperature,
     });
-    return completionMessage;
+    return { id: completionMessage.id, content: completionContent };
   } catch (error) {
     if (error instanceof Error) {
-      logger.error('Error generating completion:', { message: error.message });
+      logger.error('Error generating completion:', { error: error.message });
     } else {
       logger.error('Error generating completion:', { error });
     }

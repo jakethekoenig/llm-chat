@@ -7,8 +7,11 @@ import { User } from './database/models/User';
 import { Op } from 'sequelize';
 import { Conversation } from './database/models/Conversation';
 import { Message } from './database/models/Message';
+import { Configuration, OpenAIApi } from 'openai';
 import { addMessage, generateCompletion } from './helpers/messageHelpers';
 import { body, validationResult } from 'express-validator';
+
+import 'server/types/openai.d.ts';
 
 const app = express();
 const SECRET_KEY = process.env.SECRET_KEY || 'fallback-secret-key';
@@ -85,7 +88,7 @@ app.post('/api/add_message', authenticateToken, [
 
   try {
     const message = await addMessage(content, conversationId, parentId, userId);
-    res.status(201).json({ id: message.get('id') });
+    res.status(201).json({ id: message.id });
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -106,7 +109,7 @@ app.post('/api/get_completion_for_message', authenticateToken, [
 
   try {
     const completionMessage = await generateCompletion(messageId, model, temperature);
-    res.status(201).json({ id: completionMessage.get('id'), content: completionMessage.get('content')});
+    res.status(201).json({ id: completionMessage.id, content: completionMessage.content });
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -127,31 +130,33 @@ app.post('/api/get_completion', authenticateToken, [
 
   try {
     const completionMessage = await generateCompletion(parentId, model, temperature);
-    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    const streamData = JSON.stringify({ id: completionMessage.get('id'), content: completionMessage.get('content')});
-    res.write(`data: ${streamData}\n\n`);
+    const configuration = new Configuration({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+    const openai = new OpenAIApi(configuration);
+    const stream = await openai.createChatCompletion({
+      model,
+      messages: [{ role: 'user', content: completionMessage.content }],
+      temperature,
+      stream: true,
+    });
 
-    // Placeholder for actual streaming logic
-    const messages = [
-      { chunk: 'Example stream data part 1' },
-      { chunk: 'Example stream data part 2' },
-      { chunk: 'Example stream data part 3' }
-    ];
+    for await (const chunk of stream) {
+      const data = JSON.stringify({ content: chunk.choices[0]?.delta?.content || '' });
+      res.write(`data: ${data}\n\n`);
+    }
 
-    let index = 0;
-    const interval = setInterval(() => {
-      if (index < messages.length) {
-        const chunkData = JSON.stringify(messages[index]);
-        res.write(`data: ${chunkData}\n\n`);
-        index++;
-      } else {
-        clearInterval(interval);
-        res.end();
-      }
-    }, 1000);
+    // After streaming is complete, save the full response to the database
+    await Message.update(
+      { content: completionMessage.content },
+      { where: { id: completionMessage.id } }
+    );
+
+    res.end();
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -204,9 +209,9 @@ app.post('/api/create_conversation', authenticateToken, [
   try {
     const defaultTitle = 'New Conversation';
     const conversation = await Conversation.create({ title: defaultTitle, user_id: userId });
-    const message = await addMessage(initialMessage, conversation.get('id') as number, null, userId);
-    const completionMessage = await generateCompletion(message.get('id') as number, model, temperature);
-    res.status(201).json({ conversationId: conversation.get('id'), initialMessageId: message.get('id'), completionMessageId: completionMessage.get('id') });
+    const message = await addMessage(initialMessage, conversation.id as number, null, userId);
+    const completionMessage = await generateCompletion(message.id as number, model, temperature);
+    res.status(201).json({ conversationId: conversation.id, initialMessageId: message.id, completionMessageId: completionMessage.id });
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }
