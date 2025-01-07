@@ -22,8 +22,7 @@ describe('Site Render Tests', () => {
     options.addArguments('--disable-dev-shm-usage');
 
     // Set up ChromeDriver service
-    const service = new ServiceBuilder()
-      .build();
+    const service = new ServiceBuilder();
 
     driver = await new Builder()
       .forBrowser('chrome')
