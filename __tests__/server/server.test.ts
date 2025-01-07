@@ -21,22 +21,17 @@ afterAll(() => {
 });
 import { Message } from '../../server/database/models/Message';
 import { OpenAI } from 'openai';
+import { setMockChatResponse } from '../../__mocks__/openai';
 import 'jest-styled-components';
 import { logger } from '../../server/helpers/messageHelpers';
 import * as messageHelpers from '../../server/helpers/messageHelpers';
 
-jest.mock('openai', () => {
-  return {
-    OpenAI: jest.fn().mockImplementation(() => ({
-      chat: {
-        completions: {
-          create: jest.fn().mockResolvedValue({
-            choices: [{message: { role: "assistant", content: 'Mocked completion response' }}]
-          })
-        }
-      }
-    }))
-  };
+jest.mock('openai');
+
+beforeEach(() => {
+  setMockChatResponse({
+    choices: [{message: { role: "assistant", content: 'Mocked completion response' }}]
+  });
 });
 process.env.OPENAI_API_KEY = 'test';
 

@@ -2,18 +2,15 @@ import { Builder, By, until } from 'selenium-webdriver';
 import { Options as ChromeOptions } from 'selenium-webdriver/chrome';
 import 'chromedriver';
 import OpenAI from 'openai';
+import { setMockCompletionResponse } from '../../__mocks__/openai';
 import 'jest-styled-components';
 
-jest.mock('openai', () => {
-  return {
-    OpenAI: jest.fn().mockImplementation(() => ({
-      completions: {
-        create: jest.fn().mockResolvedValue({
-          choices: [{ text: 'Mocked completion response' }]
-        })
-      }
-    }))
-  };
+jest.mock('openai');
+
+beforeEach(() => {
+  setMockCompletionResponse({
+    choices: [{ text: 'Mocked completion response' }]
+  });
 });
 
 describe('Site Render Tests', () => {
