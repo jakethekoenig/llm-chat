@@ -16,22 +16,37 @@ describe('Site Render Tests', () => {
   let driver: any;
 
   beforeAll(async () => {
-    const options = new ChromeOptions();
-    options.addArguments('--headless');
-    options.addArguments('--no-sandbox');
-    options.addArguments('--disable-dev-shm-usage');
+    // Increase timeout for driver initialization
+    jest.setTimeout(30000);
 
-    // Set up ChromeDriver service
-    const service = new ServiceBuilder();
+    try {
+      const options = new ChromeOptions();
+      options.addArguments('--headless');
+      options.addArguments('--no-sandbox');
+      options.addArguments('--disable-dev-shm-usage');
 
-    driver = await new Builder()
-      .forBrowser('chrome')
-      .setChromeOptions(options)
-      .setChromeService(service)
-      .build();
-  });
+      // Set up ChromeDriver service
+      const service = new ServiceBuilder();
+
+      driver = await new Builder()
+        .forBrowser('chrome')
+        .setChromeOptions(options)
+        .setChromeService(service)
+        .build();
+    } catch (error) {
+      console.error('Failed to initialize WebDriver:', error);
+      throw error;
+    }
+  }, 30000); // Explicit timeout for beforeAll
+
   afterAll(async () => {
-    await driver.quit();
+    if (driver) {
+      try {
+        await driver.quit();
+      } catch (error) {
+        console.error('Failed to quit WebDriver:', error);
+      }
+    }
   });
 
   test('should open the site and check for console errors', async () => {
@@ -39,12 +54,12 @@ describe('Site Render Tests', () => {
     const logs = await driver.manage().logs().get('browser');
     const errorLogs = logs.filter((log: any) => log.level === 'SEVERE');
     expect(errorLogs.length).toBe(0);
-  });
+  }, 10000);
 
   test('should verify certain components are visible', async () => {
     await driver.get('http://localhost:5173/showcase');
     await driver.wait(until.elementLocated(By.css('header')), 10000); 
     const header = await driver.findElement(By.css('header'));
     expect(await header.isDisplayed()).toBe(true);
-  }, 20000);
+  }, 10000);
 });
