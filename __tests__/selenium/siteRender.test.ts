@@ -1,6 +1,5 @@
 import { Builder, By, until } from 'selenium-webdriver';
 import { Options as ChromeOptions, ServiceBuilder } from 'selenium-webdriver/chrome';
-import * as chromedriver from 'chromedriver';
 import OpenAI from 'openai';
 import { setMockCompletionResponse } from '../../__mocks__/openai';
 import 'jest-styled-components';
@@ -23,7 +22,8 @@ describe('Site Render Tests', () => {
     options.addArguments('--disable-dev-shm-usage');
 
     // Set up ChromeDriver service
-    const service = new ServiceBuilder(chromedriver.path).build();
+    const service = new ServiceBuilder()
+      .build();
 
     driver = await new Builder()
       .forBrowser('chrome')
