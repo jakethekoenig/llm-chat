@@ -1,6 +1,7 @@
 // server/helpers/messageHelpers.ts
 import { Message } from '../database/models/Message';
 import 'openai/shims/node';
+import '@anthropic-ai/sdk/shims/node';
 import { OpenAI } from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { createLogger, transports, format } from 'winston';
