@@ -18,7 +18,7 @@
     "seed:test": "sequelize db:seed:all --env test",
     "test:selenium": "jest --config=jest.selenium.config.js",
     "start:all": "npm-run-all --parallel start:server start:client",
-    "test:ci": "npm-run-all -s build -p 'start:server' 'start:client' 'test -- --detectOpenHandles'"
+    "test:ci": "npm-run-all --parallel --race start:all test"
   },
   "repository": {
     "type": "git",
