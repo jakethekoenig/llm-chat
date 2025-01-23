@@ -55,7 +55,14 @@ const generateAnthropicCompletion = async (content: string, model: string, tempe
     messages: [{ role: 'user', content }],
   });
 
-  return response.content[0].text;
+  // Handle different content block types
+  const contentBlock = response.content[0];
+  if ('text' in contentBlock) {
+    return contentBlock.text;
+  } else {
+    logger.error('Unexpected content block type from Anthropic API');
+    throw new Error('Unexpected response format from Anthropic API');
+  }
 };
 
 const generateOpenAICompletion = async (content: string, model: string, temperature: number) => {
