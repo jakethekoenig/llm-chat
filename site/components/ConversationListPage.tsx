@@ -4,26 +4,49 @@ import '../App.css'; // Correct the import path
 import ConversationList from '../../chat-components/ConversationList';
 import { Message as MessageType } from '../../chat-components/types/Message';
 
+// Component to display the list of conversations
 const ConversationListPage: React.FC = () => {
+  // State to store the list of conversations
   const [conversations, setConversations] = useState<MessageType[]>([]);
+  // State to store any error messages
   const [error, setError] = useState<string | null>(null);
+  // State to track loading status
+  const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchConversations = async () => {
-      const response = await fetch('/api/conversations', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+      try {
+        setIsLoadingConversations(true);
+        const response = await fetch('/api/conversations', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch conversations');
         }
-      });
-      const data = await response.json();
-      setConversations(data);
+        const data = await response.json();
+        setConversations(data.map((conversation: any) => ({
+          id: conversation.id,
+          content: conversation.title || conversation.content || 'Untitled Conversation',
+          author: conversation.author || 'Unknown'
+        })));
+      } catch (error) {
+        console.error('Error fetching conversations:', error);
+        setError('Failed to load conversations.');
+      } finally {
+        setIsLoadingConversations(false);
+      }
     };
     fetchConversations();
   }, []);
 
+  // State to store the initial message for a new conversation
   const [initialMessage, setInitialMessage] = useState('');
+  // State to store the model type
   const [model, setModel] = useState('gpt-4o');
+  // State to store the temperature setting
   const [temperature, setTemperature] = useState(0.0);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -45,8 +68,8 @@ const ConversationListPage: React.FC = () => {
         body: JSON.stringify({ initialMessage, model, temperature })
       });
       const data = await response.json();
-      if (response.ok) {
-        setConversations([...conversations, { id: data.conversationId, content: initialMessage }]);
+      if (response.ok && data.conversationId) {
+        setConversations([...conversations, { id: data.conversationId, content: initialMessage as string }]);
         navigate(`/conversations/${data.conversationId}`);
       } else {
         setError(`Error creating conversation: ${data.error || 'Unknown error'}`);
@@ -63,16 +86,43 @@ const ConversationListPage: React.FC = () => {
     <div>
       <h2>Your Conversations</h2>
       {error && <p className="error-message">{error}</p>}
-      <form onSubmit={handleCreateConversation}>
+      {isLoadingConversations ? (
+        <p>Loading conversations...</p>
+      ) : (
+        <>
+          <form onSubmit={handleCreateConversation}>
         {isLoading && <p>Creating conversation...</p>}
-        <input type="text" value={initialMessage} onChange={(e) => setInitialMessage(e.target.value)} placeholder="Initial Message" required />
-        <input type="text" value={model} onChange={(e) => setModel(e.target.value)} placeholder="Model" required />
-        <input type="number" value={temperature} onChange={(e) => setTemperature(parseFloat(e.target.value))} placeholder="Temperature" required />
-        <button type="submit" disabled={isLoading}>Create Conversation</button>
-      </form>
-      <ConversationList conversations={conversations} onConversationClick={handleConversationClick} />
+        <input
+          type="text"
+          value={initialMessage}
+          onChange={(e) => setInitialMessage(e.target.value)}
+          placeholder="Initial Message"
+          required
+          className="form-input"
+        />
+        <input
+          type="text"
+          value={model}
+          onChange={(e) => setModel(e.target.value)}
+          placeholder="Model"
+          required
+          className="form-input"
+        />
+        <input
+          type="number"
+          value={temperature}
+          onChange={(e) => setTemperature(parseFloat(e.target.value))}
+          placeholder="Temperature"
+          required
+          className="form-input"
+        />
+            <button type="submit" disabled={isLoading}>Create Conversation</button>
+          </form>
+          <ConversationList conversations={conversations} onConversationClick={handleConversationClick} />
+        </>
+      )}
     </div>
   );
-};
+}; // End of ConversationListPage
 
 export default ConversationListPage;

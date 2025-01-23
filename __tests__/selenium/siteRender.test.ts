@@ -1,7 +1,6 @@
 import { Builder, By, until } from 'selenium-webdriver';
 import { Options as ChromeOptions } from 'selenium-webdriver/chrome';
 import 'chromedriver';
-import OpenAI from 'openai';
 import 'jest-styled-components';
 
 jest.mock('openai', () => {
@@ -30,8 +29,10 @@ options.addArguments('--disable-dev-shm-usage');
       .build();
   });
   afterAll(async () => {
-    await driver.quit();
-  });
+    if (driver) {
+      await driver.quit();
+    }
+  }, 20000);
 
   test('should open the site and check for console errors', async () => {
     await driver.get('http://localhost:5173/showcase');
