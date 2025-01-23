@@ -29,28 +29,36 @@ import { logger } from '../../server/helpers/messageHelpers';
 import * as messageHelpers from '../../server/helpers/messageHelpers';
 import { jest } from '@jest/globals';
 
+// Mock OpenAI with proper types
 jest.mock('openai', () => {
-  return {
-    OpenAI: jest.fn().mockImplementation(() => ({
+  const mockCreate = jest.fn().mockResolvedValue({
+    choices: [{
+      message: { role: "assistant", content: 'Mocked OpenAI response' }
+    }]
+  });
+
+  function MockOpenAI() {
+    return {
       chat: {
-        completions: {
-          create: jest.fn().mockResolvedValue({
-            choices: [{message: { role: "assistant", content: 'Mocked OpenAI response' }}]
-          })
-        }
+        completions: { create: mockCreate }
       }
-    }))
-  };
+    };
+  }
+
+  return { OpenAI: MockOpenAI };
 });
 
+// Mock Anthropic with proper types
 jest.mock('@anthropic-ai/sdk', () => {
-  return jest.fn().mockImplementation(() => ({
-    messages: {
-      create: jest.fn().mockResolvedValue({
-        content: [{ text: 'Mocked Anthropic response' }]
-      })
-    }
-  }));
+  const mockCreate = jest.fn().mockResolvedValue({
+    content: [{ type: 'text', text: 'Mocked Anthropic response' }]
+  });
+
+  function MockAnthropic() {
+    return { messages: { create: mockCreate } };
+  }
+
+  return { __esModule: true, default: MockAnthropic };
 });
 // API keys are set in beforeAll
 
