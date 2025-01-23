@@ -29,7 +29,9 @@ options.addArguments('--disable-dev-shm-usage');
       .build();
   });
   afterAll(async () => {
-    await driver.quit();
+    if (driver) {
+      await driver.quit();
+    }
   }, 20000);
 
   test('should open the site and check for console errors', async () => {
