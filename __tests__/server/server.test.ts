@@ -31,32 +31,30 @@ import { jest } from '@jest/globals';
 
 // Mock OpenAI with proper types
 jest.mock('openai', () => {
-  const mockCreate = jest.fn().mockResolvedValue({
+  const mockCreate = jest.fn<any, any>().mockResolvedValue({
     choices: [{
       message: { role: "assistant", content: 'Mocked OpenAI response' }
     }]
   });
 
-  function MockOpenAI() {
-    return {
-      chat: {
-        completions: { create: mockCreate }
-      }
-    };
-  }
+  const MockOpenAI = jest.fn().mockImplementation(() => ({
+    chat: {
+      completions: { create: mockCreate }
+    }
+  }));
 
   return { OpenAI: MockOpenAI };
 });
 
 // Mock Anthropic with proper types
 jest.mock('@anthropic-ai/sdk', () => {
-  const mockCreate = jest.fn().mockResolvedValue({
+  const mockCreate = jest.fn<any, any>().mockResolvedValue({
     content: [{ type: 'text', text: 'Mocked Anthropic response' }]
   });
 
-  function MockAnthropic() {
-    return { messages: { create: mockCreate } };
-  }
+  const MockAnthropic = jest.fn().mockImplementation(() => ({
+    messages: { create: mockCreate }
+  }));
 
   return { __esModule: true, default: MockAnthropic };
 });
