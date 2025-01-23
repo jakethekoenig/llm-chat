@@ -10,25 +10,33 @@ const ConversationListPage: React.FC = () => {
   const [conversations, setConversations] = useState<MessageType[]>([]);
   // State to store any error messages
   const [error, setError] = useState<string | null>(null);
+  // State to track loading status
+  const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchConversations = async () => {
       try {
+        setIsLoadingConversations(true);
         const response = await fetch('/api/conversations', {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
         });
+        if (!response.ok) {
+          throw new Error('Failed to fetch conversations');
+        }
         const data = await response.json();
         setConversations(data.map((conversation: any) => ({
           id: conversation.id,
-          content: conversation.content as string,
+          content: conversation.title || conversation.content || 'Untitled Conversation',
           author: conversation.author || 'Unknown'
         })));
       } catch (error) {
         console.error('Error fetching conversations:', error);
         setError('Failed to load conversations.');
+      } finally {
+        setIsLoadingConversations(false);
       }
     };
     fetchConversations();
@@ -78,7 +86,11 @@ const ConversationListPage: React.FC = () => {
     <div>
       <h2>Your Conversations</h2>
       {error && <p className="error-message">{error}</p>}
-      <form onSubmit={handleCreateConversation}>
+      {isLoadingConversations ? (
+        <p>Loading conversations...</p>
+      ) : (
+        <>
+          <form onSubmit={handleCreateConversation}>
         {isLoading && <p>Creating conversation...</p>}
         <input
           type="text"
@@ -104,9 +116,11 @@ const ConversationListPage: React.FC = () => {
           required
           className="form-input"
         />
-        <button type="submit" disabled={isLoading}>Create Conversation</button>
-      </form>
-      <ConversationList conversations={conversations} onConversationClick={handleConversationClick} />
+            <button type="submit" disabled={isLoading}>Create Conversation</button>
+          </form>
+          <ConversationList conversations={conversations} onConversationClick={handleConversationClick} />
+        </>
+      )}
     </div>
   );
 }; // End of ConversationListPage
