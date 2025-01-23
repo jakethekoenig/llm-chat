@@ -34,11 +34,11 @@ jest.mock('openai', () => ({
   OpenAI: jest.fn(() => ({
     chat: {
       completions: {
-        create: jest.fn().mockResolvedValue({
+        create: jest.fn().mockImplementation(() => Promise.resolve({
           choices: [{
             message: { role: "assistant", content: 'Mocked OpenAI response' }
           }]
-        })
+        } as any))
       }
     }
   }))
@@ -49,9 +49,9 @@ jest.mock('@anthropic-ai/sdk', () => ({
   __esModule: true,
   default: jest.fn(() => ({
     messages: {
-      create: jest.fn().mockResolvedValue({
+      create: jest.fn().mockImplementation(() => Promise.resolve({
         content: [{ type: 'text', text: 'Mocked Anthropic response' }]
-      })
+      } as any))
     }
   }))
 }));
