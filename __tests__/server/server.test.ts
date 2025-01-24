@@ -143,10 +143,8 @@ describe('Server Tests', () => {
     });
 
     it('should handle database errors', async () => {
-      const badConfig = { ...sequelize.sequelize.config, storage: '/nonexistent/path' };
-      const badSequelize = new Sequelize({
-        ...badConfig,
-        dialect: 'sqlite',
+      const badSequelize = new Sequelize('sqlite::memory:', {
+        storage: '/nonexistent/path',
         logging: false
       });
       await expect(badSequelize.authenticate()).rejects.toThrow();
