@@ -1,6 +1,10 @@
 // jest.setup.ts
 import { Sequelize } from 'sequelize';
 import '@testing-library/jest-dom';
+
+// Polyfill for setImmediate in test environment
+global.setImmediate = (callback: Function) => setTimeout(callback, 0);
+global.clearImmediate = (id: NodeJS.Immediate) => clearTimeout(id as any);
 import 'jest-styled-components';
 import { cleanup } from '@testing-library/react';
 
