@@ -5,6 +5,9 @@ import app, { authenticateToken } from '../../server/app';
 import { sequelize } from '../../server/database/models';
 import { up, down } from '../../server/database/seeders/20240827043208-seed-test-data';
 import { Conversation } from '../../server/database/models/Conversation';
+import { User } from '../../server/database/models/User';
+import { Message } from '../../server/database/models/Message';
+import { Model } from 'sequelize';
 
 const obtainAuthToken = async () => {
   const response = await request(app)
@@ -314,10 +317,15 @@ describe('Server Tests', () => {
         // Verify the conversation was created
         const conversationResponse = await request(app)
           .get(`/api/conversations/${response.body.conversationId}/messages`)
-          .set('Authorization', `Bearer ${token}`);
+          .set('Authorization', `Bearer ${testToken}`);
         expect(conversationResponse.status).toBe(200);
         expect(conversationResponse.body).toBeInstanceOf(Array);
         expect(conversationResponse.body.length).toBeGreaterThan(0);
+
+        // Clean up
+        await Message.destroy({ where: { conversation_id: response.body.conversationId } });
+        await Conversation.destroy({ where: { id: response.body.conversationId } });
+        await user.destroy();
       });
 
       it('should add a message without requesting completion', async () => {
@@ -406,7 +414,7 @@ describe('Server Tests', () => {
 
         // Mock Message.create to throw an error
         const originalMessageCreate = Message.create;
-        Message.create = jest.fn().mockImplementation(() => Promise.reject(new Error('Database error')));
+        (Message as any).create = jest.fn().mockImplementation(() => Promise.reject(new Error('Database error')));
 
         const response = await request(app)
           .post('/api/add_message')
@@ -423,8 +431,9 @@ describe('Server Tests', () => {
         expect(response.body.error).toBe('Internal server error');
 
         // Restore original implementation and clean up
-        Message.create = originalMessageCreate;
+        (Message as any).create = originalMessageCreate;
         await user.destroy();
+        await Conversation.destroy({ where: { user_id: user.get('id') } });
       });
 
       it('should return 400 for invalid add_message request', async () => {
@@ -477,6 +486,8 @@ describe('Server Tests', () => {
         expect(response.body.completionMessageId).toBeDefined();
 
         // Clean up
+        await Message.destroy({ where: { conversation_id: conversation.get('id') } });
+        await conversation.destroy();
         await user.destroy();
       });
 
