@@ -85,6 +85,11 @@ app.post('/api/add_message', authenticateToken, [
   const userId = (req as any).user.id;
 
   try {
+    const conversation = await Conversation.findByPk(conversationId);
+    if (!conversation) {
+      return res.status(404).json({ error: `Conversation with ID ${conversationId} not found` });
+    }
+
     const message = await addMessage(content, conversationId, parentId, userId);
     res.status(201).json({ id: message.get('id') });
   } catch (error) {
@@ -141,6 +146,11 @@ app.post('/api/get_completion', authenticateToken, [
   const { model, parentId, temperature } = req.body;
 
   try {
+    const message = await Message.findByPk(parentId);
+    if (!message) {
+      return res.status(404).json({ error: `Parent message with ID ${parentId} not found` });
+    }
+
     // Set headers for SSE
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
