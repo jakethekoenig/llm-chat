@@ -251,16 +251,26 @@ describe('Server Tests', () => {
         expect(sequelize.sequelize.getDialect()).toBe('sqlite');
 
         // Test model loading
-        const models = await sequelize.sequelize.models;
-        expect(models.Message).toBeDefined();
-        expect(models.Conversation).toBeDefined();
-        expect(models.User).toBeDefined();
+        const db = require('../../server/database').default;
+        expect(db.Message).toBeDefined();
+        expect(db.Conversation).toBeDefined();
+        expect(db.User).toBeDefined();
 
-        // Test model associations after sync
-        expect(models.Message.associations.conversation).toBeDefined();
-        expect(models.Message.associations.parent).toBeDefined();
-        expect(models.Message.associations.children).toBeDefined();
-        expect(models.Message.associations.user).toBeDefined();
+        // Test model associations
+        expect(db.Message.associations.conversation).toBeDefined();
+        expect(db.Message.associations.parent).toBeDefined();
+        expect(db.Message.associations.children).toBeDefined();
+        expect(db.Message.associations.user).toBeDefined();
+
+        // Test model association functions
+        expect(typeof db.Message.associate).toBe('function');
+        expect(typeof db.Conversation.associate).toBe('function');
+        expect(typeof db.User.associate).toBe('function');
+
+        // Test Sequelize instance
+        expect(db.sequelize).toBeDefined();
+        expect(db.Sequelize).toBeDefined();
+        expect(db.sequelize instanceof db.Sequelize).toBe(true);
       } finally {
         // Restore environment
         process.env.NODE_ENV = originalEnv;
