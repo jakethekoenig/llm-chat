@@ -247,7 +247,9 @@ app.post('/api/get_completion_for_message', authenticateToken, [
 app.post('/api/get_completion', authenticateToken, [
   body('model').notEmpty().withMessage('Model is required'),
   body('parentId').isInt().withMessage('Parent ID must be an integer'),
-  body('temperature').isFloat().withMessage('Temperature must be a float')
+  body('temperature')
+    .isFloat({ min: 0, max: 1 })
+    .withMessage('Temperature must be a float between 0 and 1')
 ], async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {

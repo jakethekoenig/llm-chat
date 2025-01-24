@@ -404,6 +404,24 @@ describe('Server Tests', () => {
 
       expect(response.status).toBe(400);
       expect(response.body.errors).toBeDefined();
+      expect(response.body.errors[0].msg).toBe('Temperature must be a float between 0 and 1');
+
+      // Test lower bound
+      const responseLow = await request(app)
+        .post('/api/get_completion')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ model: 'test-model', parentId: 1, temperature: -0.5 }); // Temperature too low
+
+      expect(responseLow.status).toBe(400);
+      expect(responseLow.body.errors[0].msg).toBe('Temperature must be a float between 0 and 1');
+
+      // Test valid temperature
+      const responseValid = await request(app)
+        .post('/api/get_completion')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ model: 'test-model', parentId: 1, temperature: 0.7 });
+
+      expect(responseValid.status).toBe(201);
     });
 
     it('should handle missing model parameter', async () => {
