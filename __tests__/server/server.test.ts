@@ -41,6 +41,7 @@ afterAll(async () => {
   }
 });
 import { Message } from '../../server/database/models/Message';
+import { User } from '../../server/database/models/User';
 import { OpenAI } from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import 'jest-styled-components';
