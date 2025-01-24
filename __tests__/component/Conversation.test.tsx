@@ -225,7 +225,7 @@ test('handles sending message without completion and dropdown interactions', asy
   });
 
   // Test model and temperature changes
-  fireEvent.contextMenu(sendButton);
+  fireEvent.contextMenu(sendButtonElement);
   const modelSelect = screen.getByLabelText('model');
   const temperatureSelect = screen.getByLabelText('temperature');
 
@@ -245,7 +245,7 @@ test('handles sending message without completion and dropdown interactions', asy
   });
 
   // Test sending without completion
-  fireEvent.contextMenu(sendButton);
+  fireEvent.contextMenu(sendButtonElement);
   fireEvent.change(newMessageInput, { target: { value: 'Test without completion' } });
   fireEvent.click(sendWithoutCompletionButton);
 
