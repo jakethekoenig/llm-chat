@@ -6,7 +6,7 @@ import { OpenAI } from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import 'jest-styled-components';
 import app, { authenticateToken } from '../../server/app';
-import { sequelize } from '../../server/database/models';
+import db from '../../server/database';
 import { up, down } from '../../server/database/seeders/20240827043208-seed-test-data';
 import { Conversation } from '../../server/database/models/Conversation';
 import { User } from '../../server/database/models/User';
@@ -14,6 +14,8 @@ import { Message } from '../../server/database/models/Message';
 import { logger } from '../../server/helpers/messageHelpers';
 import * as messageHelpers from '../../server/helpers/messageHelpers';
 import { jest } from '@jest/globals';
+
+const sequelize = db.sequelize;
 
 const obtainAuthToken = async () => {
   const response = await request(app)
@@ -26,17 +28,18 @@ beforeAll(async () => {
   process.env.OPENAI_API_KEY = 'test-openai-key';
   process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
   await sequelize.sync({ force: true });
-  await up(sequelize.getQueryInterface(), sequelize.sequelize);
+  await up(sequelize.getQueryInterface(), sequelize);
 });
 
 afterAll(async () => {
   delete process.env.OPENAI_API_KEY;
   delete process.env.ANTHROPIC_API_KEY;
-  await down(sequelize.getQueryInterface(), sequelize.sequelize);
+  await down(sequelize.getQueryInterface(), sequelize);
   await sequelize.close();
 });
 
 beforeEach(async () => {
+  // Clear test data but keep the user1 from seed data
   await Message.destroy({ where: {} });
   await Conversation.destroy({ where: {} });
   await User.destroy({ where: { username: { [Op.notIn]: ['user1'] } } });
