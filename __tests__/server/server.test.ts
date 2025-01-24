@@ -171,15 +171,17 @@ describe('Server Tests', () => {
     });
 
     it('should load models dynamically', () => {
-      expect(sequelize.models.Message).toBeDefined();
-      expect(sequelize.models.Conversation).toBeDefined();
-      expect(sequelize.models.User).toBeDefined();
+      const db = require('../../server/database').default;
+      expect(db.Message).toBeDefined();
+      expect(db.Conversation).toBeDefined();
+      expect(db.User).toBeDefined();
     });
 
     it('should handle model associations', () => {
-      const messageModel = sequelize.models.Message;
-      const conversationModel = sequelize.models.Conversation;
-      const userModel = sequelize.models.User;
+      const db = require('../../server/database').default;
+      const messageModel = db.Message;
+      const conversationModel = db.Conversation;
+      const userModel = db.User;
 
       // Test Message associations
       expect(messageModel.associations.conversation).toBeDefined();
