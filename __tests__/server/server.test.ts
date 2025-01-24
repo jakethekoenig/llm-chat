@@ -1,13 +1,19 @@
 import request from 'supertest';
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import { Op } from 'sequelize';
+import { OpenAI } from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
+import 'jest-styled-components';
 import app, { authenticateToken } from '../../server/app';
 import { sequelize } from '../../server/database/models';
 import { up, down } from '../../server/database/seeders/20240827043208-seed-test-data';
 import { Conversation } from '../../server/database/models/Conversation';
 import { User } from '../../server/database/models/User';
 import { Message } from '../../server/database/models/Message';
-import { Model } from 'sequelize';
+import { logger } from '../../server/helpers/messageHelpers';
+import * as messageHelpers from '../../server/helpers/messageHelpers';
+import { jest } from '@jest/globals';
 
 const obtainAuthToken = async () => {
   const response = await request(app)
@@ -16,21 +22,25 @@ const obtainAuthToken = async () => {
   return response.body.token;
 };
 
-beforeAll(() => {
+beforeAll(async () => {
   process.env.OPENAI_API_KEY = 'test-openai-key';
   process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
+  await sequelize.sync({ force: true });
+  await up(sequelize.getQueryInterface(), sequelize);
 });
 
-afterAll(() => {
+afterAll(async () => {
   delete process.env.OPENAI_API_KEY;
   delete process.env.ANTHROPIC_API_KEY;
+  await down(sequelize.getQueryInterface(), sequelize);
+  await sequelize.close();
 });
-import { OpenAI } from 'openai';
-import Anthropic from '@anthropic-ai/sdk';
-import 'jest-styled-components';
-import { logger } from '../../server/helpers/messageHelpers';
-import * as messageHelpers from '../../server/helpers/messageHelpers';
-import { jest } from '@jest/globals';
+
+beforeEach(async () => {
+  await Message.destroy({ where: {} });
+  await Conversation.destroy({ where: {} });
+  await User.destroy({ where: { username: { [Op.notIn]: ['user1'] } } });
+});
 
 // Mock OpenAI
 jest.mock('openai', () => ({
@@ -411,6 +421,12 @@ describe('Server Tests', () => {
 
         const testToken = jwt.sign({ id: user.get('id') }, process.env.SECRET_KEY || 'fallback-secret-key');
 
+        // Create a conversation for testing
+        const conversation = await Conversation.create({
+          title: 'Test Conversation',
+          user_id: user.get('id')
+        });
+
         // Mock Message.create to throw an error
         const originalMessageCreate = Message.create;
         (Message as any).create = jest.fn().mockImplementation(() => Promise.reject(new Error('Database error')));
@@ -420,7 +436,7 @@ describe('Server Tests', () => {
           .set('Authorization', `Bearer ${testToken}`)
           .send({
             content: 'Test message',
-            conversationId: null,
+            conversationId: conversation.get('id'),
             model: 'gpt-4',
             temperature: 0.7,
             getCompletion: true
@@ -431,8 +447,8 @@ describe('Server Tests', () => {
 
         // Restore original implementation and clean up
         (Message as any).create = originalMessageCreate;
+        await conversation.destroy();
         await user.destroy();
-        await Conversation.destroy({ where: { user_id: user.get('id') } });
       });
 
       it('should return 400 for invalid add_message request', async () => {
@@ -444,12 +460,44 @@ describe('Server Tests', () => {
       });
 
       it('should get completion for a message', async () => {
+        // Create test user and conversation
+        const user = await User.create({
+          username: 'testuser4',
+          email: 'test4@example.com',
+          hashed_password: 'hashedpassword'
+        });
+
+        const testToken = jwt.sign({ id: user.get('id') }, process.env.SECRET_KEY || 'fallback-secret-key');
+
+        const conversation = await Conversation.create({
+          title: 'Test Conversation',
+          user_id: user.get('id')
+        });
+
+        // Create a message to get completion for
+        const message = await Message.create({
+          content: 'Test message',
+          conversation_id: conversation.get('id'),
+          user_id: user.get('id')
+        });
+
         const response = await request(app)
           .post('/api/get_completion_for_message')
-          .set('Authorization', `Bearer ${token}`)
-          .send({ messageId: 1, model: 'test-model', temperature: 0.5 });
+          .set('Authorization', `Bearer ${testToken}`)
+          .send({
+            messageId: message.get('id'),
+            model: 'gpt-4',
+            temperature: 0.7
+          });
+
         expect(response.status).toBe(201);
         expect(response.body.id).toBeDefined();
+        expect(response.body.content).toBeDefined();
+
+        // Clean up
+        await message.destroy();
+        await conversation.destroy();
+        await user.destroy();
       });
 
       it('should return 400 for invalid get_completion_for_message request', async () => {
@@ -463,8 +511,8 @@ describe('Server Tests', () => {
       it('should create a new conversation with valid data', async () => {
         // Create a test user and get a token
         const user = await User.create({
-          username: 'testuser4',
-          email: 'test4@example.com',
+          username: 'testuser5',
+          email: 'test5@example.com',
           hashed_password: 'hashedpassword'
         });
 
@@ -484,12 +532,17 @@ describe('Server Tests', () => {
         expect(response.body.initialMessageId).toBeDefined();
         expect(response.body.completionMessageId).toBeDefined();
 
+        // Verify conversation and messages were created
+        const conversation = await Conversation.findByPk(response.body.conversationId);
+        expect(conversation).toBeDefined();
+        expect(conversation?.get('user_id')).toBe(user.get('id'));
+
+        const messages = await Message.findAll({ where: { conversation_id: response.body.conversationId } });
+        expect(messages.length).toBeGreaterThan(0);
+
         // Clean up
-        const createdConversation = await Conversation.findOne({ where: { user_id: user.get('id') } });
-        if (createdConversation) {
-          await Message.destroy({ where: { conversation_id: createdConversation.get('id') } });
-          await createdConversation.destroy();
-        }
+        await Message.destroy({ where: { conversation_id: response.body.conversationId } });
+        await conversation?.destroy();
         await user.destroy();
       });
 
