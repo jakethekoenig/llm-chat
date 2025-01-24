@@ -12,24 +12,33 @@ const obtainAuthToken = async () => {
   return response.body.token;
 };
 
-beforeEach(() => {
+beforeEach(async () => {
   process.env.OPENAI_API_KEY = 'test-openai-key';
   process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
+  // Reset database state
+  await Message.destroy({ where: {}, force: true });
+  await Conversation.destroy({ where: {}, force: true });
+  await User.destroy({ where: {}, force: true });
+  await up(sequelize.sequelize.getQueryInterface(), sequelize.sequelize);
 });
 
-afterEach(() => {
+afterEach(async () => {
   delete process.env.OPENAI_API_KEY;
   delete process.env.ANTHROPIC_API_KEY;
 });
 
 beforeAll(async () => {
   await sequelize.sequelize.sync({ force: true });
-  await up(sequelize.sequelize.getQueryInterface(), sequelize.sequelize);
 });
 
 afterAll(async () => {
-  await down(sequelize.sequelize.getQueryInterface(), sequelize.sequelize);
-  await sequelize.sequelize.close();
+  try {
+    await Message.destroy({ where: {}, force: true });
+    await Conversation.destroy({ where: {}, force: true });
+    await User.destroy({ where: {}, force: true });
+  } finally {
+    await sequelize.sequelize.close();
+  }
 });
 import { Message } from '../../server/database/models/Message';
 import { OpenAI } from 'openai';

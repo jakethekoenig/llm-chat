@@ -153,6 +153,16 @@ export const generateCompletion = async (messageId: number, model: string, tempe
       throw new Error('No messages found in conversation');
     }
 
+    // Validate model type
+    const validAnthropicModels = ['claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku'];
+    const validOpenAIModels = ['gpt-4', 'gpt-3.5-turbo', 'test-model'];
+    const isValidModel = isAnthropicModel(model) ? validAnthropicModels.includes(model) : validOpenAIModels.includes(model);
+    
+    if (!isValidModel) {
+      logger.error('Invalid model type:', { model });
+      throw new Error(`Invalid model type: ${model}`);
+    }
+
     // Generate completion using either Anthropic or OpenAI
     const completionContent = isAnthropicModel(model)
       ? await generateAnthropicCompletion(conversationHistory, model, temperature)
