@@ -7,8 +7,9 @@ import { User } from './database/models/User';
 import { Op } from 'sequelize';
 import { Conversation } from './database/models/Conversation';
 import { Message } from './database/models/Message';
-import { addMessage, generateCompletion } from './helpers/messageHelpers';
+import { addMessage, generateCompletion, StreamingResponse, isStreamingResponse } from './helpers/messageHelpers';
 import { body, validationResult } from 'express-validator';
+import { EventEmitter } from 'events';
 
 const app = express();
 const SECRET_KEY = process.env.SECRET_KEY || 'fallback-secret-key';
@@ -106,9 +107,18 @@ app.post('/api/get_completion_for_message', authenticateToken, [
 
   try {
     const completionMessage = await generateCompletion(messageId, model, temperature);
-    res.status(201).json({ id: completionMessage.get('id'), content: completionMessage.get('content')});
+    if (!isStreamingResponse(completionMessage)) {
+      res.status(201).json({ 
+        id: completionMessage.get('id'), 
+        content: completionMessage.get('content')
+      });
+    } else {
+      throw new Error('Unexpected streaming response in non-streaming endpoint');
+    }
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Internal server error' 
+    });
   }
 });
 
@@ -138,30 +148,30 @@ app.post('/api/get_completion', authenticateToken, [
       res.write(`data: ${JSON.stringify(data)}\n\n`);
     };
 
-    const streamingResponse = await generateCompletion(parentId, model, temperature, true);
+    const response = await generateCompletion(parentId, model, temperature, true);
     
-    if (!(streamingResponse instanceof EventEmitter)) {
+    if (!isStreamingResponse(response)) {
       throw new Error('Expected streaming response');
     }
 
     // Handle streaming events
-    streamingResponse.on('data', (data: { chunk: string; messageId: number }) => {
+    response.on('data', (data: { chunk: string; messageId: number }) => {
       sendSSE('chunk', data);
     });
 
-    streamingResponse.on('end', (data: { messageId: number }) => {
+    response.on('end', (data: { messageId: number }) => {
       sendSSE('done', data);
       res.end();
     });
 
-    streamingResponse.on('error', (error: Error) => {
+    response.on('error', (error: Error) => {
       sendSSE('error', { error: error.message });
       res.end();
     });
 
     // Handle client disconnect
     req.on('close', () => {
-      streamingResponse.removeAllListeners();
+      response.removeAllListeners();
     });
   } catch (error) {
     if (!res.headersSent) {
@@ -223,7 +233,15 @@ app.post('/api/create_conversation', authenticateToken, [
     const conversation = await Conversation.create({ title: defaultTitle, user_id: userId });
     const message = await addMessage(initialMessage, conversation.get('id') as number, null, userId);
     const completionMessage = await generateCompletion(message.get('id') as number, model, temperature);
-    res.status(201).json({ conversationId: conversation.get('id'), initialMessageId: message.get('id'), completionMessageId: completionMessage.get('id') });
+    if (!isStreamingResponse(completionMessage)) {
+      res.status(201).json({ 
+        conversationId: conversation.get('id'), 
+        initialMessageId: message.get('id'), 
+        completionMessageId: completionMessage.get('id') 
+      });
+    } else {
+      throw new Error('Unexpected streaming response in non-streaming endpoint');
+    }
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }

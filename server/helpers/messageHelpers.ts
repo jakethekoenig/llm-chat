@@ -3,15 +3,20 @@ import { Message } from '../database/models/Message';
 import 'openai/shims/node';
 import '@anthropic-ai/sdk/shims/node';
 import { OpenAI } from 'openai';
-import Anthropic from '@anthropic-ai/sdk';
+import Anthropic, { MessageStreamEvent, ContentBlockDeltaEvent } from '@anthropic-ai/sdk';
 import { createLogger, transports, format } from 'winston';
 import * as messageHelpers from './messageHelpers';
 import { EventEmitter } from 'events';
 
 export interface StreamingResponse extends EventEmitter {
-  on(event: 'data', listener: (chunk: string) => void): this;
+  on(event: 'data', listener: (data: { chunk: string; messageId: number }) => void): this;
   on(event: 'error', listener: (error: Error) => void): this;
-  on(event: 'end', listener: () => void): this;
+  on(event: 'end', listener: (data: { messageId: number }) => void): this;
+  removeAllListeners(): this;
+}
+
+export function isStreamingResponse(obj: any): obj is StreamingResponse {
+  return obj instanceof EventEmitter;
 }
 const logger = createLogger({
   level: 'error',
@@ -86,11 +91,16 @@ const generateAnthropicCompletion = async (content: string, model: string, tempe
       });
 
       for await (const chunk of stream) {
-        if (chunk.type === 'content_block_delta' && chunk.delta.text) {
-          emitter.emit('data', chunk.delta.text);
+        if (
+          chunk.type === 'content_block_delta' &&
+          (chunk as ContentBlockDeltaEvent).delta &&
+          'text' in (chunk as ContentBlockDeltaEvent).delta &&
+          (chunk as ContentBlockDeltaEvent).delta.text
+        ) {
+          emitter.emit('data', { chunk: (chunk as ContentBlockDeltaEvent).delta.text, messageId: -1 });
         }
       }
-      emitter.emit('end');
+      emitter.emit('end', { messageId: -1 });
     } catch (error) {
       emitter.emit('error', error instanceof Error ? error : new Error(String(error)));
     }
@@ -131,10 +141,10 @@ const generateOpenAICompletion = async (content: string, model: string, temperat
       for await (const chunk of stream) {
         const content = chunk.choices[0]?.delta?.content;
         if (content) {
-          emitter.emit('data', content);
+          emitter.emit('data', { chunk: content, messageId: -1 });
         }
       }
-      emitter.emit('end');
+      emitter.emit('end', { messageId: -1 });
     } catch (error) {
       emitter.emit('error', error instanceof Error ? error : new Error(String(error)));
     }
@@ -144,6 +154,7 @@ const generateOpenAICompletion = async (content: string, model: string, temperat
 };
 
 export const generateCompletion = async (messageId: number, model: string, temperature: number, stream = false): Promise<Message | StreamingResponse> => {
+  let completionMessage: Message | null = null;
   const parentMessage: Message | null = await Message.findByPk(messageId);
   if (!parentMessage) {
     throw new Error(`Parent message with ID ${messageId} not found`);
@@ -160,9 +171,9 @@ export const generateCompletion = async (messageId: number, model: string, tempe
         ? await generateAnthropicCompletion(content, model, temperature, true)
         : await generateOpenAICompletion(content, model, temperature, true);
 
-      if (streamingResponse instanceof EventEmitter) {
+      if (isStreamingResponse(streamingResponse)) {
         // Create an empty message that will be updated as the stream progresses
-        const completionMessage = await Message.create({
+        completionMessage = await Message.create({
           content: '',
           parent_id: messageId,
           conversation_id: parentMessage.get('conversation_id') as number,
@@ -174,14 +185,18 @@ export const generateCompletion = async (messageId: number, model: string, tempe
         let fullContent = '';
         const enhancedEmitter = new EventEmitter();
 
-        streamingResponse.on('data', (chunk: string) => {
-          fullContent += chunk;
-          enhancedEmitter.emit('data', { chunk, messageId: completionMessage.get('id') });
+        streamingResponse.on('data', (data: { chunk: string; messageId: number }) => {
+          fullContent += data.chunk;
+          const messageId = completionMessage?.get('id') as number;
+          enhancedEmitter.emit('data', { chunk: data.chunk, messageId });
         });
 
         streamingResponse.on('end', async () => {
-          await completionMessage.update({ content: fullContent });
-          enhancedEmitter.emit('end', { messageId: completionMessage.get('id') });
+          if (completionMessage) {
+            await completionMessage.update({ content: fullContent });
+            const messageId = completionMessage.get('id') as number;
+            enhancedEmitter.emit('end', { messageId });
+          }
         });
 
         streamingResponse.on('error', (error: Error) => {
