@@ -170,7 +170,52 @@ describe('Server Tests', () => {
       await expect(badSequelize.authenticate()).rejects.toThrow();
     });
 
-    it('should handle model associations', async () => {
+    it('should load models dynamically', () => {
+      expect(sequelize.models.Message).toBeDefined();
+      expect(sequelize.models.Conversation).toBeDefined();
+      expect(sequelize.models.User).toBeDefined();
+    });
+
+    it('should handle model associations', () => {
+      const messageModel = sequelize.models.Message;
+      const conversationModel = sequelize.models.Conversation;
+      const userModel = sequelize.models.User;
+
+      // Test Message associations
+      expect(messageModel.associations.conversation).toBeDefined();
+      expect(messageModel.associations.parent).toBeDefined();
+      expect(messageModel.associations.children).toBeDefined();
+      expect(messageModel.associations.user).toBeDefined();
+
+      // Test Conversation associations
+      expect(conversationModel.associations.messages).toBeDefined();
+      expect(conversationModel.associations.user).toBeDefined();
+
+      // Test User associations
+      expect(userModel.associations.conversations).toBeDefined();
+      expect(userModel.associations.messages).toBeDefined();
+    });
+
+    it('should handle environment variables in database config', () => {
+      const originalEnv = process.env.NODE_ENV;
+      const originalVar = process.env.DATABASE_URL;
+
+      // Test with environment variable
+      process.env.NODE_ENV = 'test';
+      process.env.DATABASE_URL = 'sqlite::memory:';
+      const testDb = require('../../server/database').default;
+      expect(testDb.sequelize).toBeDefined();
+
+      // Restore environment
+      process.env.NODE_ENV = originalEnv;
+      if (originalVar) {
+        process.env.DATABASE_URL = originalVar;
+      } else {
+        delete process.env.DATABASE_URL;
+      }
+    });
+
+    it('should handle model initialization', async () => {
       // Initialize associations
       Message.belongsTo(Conversation, { foreignKey: 'conversation_id', as: 'conversation' });
       Message.belongsTo(Message, { foreignKey: 'parent_id', as: 'parent' });
@@ -183,23 +228,7 @@ describe('Server Tests', () => {
       User.hasMany(Conversation, { foreignKey: 'user_id', as: 'conversations' });
       User.hasMany(Message, { foreignKey: 'user_id', as: 'messages' });
 
-      // Test associations
-      expect(Message.associations).toBeDefined();
-      expect(Message.associations.conversation).toBeDefined();
-      expect(Message.associations.parent).toBeDefined();
-      expect(Message.associations.children).toBeDefined();
-      expect(Message.associations.user).toBeDefined();
-
-      expect(Conversation.associations).toBeDefined();
-      expect(Conversation.associations.messages).toBeDefined();
-      expect(Conversation.associations.user).toBeDefined();
-
-      expect(User.associations).toBeDefined();
-      expect(User.associations.conversations).toBeDefined();
-      expect(User.associations.messages).toBeDefined();
-    });
-
-    it('should handle model initialization', () => {
+      // Test model initialization
       const message = Message.build({
         content: 'Test message',
         conversation_id: 1,
@@ -223,6 +252,7 @@ describe('Server Tests', () => {
       expect(user).toBeInstanceOf(User);
       expect(user.get('username')).toBe('testuser');
     });
+
   });
 
   it('should sign in and return a token', async () => {
