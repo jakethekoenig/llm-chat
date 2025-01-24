@@ -4,6 +4,8 @@ import app, { authenticateToken } from '../../server/app';
 import { sequelize } from '../../server/database/models';
 import { up, down } from '../../server/database/seeders/20240827043208-seed-test-data';
 import { Conversation } from '../../server/database/models/Conversation';
+import { User } from '../../server/database/models/User';
+import bcrypt from 'bcrypt';
 
 const obtainAuthToken = async () => {
   const response = await request(app)
@@ -105,6 +107,82 @@ describe('Server Tests', () => {
       .post('/api/signin')
       .send({ username: 'user1', password: 'wrongpassword' });
     expect(response.status).toBe(401);
+  });
+
+  it('should return 400 for missing username', async () => {
+    const response = await request(app)
+      .post('/api/signin')
+      .send({ password: 'password1' });
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe('Username and password are required');
+  });
+
+  it('should return 400 for missing password', async () => {
+    const response = await request(app)
+      .post('/api/signin')
+      .send({ username: 'user1' });
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe('Username and password are required');
+  });
+
+  it('should return 400 for missing email in register', async () => {
+    const response = await request(app)
+      .post('/api/register')
+      .send({ username: 'newuser', password: 'password123' });
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe('Username, email, and password are required');
+  });
+
+  it('should handle database errors in register', async () => {
+    // Mock bcrypt.hash to throw an error
+    jest.spyOn(bcrypt, 'hash').mockImplementationOnce(() => {
+      throw new Error('Hashing error');
+    });
+
+    const response = await request(app)
+      .post('/api/register')
+      .send({ username: 'newuser', email: 'new@test.com', password: 'password123' });
+    expect(response.status).toBe(500);
+    expect(response.body.error).toBe('Internal server error');
+  });
+
+  it('should handle database errors in message creation', async () => {
+    const token = await obtainAuthToken();
+    
+    // Mock Message.create to throw an error
+    jest.spyOn(Message, 'create').mockImplementationOnce(() => {
+      throw new Error('Database error');
+    });
+
+    const response = await request(app)
+      .post('/api/add_message')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content: 'Test message', conversationId: 1 });
+    expect(response.status).toBe(500);
+    expect(response.body.error).toBe('Internal server error');
+  });
+
+  it('should return 400 for invalid conversation ID format', async () => {
+    const token = await obtainAuthToken();
+    
+    const response = await request(app)
+      .get('/api/conversations/invalid/messages')
+      .set('Authorization', `Bearer ${token}`);
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe('Invalid conversation ID');
+  });
+
+  it('should handle database errors in signin', async () => {
+    // Mock User.findOne to throw an error
+    jest.spyOn(User, 'findOne').mockImplementationOnce(() => {
+      throw new Error('Database connection error');
+    });
+
+    const response = await request(app)
+      .post('/api/signin')
+      .send({ username: 'user1', password: 'password1' });
+    expect(response.status).toBe(500);
+    expect(response.body.error).toBe('Internal server error');
   });
 
   it('should return 400 for invalid parentId in add_message', async () => {
@@ -275,6 +353,97 @@ describe('Server Tests', () => {
         .send({ messageId: 1, model: 'gpt-4', temperature: 0.7 });
       expect(response.status).toBe(500);
       expect(response.body.error).toBe('Internal server error');
+    });
+
+    it('should handle database errors in conversation fetching', async () => {
+      // Mock Conversation.findAll to throw an error
+      jest.spyOn(Conversation, 'findAll').mockImplementationOnce(() => {
+        throw new Error('Database connection error');
+      });
+
+      const response = await request(app)
+        .get('/api/conversations')
+        .set('Authorization', `Bearer ${token}`);
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Internal server error');
+    });
+
+    it('should handle database errors in message fetching', async () => {
+      // Mock Message.findAll to throw an error
+      jest.spyOn(Message, 'findAll').mockImplementationOnce(() => {
+        throw new Error('Database connection error');
+      });
+
+      const response = await request(app)
+        .get('/api/conversations/1/messages')
+        .set('Authorization', `Bearer ${token}`);
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Internal server error');
+    });
+
+    it('should handle errors in completion generation', async () => {
+      // Mock generateCompletion to throw an error
+      jest.spyOn(messageHelpers, 'generateCompletion').mockImplementationOnce(() => {
+        throw new Error('Stream generation error');
+      });
+
+      const response = await request(app)
+        .post('/api/get_completion')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ model: 'test-model', parentId: 1, temperature: 0.5 });
+
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Internal server error');
+    });
+
+    it('should validate temperature range', async () => {
+      const response = await request(app)
+        .post('/api/get_completion')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ model: 'test-model', parentId: 1, temperature: 2.0 }); // Temperature too high
+
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toBeDefined();
+      expect(response.body.errors[0].msg).toBe('Temperature must be a float between 0 and 1');
+
+      // Test lower bound
+      const responseLow = await request(app)
+        .post('/api/get_completion')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ model: 'test-model', parentId: 1, temperature: -0.5 }); // Temperature too low
+
+      expect(responseLow.status).toBe(400);
+      expect(responseLow.body.errors[0].msg).toBe('Temperature must be a float between 0 and 1');
+
+      // Test valid temperature
+      const responseValid = await request(app)
+        .post('/api/get_completion')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ model: 'test-model', parentId: 1, temperature: 0.7 });
+
+      expect(responseValid.status).toBe(201);
+    });
+
+    it('should handle missing model parameter', async () => {
+      const response = await request(app)
+        .post('/api/get_completion')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ parentId: 1, temperature: 0.5 });
+
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toBeDefined();
+      expect(response.body.errors[0].msg).toBe('Model is required');
+    });
+
+    it('should handle missing parentId parameter', async () => {
+      const response = await request(app)
+        .post('/api/get_completion')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ model: 'test-model', temperature: 0.5 });
+
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toBeDefined();
+      expect(response.body.errors[0].msg).toBe('Parent ID must be an integer');
     });
 
     describe('Add Message and Get Completion for Message Endpoints', () => {
