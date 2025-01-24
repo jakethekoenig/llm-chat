@@ -1,9 +1,17 @@
 import request from 'supertest';
 import express from 'express';
+import { jest } from '@jest/globals';
+import 'jest-styled-components';
+import { OpenAI } from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 import app, { authenticateToken } from '../../server/app';
 import { sequelize } from '../../server/database/models';
-import { up, down, testData } from '../../server/database/seeders/20240827043208-seed-test-data';
+import { Message } from '../../server/database/models/Message';
+import { User } from '../../server/database/models/User';
 import { Conversation } from '../../server/database/models/Conversation';
+import { up, down, testData } from '../../server/database/seeders/20240827043208-seed-test-data';
+import { logger } from '../../server/helpers/messageHelpers';
+import * as messageHelpers from '../../server/helpers/messageHelpers';
 
 const obtainAuthToken = async () => {
   const response = await request(app)
@@ -12,42 +20,30 @@ const obtainAuthToken = async () => {
   return response.body.token;
 };
 
-beforeEach(async () => {
+let connection: any;
+
+beforeAll(async () => {
+  connection = await sequelize.sequelize.sync({ force: true });
   process.env.OPENAI_API_KEY = 'test-openai-key';
   process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
-  // Reset database state
-  await Message.destroy({ where: {}, force: true });
-  await Conversation.destroy({ where: {}, force: true });
-  await User.destroy({ where: {}, force: true });
   await up(sequelize.sequelize.getQueryInterface(), sequelize.sequelize);
 });
 
-afterEach(async () => {
+afterAll(async () => {
   delete process.env.OPENAI_API_KEY;
   delete process.env.ANTHROPIC_API_KEY;
-});
-
-beforeAll(async () => {
-  await sequelize.sequelize.sync({ force: true });
-});
-
-afterAll(async () => {
-  try {
-    await Message.destroy({ where: {}, force: true });
-    await Conversation.destroy({ where: {}, force: true });
-    await User.destroy({ where: {}, force: true });
-  } finally {
-    await sequelize.sequelize.close();
+  if (connection) {
+    await connection.close();
   }
 });
-import { Message } from '../../server/database/models/Message';
-import { User } from '../../server/database/models/User';
-import { OpenAI } from 'openai';
-import Anthropic from '@anthropic-ai/sdk';
-import 'jest-styled-components';
-import { logger } from '../../server/helpers/messageHelpers';
-import * as messageHelpers from '../../server/helpers/messageHelpers';
-import { jest } from '@jest/globals';
+
+// Reset database state between tests
+beforeEach(async () => {
+  await Message.destroy({ where: {}, truncate: true, cascade: true });
+  await Conversation.destroy({ where: {}, truncate: true, cascade: true });
+  await User.destroy({ where: {}, truncate: true, cascade: true });
+  await up(sequelize.sequelize.getQueryInterface(), sequelize.sequelize);
+});
 
 // Mock OpenAI
 jest.mock('openai', () => {

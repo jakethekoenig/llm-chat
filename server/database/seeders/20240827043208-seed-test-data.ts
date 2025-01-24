@@ -64,7 +64,11 @@ export async function up(queryInterface: QueryInterface, sequelize: Sequelize) {
 }
 
 export async function down(queryInterface: QueryInterface, sequelize: Sequelize) {
-  await queryInterface.bulkDelete('Messages', {});
-  await queryInterface.bulkDelete('Conversations', {});
-  await queryInterface.bulkDelete('Users', {});
+  try {
+    await Message.destroy({ where: {}, truncate: true, cascade: true });
+    await Conversation.destroy({ where: {}, truncate: true, cascade: true });
+    await User.destroy({ where: {}, truncate: true, cascade: true });
+  } catch (error) {
+    console.error('Error cleaning up test data:', error);
+  }
 }
