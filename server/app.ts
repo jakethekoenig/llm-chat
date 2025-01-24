@@ -51,7 +51,7 @@ const errorHandler = (err: any, req: express.Request, res: express.Response, nex
 
   // For test environment, maintain the original error format
   if (process.env.NODE_ENV === 'test') {
-    return res.status(500).json('Internal server error');
+    return res.status(500).json({ error: 'Internal server error' });
   }
 
   // Don't expose stack traces to client in production
