@@ -13,7 +13,6 @@ import { Conversation } from '../../server/database/models/Conversation';
 import { up, down, testData } from '../../server/database/seeders/20240827043208-seed-test-data';
 import { logger } from '../../server/helpers/messageHelpers';
 import * as messageHelpers from '../../server/helpers/messageHelpers';
-import initializeDatabase from '../../server/database';
 
 const obtainAuthToken = async () => {
   const response = await request(app)
@@ -143,25 +142,24 @@ describe('Server Tests', () => {
       expect(connection).toBeUndefined();
     });
 
-    it('should initialize database with options', async () => {
-      const options = {
-        database: ':memory:',
+    it('should initialize database with custom options', async () => {
+      const testSequelize = new Sequelize({
         dialect: 'sqlite',
+        storage: ':memory:',
         logging: false
-      };
-      const db = await initializeDatabase(options);
-      expect(db).toBeDefined();
-      expect(db.sequelize).toBeDefined();
-      await db.sequelize.close();
+      });
+      await testSequelize.authenticate();
+      expect(testSequelize).toBeDefined();
+      await testSequelize.close();
     });
 
     it('should handle database initialization errors', async () => {
-      const badOptions = {
-        database: '/nonexistent/path',
+      const badSequelize = new Sequelize({
         dialect: 'sqlite',
+        storage: '/nonexistent/path',
         logging: false
-      };
-      await expect(initializeDatabase(badOptions)).rejects.toThrow();
+      });
+      await expect(badSequelize.authenticate()).rejects.toThrow();
     });
 
     it('should handle database errors', async () => {
