@@ -13,7 +13,7 @@ import { Conversation } from '../../server/database/models/Conversation';
 import { up, down, testData } from '../../server/database/seeders/20240827043208-seed-test-data';
 import { logger } from '../../server/helpers/messageHelpers';
 import * as messageHelpers from '../../server/helpers/messageHelpers';
-import { initializeDatabase } from '../../server/database';
+import initializeDatabase from '../../server/database';
 
 const obtainAuthToken = async () => {
   const response = await request(app)
