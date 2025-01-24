@@ -3,19 +3,15 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Conversation from '../../chat-components/Conversation';
 import ConversationList from '../../chat-components/ConversationList';
+import OpenAI from 'openai';
+import { setMockChatResponse } from '../../__mocks__/openai';
 
-jest.mock('openai', () => {
-  return {
-    OpenAI: jest.fn().mockImplementation(() => ({
-      chat: {
-        completions: {
-          create: jest.fn().mockResolvedValue({
-            choices: [{ message: { role: "assistant", content: 'Mocked completion response' }}]
-          })
-        }
-      }
-    }))
-  };
+jest.mock('openai');
+
+beforeEach(() => {
+  setMockChatResponse({
+    choices: [{ message: { role: "assistant", content: 'Mocked completion response' }}]
+  });
 });
 
 const mockOnSubmit = jest.fn(async function* (message: string) {

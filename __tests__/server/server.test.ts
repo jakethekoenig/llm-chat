@@ -23,26 +23,14 @@ afterAll(() => {
 });
 import { Message } from '../../server/database/models/Message';
 import { OpenAI } from 'openai';
+import { setMockChatResponse } from '../../__mocks__/openai';
 import Anthropic from '@anthropic-ai/sdk';
 import 'jest-styled-components';
 import { logger } from '../../server/helpers/messageHelpers';
 import * as messageHelpers from '../../server/helpers/messageHelpers';
 import { jest } from '@jest/globals';
 
-// Mock OpenAI
-jest.mock('openai', () => ({
-  OpenAI: jest.fn(() => ({
-    chat: {
-      completions: {
-        create: jest.fn().mockImplementation(() => Promise.resolve({
-          choices: [{
-            message: { role: "assistant", content: 'Mocked OpenAI response' }
-          }]
-        } as any))
-      }
-    }
-  }))
-}));
+jest.mock('openai');
 
 // Mock Anthropic
 jest.mock('@anthropic-ai/sdk', () => ({
@@ -55,7 +43,12 @@ jest.mock('@anthropic-ai/sdk', () => ({
     }
   }))
 }));
-// API keys are set in beforeAll
+
+beforeEach(() => {
+  setMockChatResponse({
+    choices: [{message: { role: "assistant", content: 'Mocked OpenAI response' }}]
+  });
+});
 
 beforeAll(async () => {
   await sequelize.sequelize.sync({ force: true });
