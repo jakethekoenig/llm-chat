@@ -65,9 +65,11 @@ export async function up(queryInterface: QueryInterface, sequelize: Sequelize) {
 
 export async function down(queryInterface: QueryInterface, sequelize: Sequelize) {
   try {
-    await Message.destroy({ where: {}, truncate: true, cascade: true });
-    await Conversation.destroy({ where: {}, truncate: true, cascade: true });
-    await User.destroy({ where: {}, truncate: true, cascade: true });
+    await sequelize.query('PRAGMA foreign_keys = OFF;');
+    await sequelize.query('DELETE FROM Messages;');
+    await sequelize.query('DELETE FROM Conversations;');
+    await sequelize.query('DELETE FROM Users;');
+    await sequelize.query('PRAGMA foreign_keys = ON;');
   } catch (error) {
     console.error('Error cleaning up test data:', error);
   }

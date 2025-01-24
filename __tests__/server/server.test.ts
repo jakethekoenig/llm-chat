@@ -20,28 +20,24 @@ const obtainAuthToken = async () => {
   return response.body.token;
 };
 
-let connection: any;
-
 beforeAll(async () => {
-  connection = await sequelize.sequelize.sync({ force: true });
+  await sequelize.sequelize.sync({ force: true });
   process.env.OPENAI_API_KEY = 'test-openai-key';
   process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
-  await up(sequelize.sequelize.getQueryInterface(), sequelize.sequelize);
 });
 
 afterAll(async () => {
   delete process.env.OPENAI_API_KEY;
   delete process.env.ANTHROPIC_API_KEY;
-  if (connection) {
-    await connection.close();
-  }
 });
 
 // Reset database state between tests
 beforeEach(async () => {
-  await Message.destroy({ where: {}, truncate: true, cascade: true });
-  await Conversation.destroy({ where: {}, truncate: true, cascade: true });
-  await User.destroy({ where: {}, truncate: true, cascade: true });
+  await sequelize.sequelize.query('PRAGMA foreign_keys = OFF;');
+  await sequelize.sequelize.query('DELETE FROM Messages;');
+  await sequelize.sequelize.query('DELETE FROM Conversations;');
+  await sequelize.sequelize.query('DELETE FROM Users;');
+  await sequelize.sequelize.query('PRAGMA foreign_keys = ON;');
   await up(sequelize.sequelize.getQueryInterface(), sequelize.sequelize);
 });
 
