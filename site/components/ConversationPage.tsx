@@ -48,7 +48,7 @@ const ConversationPage: React.FC = () => {
     fetchMessages();
   }, [conversationId]);
 
-  const handleNewMessageSubmit = async (message: string) => {
+  const handleNewMessageSubmit = async function* (message: string) {
     try {
       setError(null);
       const mostRecentMessageId = messages.length > 0 ? messages[messages.length - 1].id : null;
@@ -65,16 +65,23 @@ const ConversationPage: React.FC = () => {
       }
 
       const data = await response.json();
-      setMessages(prevMessages => [...prevMessages, { 
+      const newMessage = { 
         id: data.id, 
         content: message, 
         author: 'User', 
         timestamp: new Date().toISOString(), 
         parentId: mostRecentMessageId 
-      }]);
+      };
+      
+      setMessages(prevMessages => [...prevMessages, newMessage]);
+      
+      // Yield the message content to support streaming interface
+      yield message;
+      
     } catch (error) {
       console.error('Error sending message:', error);
       setError('Failed to send message. Please try again.');
+      yield 'Error: Failed to send message';
     }
   };
 

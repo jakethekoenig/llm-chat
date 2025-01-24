@@ -37,14 +37,22 @@ const mathjaxConfig = {
 
 const AppContent = () => {
   const [isSidePaneOpen, setIsSidePaneOpen] = React.useState(true);
+  const [isAuthInitialized, setIsAuthInitialized] = React.useState(false);
   const toggleSidePane = () => { setIsSidePaneOpen(!isSidePaneOpen); };
   const auth = useAuth();
 
   React.useEffect(() => {
-    import('./utils/api').then(({ setAuthInstance }) => {
+    const initAuth = async () => {
+      const { setAuthInstance } = await import('./utils/api');
       setAuthInstance(auth);
-    });
+      setIsAuthInitialized(true);
+    };
+    initAuth();
   }, [auth]);
+
+  if (!isAuthInitialized) {
+    return <div>Initializing...</div>;
+  }
 
   return (
     <MathJaxContext config={mathjaxConfig as any}>
