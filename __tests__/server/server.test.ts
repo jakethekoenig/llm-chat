@@ -23,19 +23,25 @@ afterAll(() => {
 });
 import { Message } from '../../server/database/models/Message';
 import { OpenAI } from 'openai';
-import type { ChatCompletionCreateParams } from 'openai/resources/chat/completions';
 import Anthropic from '@anthropic-ai/sdk';
 import 'jest-styled-components';
 import { logger } from '../../server/helpers/messageHelpers';
 import * as messageHelpers from '../../server/helpers/messageHelpers';
 import { jest } from '@jest/globals';
 
+// Define the type for our mock parameters
+type MockCompletionParams = {
+  model: string;
+  messages: Array<{ role: string; content: string }>;
+  temperature?: number;
+};
+
 // Mock OpenAI
 jest.mock('openai', () => ({
   OpenAI: jest.fn(() => ({
     chat: {
       completions: {
-        create: jest.fn().mockImplementation((params: ChatCompletionCreateParams) => {
+        create: jest.fn().mockImplementation((params: MockCompletionParams) => {
           // Validate that messages is an array and has at least one message
           if (!Array.isArray(params.messages) || params.messages.length === 0) {
             throw new Error('Invalid messages format');
