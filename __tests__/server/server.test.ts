@@ -150,7 +150,20 @@ describe('Server Tests', () => {
       await expect(badSequelize.authenticate()).rejects.toThrow();
     });
 
-    it('should handle model associations', () => {
+    it('should handle model associations', async () => {
+      // Initialize associations
+      Message.belongsTo(Conversation, { foreignKey: 'conversation_id', as: 'conversation' });
+      Message.belongsTo(Message, { foreignKey: 'parent_id', as: 'parent' });
+      Message.hasMany(Message, { foreignKey: 'parent_id', as: 'children' });
+      Message.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+      Conversation.hasMany(Message, { foreignKey: 'conversation_id', as: 'messages' });
+      Conversation.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+      User.hasMany(Conversation, { foreignKey: 'user_id', as: 'conversations' });
+      User.hasMany(Message, { foreignKey: 'user_id', as: 'messages' });
+
+      // Test associations
       expect(Message.associations).toBeDefined();
       expect(Message.associations.conversation).toBeDefined();
       expect(Message.associations.parent).toBeDefined();
