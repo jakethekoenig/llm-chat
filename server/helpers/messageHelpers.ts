@@ -64,56 +64,63 @@ const generateAnthropicCompletion = async (content: string, model: string, tempe
     throw new Error('Anthropic API key is not set');
   }
 
-  const client = new Anthropic({
-    apiKey: apiKey,
-  });
-
-  if (!stream) {
-    const response = await client.messages.create({
-      model,
-      max_tokens: 1024,
-      temperature,
-      messages: [{ role: 'user', content }],
+  try {
+    const client = new Anthropic({
+      apiKey: apiKey,
     });
 
-    const contentBlock = response.content[0];
-    if ('text' in contentBlock) {
-      return contentBlock.text;
-    } else {
-      logger.error('Unexpected content block type from Anthropic API');
-      throw new Error('Unexpected response format from Anthropic API');
-    }
-  }
-
-  const emitter = new EventEmitter();
-  
-  (async () => {
-    try {
-      const stream = await client.messages.create({
+    if (!stream) {
+      const response = await client.messages.create({
         model,
         max_tokens: 1024,
         temperature,
         messages: [{ role: 'user', content }],
-        stream: true,
       });
 
-      for await (const chunk of stream) {
-        const messageContent = chunk as MessageContent;
-        if (
-          messageContent.type === 'content_block_delta' &&
-          messageContent.delta &&
-          messageContent.delta.text
-        ) {
-          emitter.emit('data', { chunk: messageContent.delta.text, messageId: -1 });
-        }
+      const contentBlock = response.content[0];
+      if ('text' in contentBlock) {
+        return contentBlock.text;
+      } else {
+        logger.error('Unexpected content block type from Anthropic API');
+        throw new Error('Unexpected response format from Anthropic API');
       }
-      emitter.emit('end', { messageId: -1 });
-    } catch (error) {
-      emitter.emit('error', error instanceof Error ? error : new Error(String(error)));
     }
-  })();
 
-  return emitter;
+    const emitter = new EventEmitter();
+    
+    (async () => {
+      try {
+        const stream = await client.messages.create({
+          model,
+          max_tokens: 1024,
+          temperature,
+          messages: [{ role: 'user', content }],
+          stream: true,
+        });
+
+        for await (const chunk of stream) {
+          const messageContent = chunk as MessageContent;
+          if (
+            messageContent.type === 'content_block_delta' &&
+            messageContent.delta &&
+            messageContent.delta.text
+          ) {
+            emitter.emit('data', { chunk: messageContent.delta.text, messageId: -1 });
+          }
+        }
+        emitter.emit('end', { messageId: -1 });
+      } catch (error) {
+        emitter.emit('error', error instanceof Error ? error : new Error(String(error)));
+      }
+    })();
+
+    return emitter;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to generate Anthropic completion');
+  }
 };
 
 const generateOpenAICompletion = async (content: string, model: string, temperature: number, stream = false): Promise<string | StreamingResponse> => {
@@ -122,42 +129,49 @@ const generateOpenAICompletion = async (content: string, model: string, temperat
     throw new Error('OpenAI API key is not set');
   }
 
-  const openai = new OpenAI({ apiKey });
+  try {
+    const openai = new OpenAI({ apiKey });
 
-  if (!stream) {
-    const response = await openai.chat.completions.create({
-      model,
-      messages: [{ role: "user", content }],
-      temperature,
-    });
-
-    return response.choices[0].message?.content || '';
-  }
-
-  const emitter = new EventEmitter();
-  
-  (async () => {
-    try {
-      const stream = await openai.chat.completions.create({
+    if (!stream) {
+      const response = await openai.chat.completions.create({
         model,
         messages: [{ role: "user", content }],
         temperature,
-        stream: true,
       });
 
-      for await (const chunk of stream) {
-        const content = chunk.choices[0]?.delta?.content;
-        if (content) {
-          emitter.emit('data', { chunk: content, messageId: -1 });
-        }
-      }
-      emitter.emit('end', { messageId: -1 });
-    } catch (error) {
-      emitter.emit('error', error instanceof Error ? error : new Error(String(error)));
+      return response.choices[0].message?.content || '';
     }
-  })();
 
-  return emitter;
+    const emitter = new EventEmitter();
+    
+    (async () => {
+      try {
+        const stream = await openai.chat.completions.create({
+          model,
+          messages: [{ role: "user", content }],
+          temperature,
+          stream: true,
+        });
+
+        for await (const chunk of stream) {
+          const content = chunk.choices[0]?.delta?.content;
+          if (content) {
+            emitter.emit('data', { chunk: content, messageId: -1 });
+          }
+        }
+        emitter.emit('end', { messageId: -1 });
+      } catch (error) {
+        emitter.emit('error', error instanceof Error ? error : new Error(String(error)));
+      }
+    })();
+
+    return emitter;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to generate OpenAI completion');
+  }
 };
 
 export const generateCompletion = async (messageId: number, model: string, temperature: number, stream = false): Promise<Message | StreamingResponse> => {

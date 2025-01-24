@@ -1,9 +1,17 @@
 import request from 'supertest';
 import express from 'express';
+import { jest } from '@jest/globals';
+import 'jest-styled-components';
+import { OpenAI } from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
+
 import app, { authenticateToken } from '../../server/app';
 import { sequelize } from '../../server/database/models';
 import { up, down } from '../../server/database/seeders/20240827043208-seed-test-data';
 import { Conversation } from '../../server/database/models/Conversation';
+import { Message } from '../../server/database/models/Message';
+import { logger } from '../../server/helpers/messageHelpers';
+import * as messageHelpers from '../../server/helpers/messageHelpers';
 
 const obtainAuthToken = async () => {
   const response = await request(app)
@@ -12,50 +20,36 @@ const obtainAuthToken = async () => {
   return response.body.token;
 };
 
-beforeAll(() => {
-  process.env.OPENAI_API_KEY = 'test-openai-key';
-  process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
-});
-
-afterAll(() => {
-  delete process.env.OPENAI_API_KEY;
-  delete process.env.ANTHROPIC_API_KEY;
-});
-import { Message } from '../../server/database/models/Message';
-import { OpenAI } from 'openai';
-import Anthropic from '@anthropic-ai/sdk';
-import 'jest-styled-components';
-import { logger } from '../../server/helpers/messageHelpers';
-import * as messageHelpers from '../../server/helpers/messageHelpers';
-import { jest } from '@jest/globals';
-
 // Mock OpenAI
+const mockOpenAICreate = jest.fn().mockImplementation(() => Promise.resolve({
+  choices: [{
+    message: { role: "assistant", content: 'Mocked OpenAI response' }
+  }]
+}));
+
 jest.mock('openai', () => ({
   OpenAI: jest.fn(() => ({
     chat: {
       completions: {
-        create: jest.fn().mockImplementation(() => Promise.resolve({
-          choices: [{
-            message: { role: "assistant", content: 'Mocked OpenAI response' }
-          }]
-        } as any))
+        create: mockOpenAICreate
       }
     }
   }))
 }));
 
 // Mock Anthropic
+const mockAnthropicCreate = jest.fn().mockImplementation(() => Promise.resolve({
+  content: [{ type: 'text', text: 'Mocked Anthropic response' }]
+}));
+
 jest.mock('@anthropic-ai/sdk', () => ({
   __esModule: true,
   default: jest.fn(() => ({
     messages: {
-      create: jest.fn().mockImplementation(() => Promise.resolve({
-        content: [{ type: 'text', text: 'Mocked Anthropic response' }]
-      } as any))
+      create: mockAnthropicCreate
     }
   }))
 }));
-// API keys are set in beforeAll
 
 beforeAll(async () => {
   await sequelize.sequelize.sync({ force: true });
@@ -65,6 +59,19 @@ beforeAll(async () => {
 afterAll(async () => {
   await down(sequelize.sequelize.getQueryInterface(), sequelize.sequelize);
   await sequelize.sequelize.close();
+  delete process.env.OPENAI_API_KEY;
+  delete process.env.ANTHROPIC_API_KEY;
+});
+
+beforeEach(() => {
+  mockOpenAICreate.mockClear();
+  mockAnthropicCreate.mockClear();
+  process.env.OPENAI_API_KEY = 'test-openai-key';
+  process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
+});
+
+afterEach(async () => {
+  await Message.destroy({ where: {} });
 });
 
 // Streaming endpoint
@@ -237,10 +244,16 @@ describe('Server Tests', () => {
       const originalKey = process.env.ANTHROPIC_API_KEY;
       delete process.env.ANTHROPIC_API_KEY;
 
+      const message = await Message.create({
+        content: 'Test message',
+        conversation_id: 1,
+        user_id: 1
+      });
+
       const response = await request(app)
         .post('/api/get_completion_for_message')
         .set('Authorization', `Bearer ${token}`)
-        .send({ messageId: 1, model: 'claude-3-opus', temperature: 0.7 });
+        .send({ messageId: message.get('id'), model: 'claude-3-opus', temperature: 0.7 });
       
       expect(response.status).toBe(500);
       expect(response.body.error).toBe('Anthropic API key is not set');
@@ -249,32 +262,87 @@ describe('Server Tests', () => {
       process.env.ANTHROPIC_API_KEY = originalKey;
     });
 
+    it('should handle streaming API errors', async () => {
+      const message = await Message.create({
+        content: 'Test message',
+        conversation_id: 1,
+        user_id: 1
+      });
+
+      mockOpenAICreate.mockRejectedValueOnce(new Error('Stream error'));
+
+      const response = await request(app)
+        .post('/api/get_completion')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ parentId: message.get('id'), model: 'gpt-4', temperature: 0.7 });
+
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Stream error');
+    });
+
     it('should detect different Anthropic model variants', async () => {
       const anthropicModels = ['claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku'];
       
       for (const model of anthropicModels) {
+        mockAnthropicCreate.mockImplementationOnce(() => Promise.resolve({
+          content: [{ type: 'text', text: `Mocked ${model} response` }]
+        }));
+
+        const message = await Message.create({
+          content: 'Test message',
+          conversation_id: 1,
+          user_id: 1
+        });
+
         const response = await request(app)
           .post('/api/get_completion_for_message')
           .set('Authorization', `Bearer ${token}`)
-          .send({ messageId: 1, model, temperature: 0.7 });
+          .send({ messageId: message.get('id'), model, temperature: 0.7 });
         
         expect(response.status).toBe(201);
-        expect(response.body.content).toBe('Mocked Anthropic response');
+        expect(response.body.content).toBe(`Mocked ${model} response`);
+        expect(mockAnthropicCreate).toHaveBeenCalledWith(expect.objectContaining({
+          model,
+          messages: [{ role: 'user', content: 'Test message' }],
+          temperature: 0.7
+        }));
       }
     });
 
-    it('should return 500 when generating completion fails', async () => {
-      // Mock generateCompletion to throw an error
-      jest.spyOn(messageHelpers, 'generateCompletion').mockImplementationOnce(() => {
-        throw new Error('Completion service unavailable');
+    it('should handle streaming responses', async () => {
+      const message = await Message.create({
+        content: 'Test message',
+        conversation_id: 1,
+        user_id: 1
       });
+
+      const response = await request(app)
+        .post('/api/get_completion')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ parentId: message.get('id'), model: 'gpt-4', temperature: 0.7 });
+
+      expect(response.status).toBe(200);
+      expect(response.headers['content-type']).toBe('text/event-stream');
+      expect(response.headers['connection']).toBe('keep-alive');
+    });
+
+    it('should return 500 when generating completion fails', async () => {
+      const message = await Message.create({
+        content: 'Test message',
+        conversation_id: 1,
+        user_id: 1
+      });
+
+      mockOpenAICreate.mockRejectedValueOnce(new Error('Completion service unavailable'));
 
       const response = await request(app)
         .post('/api/get_completion_for_message')
         .set('Authorization', `Bearer ${token}`)
-        .send({ messageId: 1, model: 'gpt-4', temperature: 0.7 });
+        .send({ messageId: message.get('id'), model: 'gpt-4', temperature: 0.7 });
       expect(response.status).toBe(500);
-      expect(response.body.error).toBe('Internal server error');
+      expect(response.body.error).toBe('Completion service unavailable');
+
+      await message.destroy();
     });
 
     describe('Add Message and Get Completion for Message Endpoints', () => {
@@ -370,21 +438,26 @@ describe('Server Tests', () => {
 
       // New test for handling missing environment variables
       it('should return 500 if OPENAI_API_KEY is not set', async () => {
+        const message = await Message.create({
+          content: 'Test message',
+          conversation_id: 1,
+          user_id: 1
+        });
+
         // Temporarily unset the API key
         const originalApiKey = process.env.OPENAI_API_KEY;
         delete process.env.OPENAI_API_KEY;
 
-        const token = await obtainAuthToken();
-
         const response = await request(app)
           .post('/api/get_completion_for_message')
           .set('Authorization', `Bearer ${token}`)
-          .send({ messageId: 1, model: 'test-model', temperature: 0.5 });
+          .send({ messageId: message.get('id'), model: 'test-model', temperature: 0.5 });
 
         expect(response.status).toBe(500);
-        expect(response.body.error).toBe('Internal server error');
+        expect(response.body.error).toBe('OpenAI API key is not set');
 
-        // Restore the API key
+        // Cleanup
+        await message.destroy();
         process.env.OPENAI_API_KEY = originalApiKey;
       });
 
@@ -404,25 +477,32 @@ describe('Server Tests', () => {
 
       // New test for generating completion with non-existent messageId
       it('should return 500 when parent message is not found', async () => {
-        const token = await obtainAuthToken();
-
         const invalidMessageResponse = await request(app)
           .post('/api/get_completion_for_message')
           .set('Authorization', `Bearer ${token}`)
-          .send({ messageId: 9999, model: 'test-model', temperature: 0.5 });
+          .send({ messageId: 99999, model: 'test-model', temperature: 0.5 });
 
         expect(invalidMessageResponse.status).toBe(500);
-        expect(invalidMessageResponse.body.error).toBe('Parent message with ID 9999 not found');
+        expect(invalidMessageResponse.body.error).toBe('Parent message with ID 99999 not found');
       });
 
-      it('should return 500 when generating completion with non-existent messageId', async () => {
-        const invalidMessageResponse = await request(app)
+      it('should return 500 when message is deleted before completion', async () => {
+        const message = await Message.create({
+          content: 'Test message',
+          conversation_id: 1,
+          user_id: 1
+        });
+
+        const messageId = message.get('id');
+        await message.destroy();
+
+        const response = await request(app)
           .post('/api/get_completion_for_message')
           .set('Authorization', `Bearer ${token}`)
-          .send({ messageId: 9999, model: 'test-model', temperature: 0.5 });
+          .send({ messageId, model: 'test-model', temperature: 0.5 });
 
-        expect(invalidMessageResponse.status).toBe(500);
-        expect(invalidMessageResponse.body.error).toBe('Parent message with ID 9999 not found');
+        expect(response.status).toBe(500);
+        expect(response.body.error).toBe(`Parent message with ID ${messageId} not found`);
       });
 
       // New test for invalid temperature parameter
