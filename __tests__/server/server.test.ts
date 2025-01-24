@@ -279,12 +279,19 @@ describe('Server Tests', () => {
 
     describe('Add Message and Get Completion for Message Endpoints', () => {
       it('should add a new message with model options and create conversation', async () => {
+        // First create a conversation to get a valid ID
+        const conversation = await Conversation.create({
+          title: 'Test Conversation',
+          user_id: 1
+        });
+
         const response = await request(app)
           .post('/api/add_message')
           .set('Authorization', `Bearer ${token}`)
           .send({
             content: 'New Test Message',
-            conversationId: null,
+            conversationId: conversation.get('id'),
+            parentId: null,
             model: 'gpt-4',
             temperature: 0.7,
             getCompletion: true

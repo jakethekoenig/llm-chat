@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Conversation from '../../chat-components/Conversation';
 import ConversationList from '../../chat-components/ConversationList';
@@ -203,8 +203,14 @@ test('handles sending message without completion and dropdown interactions', asy
   expect(sendWithoutCompletionButton).toBeInTheDocument();
 
   // Test closing dropdown by clicking outside
-  fireEvent.click(document.body);
-  expect(screen.queryByText('Send without completion')).not.toBeInTheDocument();
+  await act(async () => {
+    fireEvent.click(document.body);
+    // Wait for the next tick to allow the click handler to execute
+    await new Promise(resolve => setTimeout(resolve, 0));
+  });
+  await waitFor(() => {
+    expect(screen.queryByText('Send without completion')).not.toBeInTheDocument();
+  });
 
   // Test sending without completion
   fireEvent.contextMenu(sendButton);

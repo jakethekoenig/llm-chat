@@ -27,11 +27,16 @@ const NewMessage: React.FC<NewMessageProps> = ({
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    // Add the event listener with a slight delay to avoid immediate trigger
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('click', handleClickOutside);
+    }, 0);
+
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('click', handleClickOutside);
+      clearTimeout(timeoutId);
     };
-  }, []);
+  }, [showSendOptions]); // Re-add listener when dropdown state changes
 
   const models = ['gpt-4', 'gpt-3.5-turbo'];
   const temperatures = Array.from({ length: 11 }, (_, i) => i / 10);
@@ -124,7 +129,12 @@ const NewMessage: React.FC<NewMessageProps> = ({
             disabled={loading}
             onContextMenu={(e) => {
               e.preventDefault();
-              setShowSendOptions(!showSendOptions);
+              e.stopPropagation();
+              setShowSendOptions(true);
+            }}
+            onClick={(e) => {
+              if (loading) return;
+              handleSubmit(true);
             }}
             style={{
               padding: '12px 24px',
