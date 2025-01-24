@@ -280,19 +280,24 @@ describe('Server Tests', () => {
 
     describe('Add Message and Get Completion for Message Endpoints', () => {
       it('should add a new message with model options and create conversation', async () => {
-        // Get the user ID from the token
-        const decodedToken = jwt.verify(token, process.env.SECRET_KEY || 'fallback-secret-key') as { id: number };
-        const userId = decodedToken.id;
+        // Create a test user and get a token
+        const user = await User.create({
+          username: 'testuser2',
+          email: 'test2@example.com',
+          hashed_password: 'hashedpassword'
+        });
 
-        // Create a conversation for the authenticated user
+        const testToken = jwt.sign({ id: user.get('id') }, process.env.SECRET_KEY || 'fallback-secret-key');
+
+        // Create a conversation for the test user
         const conversation = await Conversation.create({
           title: 'Test Conversation',
-          user_id: userId
+          user_id: user.get('id')
         });
 
         const response = await request(app)
           .post('/api/add_message')
-          .set('Authorization', `Bearer ${token}`)
+          .set('Authorization', `Bearer ${testToken}`)
           .send({
             content: 'New Test Message',
             conversationId: conversation.get('id'),
@@ -390,14 +395,22 @@ describe('Server Tests', () => {
       });
 
       it('should handle database errors gracefully', async () => {
-        // Mock Conversation.create to throw an error
-        const originalCreate = Conversation.create;
-        const mockCreate = jest.fn().mockImplementation(() => Promise.reject(new Error('Database error')));
-        (Conversation as any).create = mockCreate;
+        // Create a test user and get a token
+        const user = await User.create({
+          username: 'testuser3',
+          email: 'test3@example.com',
+          hashed_password: 'hashedpassword'
+        });
+
+        const testToken = jwt.sign({ id: user.get('id') }, process.env.SECRET_KEY || 'fallback-secret-key');
+
+        // Mock Message.create to throw an error
+        const originalMessageCreate = Message.create;
+        Message.create = jest.fn().mockImplementation(() => Promise.reject(new Error('Database error')));
 
         const response = await request(app)
           .post('/api/add_message')
-          .set('Authorization', `Bearer ${token}`)
+          .set('Authorization', `Bearer ${testToken}`)
           .send({
             content: 'Test message',
             conversationId: null,
@@ -409,8 +422,9 @@ describe('Server Tests', () => {
         expect(response.status).toBe(500);
         expect(response.body.error).toBe('Internal server error');
 
-        // Restore original implementation
-        Conversation.create = originalCreate;
+        // Restore original implementation and clean up
+        Message.create = originalMessageCreate;
+        await user.destroy();
       });
 
       it('should return 400 for invalid add_message request', async () => {
@@ -439,14 +453,31 @@ describe('Server Tests', () => {
       });
 
       it('should create a new conversation with valid data', async () => {
+        // Create a test user and get a token
+        const user = await User.create({
+          username: 'testuser4',
+          email: 'test4@example.com',
+          hashed_password: 'hashedpassword'
+        });
+
+        const testToken = jwt.sign({ id: user.get('id') }, process.env.SECRET_KEY || 'fallback-secret-key');
+
         const response = await request(app)
           .post('/api/create_conversation')
-          .set('Authorization', `Bearer ${token}`)
-          .send({ initialMessage: 'Hello, world!', model: 'gpt-4o', temperature: 0.0 });
+          .set('Authorization', `Bearer ${testToken}`)
+          .send({ 
+            initialMessage: 'Hello, world!', 
+            model: 'gpt-4', 
+            temperature: 0.7 
+          });
+
         expect(response.status).toBe(201);
         expect(response.body.conversationId).toBeDefined();
         expect(response.body.initialMessageId).toBeDefined();
         expect(response.body.completionMessageId).toBeDefined();
+
+        // Clean up
+        await user.destroy();
       });
 
       it('should return 400 for missing initialMessage', async () => {
