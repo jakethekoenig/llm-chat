@@ -5,11 +5,13 @@ import NewMessage from './NewMessage'; // Ensure this path is correct
 
 interface ConversationProps {
   messages: MessageType[];
-  onSubmit: (message: string) => AsyncIterable<string>;
   author: string;
+  conversationId: number;
+  parentId?: number;
+  onMessageComplete?: (messageId: number) => void;
 }
 
-const Conversation: React.FC<ConversationProps> = ({ messages, onSubmit, author }) => {
+const Conversation: React.FC<ConversationProps> = ({ messages, author, conversationId, parentId, onMessageComplete }) => {
   // TODO: Refactor messages to be a map
   const getChildren = (_messages: MessageType[], parentId: string | null): MessageType[] => {
     return _messages.filter(message => message.parentId === parentId);
@@ -110,7 +112,11 @@ const Conversation: React.FC<ConversationProps> = ({ messages, onSubmit, author 
     <div>
       {renderMessages(messages, parentMessages[0]?.id || '', null)}
       <div style={{ marginTop: '16px' }}>
-        <NewMessage onSubmit={onSubmit} />
+        <NewMessage 
+          conversationId={conversationId}
+          parentId={parentId}
+          onMessageComplete={onMessageComplete}
+        />
       </div>
     </div>
   );

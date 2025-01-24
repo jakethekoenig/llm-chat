@@ -6,6 +6,25 @@ import { OpenAI } from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { createLogger, transports, format } from 'winston';
 import * as messageHelpers from './messageHelpers';
+import { EventEmitter } from 'events';
+
+interface MessageContent {
+  type: 'content_block_delta';
+  delta: {
+    text?: string;
+  };
+}
+
+export interface StreamingResponse extends EventEmitter {
+  on(event: 'data', listener: (data: { chunk: string; messageId: number }) => void): this;
+  on(event: 'error', listener: (error: Error) => void): this;
+  on(event: 'end', listener: (data: { messageId: number }) => void): this;
+  removeAllListeners(): this;
+}
+
+export function isStreamingResponse(obj: any): obj is StreamingResponse {
+  return obj instanceof EventEmitter;
+}
 const logger = createLogger({
   level: 'error',
   format: format.combine(
@@ -39,81 +58,242 @@ const isAnthropicModel = (model: string): boolean => {
   return anthropicIdentifiers.some(identifier => model.toLowerCase().includes(identifier));
 };
 
-const generateAnthropicCompletion = async (content: string, model: string, temperature: number) => {
+const generateAnthropicCompletion = async (content: string, model: string, temperature: number, stream = false): Promise<string | StreamingResponse> => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new Error('Anthropic API key is not set');
   }
 
-  const client = new Anthropic({
-    apiKey: apiKey,
-  });
+  try {
+    const client = new Anthropic({
+      apiKey: apiKey,
+    });
 
-  const response = await client.messages.create({
-    model,
-    max_tokens: 1024,
-    temperature,
-    messages: [{ role: 'user', content }],
-  });
+    if (!stream) {
+      const response = await client.messages.create({
+        model,
+        max_tokens: 1024,
+        temperature,
+        messages: [{ role: 'user', content }],
+      });
 
-  // Handle different content block types
-  const contentBlock = response.content[0];
-  if ('text' in contentBlock) {
-    return contentBlock.text;
-  } else {
-    logger.error('Unexpected content block type from Anthropic API');
-    throw new Error('Unexpected response format from Anthropic API');
+      const contentBlock = response.content[0];
+      if ('text' in contentBlock) {
+        return contentBlock.text;
+      } else {
+        logger.error('Unexpected content block type from Anthropic API');
+        throw new Error('Unexpected response format from Anthropic API');
+      }
+    }
+
+    const emitter = new EventEmitter();
+    
+    (async () => {
+      try {
+        const stream = await client.messages.create({
+          model,
+          max_tokens: 1024,
+          temperature,
+          messages: [{ role: 'user', content }],
+          stream: true,
+        });
+
+        for await (const chunk of stream) {
+          const messageContent = chunk as MessageContent;
+          if (
+            messageContent.type === 'content_block_delta' &&
+            messageContent.delta &&
+            messageContent.delta.text
+          ) {
+            emitter.emit('data', { chunk: messageContent.delta.text, messageId: -1 });
+          }
+        }
+        emitter.emit('end', { messageId: -1 });
+      } catch (error) {
+        if (error instanceof Error) {
+          if (error.message.includes('rate limit')) {
+            emitter.emit('error', new Error('Anthropic API rate limit exceeded'));
+          } else {
+            emitter.emit('error', error);
+          }
+        } else {
+          emitter.emit('error', new Error('Failed to generate Anthropic completion'));
+        }
+      }
+    })();
+
+    return emitter;
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes('rate limit')) {
+        throw new Error('Anthropic API rate limit exceeded');
+      }
+      throw error;
+    }
+    throw new Error('Failed to generate Anthropic completion');
   }
 };
 
-const generateOpenAICompletion = async (content: string, model: string, temperature: number) => {
+const generateOpenAICompletion = async (content: string, model: string, temperature: number, stream = false): Promise<string | StreamingResponse> => {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error('OpenAI API key is not set');
   }
 
-  const openai = new OpenAI({ apiKey });
-  const response = await openai.chat.completions.create({
-    model,
-    messages: [{ role: "user", content }],
-    temperature,
-  });
+  try {
+    const openai = new OpenAI({ apiKey });
 
-  return response.choices[0].message?.content || '';
+    if (!stream) {
+      const response = await openai.chat.completions.create({
+        model,
+        messages: [{ role: "user", content }],
+        temperature,
+      });
+
+      return response.choices[0].message?.content || '';
+    }
+
+    const emitter = new EventEmitter();
+    
+    (async () => {
+      try {
+        const stream = await openai.chat.completions.create({
+          model,
+          messages: [{ role: "user", content }],
+          temperature,
+          stream: true,
+        });
+
+        for await (const chunk of stream) {
+          const content = chunk.choices[0]?.delta?.content;
+          if (content) {
+            emitter.emit('data', { chunk: content, messageId: -1 });
+          }
+        }
+        emitter.emit('end', { messageId: -1 });
+      } catch (error) {
+        if (error instanceof Error) {
+          if (error.message.includes('rate limit')) {
+            emitter.emit('error', new Error('OpenAI API rate limit exceeded'));
+          } else {
+            emitter.emit('error', error);
+          }
+        } else {
+          emitter.emit('error', new Error('Failed to generate OpenAI completion'));
+        }
+      }
+    })();
+
+    return emitter;
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes('rate limit')) {
+        throw new Error('OpenAI API rate limit exceeded');
+      }
+      throw error;
+    }
+    throw new Error('Failed to generate OpenAI completion');
+  }
 };
 
-export const generateCompletion = async (messageId: number, model: string, temperature: number) => {
-  const parentMessage: Message | null = await Message.findByPk(messageId);
-  if (!parentMessage) {
-    throw new Error(`Parent message with ID ${messageId} not found`);
-  }
-
-  const content = parentMessage.get('content') as string;
-  if (!content) {
-    throw new Error('Parent message has no content');
-  }
-
+export const generateCompletion = async (messageId: number, model: string, temperature: number, stream = false): Promise<Message | StreamingResponse> => {
   try {
-    const completionContent = isAnthropicModel(model)
-      ? await generateAnthropicCompletion(content, model, temperature)
-      : await generateOpenAICompletion(content, model, temperature);
+    // Validate model and API keys first
+    if (!model) {
+      throw new Error('Model is required');
+    }
+    if (model.startsWith('gpt-') && !process.env.OPENAI_API_KEY) {
+      throw new Error('OpenAI API key is not set');
+    }
+    if (model.startsWith('claude-') && !process.env.ANTHROPIC_API_KEY) {
+      throw new Error('Anthropic API key is not set');
+    }
+    if (!model.startsWith('gpt-') && !model.startsWith('claude-')) {
+      throw new Error('Invalid model specified');
+    }
 
-    console.log('completionContent:', completionContent);
-    const completionMessage: Message = await Message.create({
-      content: completionContent,
-      parent_id: messageId,
-      conversation_id: parentMessage.get('conversation_id') as number,
-      user_id: parentMessage.get('user_id') as number,
-      model,
-      temperature,
-    });
-    return completionMessage;
+    const parentMessage: Message | null = await Message.findByPk(messageId);
+    if (!parentMessage) {
+      throw new Error(`Parent message with ID ${messageId} not found`);
+    }
+
+    const content = parentMessage.get('content') as string;
+    if (!content) {
+      throw new Error('Parent message has no content');
+    }
+
+    try {
+      if (stream) {
+        const streamingResponse = isAnthropicModel(model)
+          ? await generateAnthropicCompletion(content, model, temperature, true)
+          : await generateOpenAICompletion(content, model, temperature, true);
+
+        if (isStreamingResponse(streamingResponse)) {
+          // Create an empty message that will be updated as the stream progresses
+          const completionMessage = await Message.create({
+            content: '',
+            parent_id: messageId,
+            conversation_id: parentMessage.get('conversation_id') as number,
+            user_id: parentMessage.get('user_id') as number,
+            model,
+            temperature,
+          });
+
+          let fullContent = '';
+          const enhancedEmitter = new EventEmitter();
+
+          streamingResponse.on('data', (data: { chunk: string; messageId: number }) => {
+            fullContent += data.chunk;
+            enhancedEmitter.emit('data', { chunk: data.chunk, messageId: completionMessage.get('id') as number });
+          });
+
+          streamingResponse.on('end', async () => {
+            await completionMessage.update({ content: fullContent });
+            enhancedEmitter.emit('end', { messageId: completionMessage.get('id') as number });
+          });
+
+          streamingResponse.on('error', (error: Error) => {
+            enhancedEmitter.emit('error', error);
+          });
+
+          return enhancedEmitter;
+        }
+        throw new Error('Unexpected response type from streaming completion');
+      }
+
+      const completionContent = isAnthropicModel(model)
+        ? await generateAnthropicCompletion(content, model, temperature)
+        : await generateOpenAICompletion(content, model, temperature);
+
+      if (typeof completionContent !== 'string') {
+        throw new Error('Unexpected response type from non-streaming completion');
+      }
+
+      const completionMessage: Message = await Message.create({
+        content: completionContent,
+        parent_id: messageId,
+        conversation_id: parentMessage.get('conversation_id') as number,
+        user_id: parentMessage.get('user_id') as number,
+        model,
+        temperature,
+      });
+      return completionMessage;
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message.includes('rate limit')) {
+          throw new Error(`${model.startsWith('gpt-') ? 'OpenAI' : 'Anthropic'} API rate limit exceeded`);
+        }
+        throw error;
+      }
+      throw new Error('Failed to generate completion');
+    }
   } catch (error) {
     if (error instanceof Error) {
       logger.error('Error generating completion:', { message: error.message });
+      throw error;
     } else {
       logger.error('Error generating completion:', { error });
+      throw new Error('Failed to generate completion');
     }
-    throw new Error('Failed to generate completion');
   }
 };

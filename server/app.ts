@@ -7,8 +7,9 @@ import { User } from './database/models/User';
 import { Op } from 'sequelize';
 import { Conversation } from './database/models/Conversation';
 import { Message } from './database/models/Message';
-import { addMessage, generateCompletion } from './helpers/messageHelpers';
+import { addMessage, generateCompletion, StreamingResponse, isStreamingResponse } from './helpers/messageHelpers';
 import { body, validationResult } from 'express-validator';
+import { EventEmitter } from 'events';
 
 const app = express();
 const SECRET_KEY = process.env.SECRET_KEY || 'fallback-secret-key';
@@ -84,10 +85,16 @@ app.post('/api/add_message', authenticateToken, [
   const userId = (req as any).user.id;
 
   try {
+    const conversation = await Conversation.findByPk(conversationId);
+    if (!conversation) {
+      return res.status(404).json({ error: `Conversation with ID ${conversationId} not found` });
+    }
+
     const message = await addMessage(content, conversationId, parentId, userId);
     res.status(201).json({ id: message.get('id') });
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    res.status(500).json({ error: errorMessage });
   }
 });
 
@@ -95,7 +102,9 @@ app.post('/api/add_message', authenticateToken, [
 app.post('/api/get_completion_for_message', authenticateToken, [
   body('messageId').isInt().withMessage('Message ID must be an integer'),
   body('model').notEmpty().withMessage('Model is required'),
-  body('temperature').isFloat().withMessage('Temperature must be a float')
+  body('temperature')
+    .isFloat({ min: 0, max: 1 })
+    .withMessage('Temperature must be between 0 and 1')
 ], async (req: express.Request, res: express.Response) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -106,9 +115,29 @@ app.post('/api/get_completion_for_message', authenticateToken, [
 
   try {
     const completionMessage = await generateCompletion(messageId, model, temperature);
-    res.status(201).json({ id: completionMessage.get('id'), content: completionMessage.get('content')});
+    if (!isStreamingResponse(completionMessage)) {
+      res.status(201).json({ 
+        id: completionMessage.get('id'), 
+        content: completionMessage.get('content')
+      });
+    } else {
+      throw new Error('Unexpected streaming response in non-streaming endpoint');
+    }
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    if (errorMessage === 'Invalid model specified') {
+      return res.status(400).json({ errors: [{ msg: errorMessage }] });
+    }
+    if (errorMessage.includes('not found')) {
+      return res.status(404).json({ error: errorMessage });
+    }
+    if (errorMessage.includes('API key')) {
+      return res.status(500).json({ error: errorMessage });
+    }
+    if (errorMessage.includes('rate limit')) {
+      return res.status(429).json({ error: errorMessage });
+    }
+    res.status(500).json({ error: errorMessage });
   }
 });
 
@@ -116,7 +145,9 @@ app.post('/api/get_completion_for_message', authenticateToken, [
 app.post('/api/get_completion', authenticateToken, [
   body('model').notEmpty().withMessage('Model is required'),
   body('parentId').isInt().withMessage('Parent ID must be an integer'),
-  body('temperature').isFloat().withMessage('Temperature must be a float')
+  body('temperature')
+    .isFloat({ min: 0, max: 1 })
+    .withMessage('Temperature must be between 0 and 1')
 ], async (req: express.Request, res: express.Response) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -126,34 +157,85 @@ app.post('/api/get_completion', authenticateToken, [
   const { model, parentId, temperature } = req.body;
 
   try {
-    const completionMessage = await generateCompletion(parentId, model, temperature);
-    res.setHeader('Content-Type', 'application/json');
+    // Set headers for SSE
+    res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering for nginx
 
-    const streamData = JSON.stringify({ id: completionMessage.get('id'), content: completionMessage.get('content')});
-    res.write(`data: ${streamData}\n\n`);
+    // Helper function to send SSE data
+    const sendSSE = (event: string, data: any) => {
+      res.write(`event: ${event}\n`);
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    };
 
-    // Placeholder for actual streaming logic
-    const messages = [
-      { chunk: 'Example stream data part 1' },
-      { chunk: 'Example stream data part 2' },
-      { chunk: 'Example stream data part 3' }
-    ];
+    const response = await generateCompletion(parentId, model, temperature, true);
+    
+    if (!isStreamingResponse(response)) {
+      throw new Error('Expected streaming response');
+    }
 
-    let index = 0;
-    const interval = setInterval(() => {
-      if (index < messages.length) {
-        const chunkData = JSON.stringify(messages[index]);
-        res.write(`data: ${chunkData}\n\n`);
-        index++;
-      } else {
-        clearInterval(interval);
+    // Handle streaming events
+    response.on('data', (data: { chunk: string; messageId: number }) => {
+      try {
+        sendSSE('chunk', data);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Error sending chunk';
+        sendSSE('error', { error: errorMessage });
         res.end();
       }
-    }, 1000);
+    });
+
+    response.on('end', (data: { messageId: number }) => {
+      try {
+        sendSSE('done', data);
+        res.end();
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Error ending stream';
+        sendSSE('error', { error: errorMessage });
+        res.end();
+      }
+    });
+
+    response.on('error', (error: Error) => {
+      try {
+        sendSSE('error', { error: error.message });
+        res.end();
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Error handling stream error';
+        if (!res.headersSent) {
+          res.status(500).json({ error: errorMessage });
+        } else {
+          res.write(`data: ${JSON.stringify({ error: errorMessage })}\n\n`);
+          res.end();
+        }
+      }
+    });
+
+    // Handle client disconnect
+    req.on('close', () => {
+      response.removeAllListeners();
+    });
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    if (!res.headersSent) {
+      if (errorMessage === 'Invalid model specified') {
+        return res.status(400).json({ errors: [{ msg: errorMessage }] });
+      }
+      if (errorMessage.includes('not found')) {
+        return res.status(404).json({ error: errorMessage });
+      }
+      if (errorMessage.includes('API key')) {
+        return res.status(500).json({ error: errorMessage });
+      }
+      if (errorMessage.includes('rate limit')) {
+        return res.status(429).json({ error: errorMessage });
+      }
+      res.status(500).json({ error: errorMessage });
+    } else {
+      res.write(`data: ${JSON.stringify({ error: errorMessage })}\n\n`);
+      res.end();
+    }
   }
 });
 
@@ -191,7 +273,9 @@ app.get('/api/conversations/:conversationId/messages', authenticateToken, async 
 app.post('/api/create_conversation', authenticateToken, [
   body('initialMessage').notEmpty().withMessage('Initial message is required'),
   body('model').notEmpty().withMessage('Model is required'),
-  body('temperature').isFloat().withMessage('Temperature must be a float')
+  body('temperature')
+    .isFloat({ min: 0, max: 1 })
+    .withMessage('Temperature must be between 0 and 1')
 ], async (req: express.Request, res: express.Response) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -206,9 +290,18 @@ app.post('/api/create_conversation', authenticateToken, [
     const conversation = await Conversation.create({ title: defaultTitle, user_id: userId });
     const message = await addMessage(initialMessage, conversation.get('id') as number, null, userId);
     const completionMessage = await generateCompletion(message.get('id') as number, model, temperature);
-    res.status(201).json({ conversationId: conversation.get('id'), initialMessageId: message.get('id'), completionMessageId: completionMessage.get('id') });
+    if (!isStreamingResponse(completionMessage)) {
+      res.status(201).json({ 
+        conversationId: conversation.get('id'), 
+        initialMessageId: message.get('id'), 
+        completionMessageId: completionMessage.get('id') 
+      });
+    } else {
+      throw new Error('Unexpected streaming response in non-streaming endpoint');
+    }
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    res.status(500).json({ error: errorMessage });
   }
 });
 

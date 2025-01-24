@@ -1,47 +1,100 @@
 // chat-components/NewMessage.tsx
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import { fetchStreamingCompletion } from '../site/utils/api';
 
 interface NewMessageProps {
-  onSubmit: (message: string) => AsyncIterable<string>;
+  conversationId: number;
+  parentId?: number;
+  onMessageComplete?: (messageId: number) => void;
 }
 
-const NewMessage: React.FC<NewMessageProps> = ({ onSubmit }) => {
+const NewMessage: React.FC<NewMessageProps> = ({ conversationId, parentId, onMessageComplete }) => {
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (inputValue.trim() === '') return;
+    
     setLoading(true);
     setStreamingContent('');
+    setError(null);
+
     try {
-      const iterator = onSubmit(inputValue);
-      for await (const chunk of iterator) {
-        setStreamingContent(prev => prev + chunk);
-      }
+      await fetchStreamingCompletion(
+        parentId || -1,
+        'gpt-4', // TODO: Make model configurable
+        0.7, // TODO: Make temperature configurable
+        {
+          onChunk: ({ chunk, messageId }) => {
+            setStreamingContent(prev => prev + chunk);
+          },
+          onDone: ({ messageId }) => {
+            if (onMessageComplete) {
+              onMessageComplete(messageId);
+            }
+            setLoading(false);
+            setInputValue('');
+          },
+          onError: (error) => {
+            setError(error.message);
+            setLoading(false);
+          },
+        }
+      );
     } catch (error) {
-      console.error('Error submitting message:', error);
-      setStreamingContent('Error submitting message.');
-    } finally {
+      setError(error instanceof Error ? error.message : 'An error occurred');
       setLoading(false);
       setInputValue('');
+    }
+  }, [inputValue, parentId, onMessageComplete]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
     }
   };
 
   return (
     <div style={{ marginTop: '16px' }}>
-      <input
-        type="text"
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-        placeholder="Type your message..."
-        style={{ width: '80%', padding: '8px' }}
-        disabled={loading}
-      />
-      <button onClick={handleSubmit} disabled={loading} style={{ padding: '8px 16px', marginLeft: '8px' }}>
-        {loading ? 'Sending...' : 'Send'}
-      </button>
-      {streamingContent && <div style={{ marginTop: '8px' }}>{streamingContent}</div>}
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <textarea
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Type your message... (Press Enter to send, Shift+Enter for new line)"
+          style={{
+            width: '100%',
+            padding: '8px',
+            resize: 'vertical',
+            minHeight: '40px',
+            maxHeight: '200px',
+          }}
+          disabled={loading}
+        />
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          style={{
+            padding: '8px 16px',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {loading ? 'Sending...' : 'Send'}
+        </button>
+      </div>
+      {streamingContent && (
+        <div style={{ marginTop: '8px', whiteSpace: 'pre-wrap' }}>
+          {streamingContent}
+        </div>
+      )}
+      {error && (
+        <div style={{ marginTop: '8px', color: 'red' }}>
+          Error: {error}
+        </div>
+      )}
     </div>
   );
 };
