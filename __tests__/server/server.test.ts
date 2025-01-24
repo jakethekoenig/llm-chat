@@ -168,10 +168,31 @@ describe('Server Tests', () => {
   it('should generate a completion for a valid message', async () => {
     const token = await obtainAuthToken();
 
+    // Log test data state
+    console.log('Test data:', {
+      firstMessageId: testData.firstMessageId,
+      conversationIds: testData.conversationIds
+    });
+
+    // Verify message exists
+    const message = await Message.findByPk(testData.firstMessageId);
+    console.log('Test message:', {
+      exists: !!message,
+      content: message?.get('content'),
+      conversationId: message?.get('conversation_id')
+    });
+
     const response = await request(app)
       .post('/api/get_completion_for_message')
       .set('Authorization', `Bearer ${token}`)
       .send({ messageId: testData.firstMessageId, model: 'test-model', temperature: 0.5 });
+    
+    // Log response for debugging
+    console.log('Response:', {
+      status: response.status,
+      body: response.body
+    });
+
     expect(response.status).toBe(201);
     expect(response.body.id).toBeDefined();
     expect(response.body.content).toBe('Mocked OpenAI response');

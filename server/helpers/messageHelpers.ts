@@ -93,14 +93,27 @@ const generateOpenAICompletion = async (messages: { role: string; content: strin
 
 export const generateCompletion = async (messageId: number, model: string, temperature: number) => {
   try {
+    logger.info('Starting generateCompletion:', { messageId, model, temperature });
+
     const parentMessage: Message | null = await Message.findByPk(messageId);
     if (!parentMessage) {
       logger.error('Parent message not found:', { messageId });
       throw new Error(`Parent message with ID ${messageId} not found`);
     }
 
+    const parentContent = parentMessage.get('content');
+    logger.info('Found parent message:', { 
+      messageId, 
+      content: parentContent,
+      conversationId: parentMessage.get('conversation_id'),
+      userId: parentMessage.get('user_id')
+    });
+
     const conversationId = parentMessage.get('conversation_id');
-    logger.info('Found parent message:', { messageId, conversationId });
+    if (!conversationId) {
+      logger.error('Parent message has no conversation_id:', { messageId });
+      throw new Error('Parent message has no conversation_id');
+    }
 
     // Fetch all messages in the conversation
     const conversationMessages = await Message.findAll({
@@ -119,9 +132,14 @@ export const generateCompletion = async (messageId: number, model: string, tempe
       .filter(msg => (msg.get('id') as number) <= messageId) // Only include messages up to the current one
       .map(msg => {
         const hasModel = msg.get('model') !== null; // Check if the message is from the assistant
+        const content = msg.get('content');
+        if (!content) {
+          logger.error('Message has no content:', { messageId: msg.get('id') });
+          throw new Error('Message has no content');
+        }
         return {
           role: hasModel ? "assistant" as const : "user" as const,
-          content: msg.get('content') as string
+          content: content as string
         };
       });
 
@@ -130,9 +148,9 @@ export const generateCompletion = async (messageId: number, model: string, tempe
       messages: conversationHistory
     });
 
-    if (conversationHistory.length === 0 || !conversationHistory[conversationHistory.length - 1].content) {
-      logger.error('No valid messages found');
-      throw new Error('No valid messages found in conversation');
+    if (conversationHistory.length === 0) {
+      logger.error('No messages found in conversation');
+      throw new Error('No messages found in conversation');
     }
 
     // Generate completion using either Anthropic or OpenAI
