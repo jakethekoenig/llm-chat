@@ -38,10 +38,29 @@ export const generateCompletion = async (messageId: number, model: string, tempe
     throw new Error(`Parent message with ID ${messageId} not found`);
   }
 
-  const content = parentMessage.get('content') as string;
+  const conversationId = parentMessage.get('conversation_id');
 
-  if (!content) {
-    throw new Error('Parent message has no content');
+  // Fetch all messages in the conversation
+  const conversationMessages = await Message.findAll({
+    where: {
+      conversation_id: conversationId,
+    },
+    order: [['timestamp', 'ASC']], // Order messages chronologically
+  });
+
+  // Build the conversation history for the API
+  const apiMessages = conversationMessages
+    .filter(msg => msg.get('id') <= messageId) // Only include messages up to the current one
+    .map(msg => {
+      const hasModel = msg.get('model') !== null; // Check if the message is from the assistant
+      return {
+        role: hasModel ? "assistant" : "user",
+        content: msg.get('content') as string
+      };
+    });
+
+  if (apiMessages.length === 0 || !apiMessages[apiMessages.length - 1].content) {
+    throw new Error('No valid messages found in conversation');
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
@@ -54,7 +73,7 @@ export const generateCompletion = async (messageId: number, model: string, tempe
   try {
     const response = await openai.chat.completions.create({
       model,
-      messages: [{"role": "user", "content": content}],
+      messages: apiMessages,
       temperature,
     });
 
@@ -63,7 +82,7 @@ export const generateCompletion = async (messageId: number, model: string, tempe
     const completionMessage: Message = await Message.create({
       content: completionContent,
       parent_id: messageId,
-      conversation_id: parentMessage.get('conversation_id') as number,
+      conversation_id: conversationId,
       user_id: parentMessage.get('user_id') as number,
       model,
       temperature,
