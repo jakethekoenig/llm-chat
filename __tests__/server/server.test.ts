@@ -190,8 +190,13 @@ describe('Server Tests', () => {
     // Log response for debugging
     console.log('Response:', {
       status: response.status,
-      body: response.body
+      body: response.body,
+      error: response.body.error
     });
+
+    if (response.status === 500) {
+      console.error('Test failed with error:', response.body.error);
+    }
 
     expect(response.status).toBe(201);
     expect(response.body.id).toBeDefined();
