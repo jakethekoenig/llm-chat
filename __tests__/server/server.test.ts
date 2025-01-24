@@ -389,7 +389,7 @@ describe('Server Tests', () => {
         const response = await request(app)
           .post('/api/create_conversation')
           .set('Authorization', `Bearer ${token}`)
-          .send({ initialMessage: 'Hello, world!', model: 'gpt-4o', temperature: 0.0 });
+          .send({ initialMessage: 'Hello, world!', model: 'gpt-4', temperature: 0.0 });
         expect(response.status).toBe(201);
         expect(response.body.conversationId).toBeDefined();
         expect(response.body.initialMessageId).toBeDefined();
