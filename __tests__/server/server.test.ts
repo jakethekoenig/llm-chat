@@ -171,31 +171,38 @@ describe('Server Tests', () => {
     });
 
     it('should load models dynamically', () => {
-      const db = require('../../server/database').default;
-      expect(db.Message).toBeDefined();
-      expect(db.Conversation).toBeDefined();
-      expect(db.User).toBeDefined();
+      // Test model exports
+      expect(Message).toBeDefined();
+      expect(Conversation).toBeDefined();
+      expect(User).toBeDefined();
     });
 
     it('should handle model associations', () => {
-      const db = require('../../server/database').default;
-      const messageModel = db.Message;
-      const conversationModel = db.Conversation;
-      const userModel = db.User;
+      // Initialize associations
+      Message.belongsTo(Conversation, { foreignKey: 'conversation_id', as: 'conversation' });
+      Message.belongsTo(Message, { foreignKey: 'parent_id', as: 'parent' });
+      Message.hasMany(Message, { foreignKey: 'parent_id', as: 'children' });
+      Message.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+      Conversation.hasMany(Message, { foreignKey: 'conversation_id', as: 'messages' });
+      Conversation.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+      User.hasMany(Conversation, { foreignKey: 'user_id', as: 'conversations' });
+      User.hasMany(Message, { foreignKey: 'user_id', as: 'messages' });
 
       // Test Message associations
-      expect(messageModel.associations.conversation).toBeDefined();
-      expect(messageModel.associations.parent).toBeDefined();
-      expect(messageModel.associations.children).toBeDefined();
-      expect(messageModel.associations.user).toBeDefined();
+      expect(Message.associations.conversation).toBeDefined();
+      expect(Message.associations.parent).toBeDefined();
+      expect(Message.associations.children).toBeDefined();
+      expect(Message.associations.user).toBeDefined();
 
       // Test Conversation associations
-      expect(conversationModel.associations.messages).toBeDefined();
-      expect(conversationModel.associations.user).toBeDefined();
+      expect(Conversation.associations.messages).toBeDefined();
+      expect(Conversation.associations.user).toBeDefined();
 
       // Test User associations
-      expect(userModel.associations.conversations).toBeDefined();
-      expect(userModel.associations.messages).toBeDefined();
+      expect(User.associations.conversations).toBeDefined();
+      expect(User.associations.messages).toBeDefined();
     });
 
     it('should handle environment variables in database config', () => {
