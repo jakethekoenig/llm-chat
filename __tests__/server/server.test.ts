@@ -220,8 +220,8 @@ describe('Server Tests', () => {
       expect(Message.associations.user).toBeDefined();
 
       // Test database configuration
-      expect(sequelize.sequelize.options.dialect).toBe('sqlite');
-      expect(sequelize.sequelize.options.storage).toBe('./database_test.sqlite');
+      expect(sequelize.sequelize.getDialect()).toBe('sqlite');
+      expect(sequelize.sequelize.config.storage).toBe('./database_test.sqlite');
     });
 
     it('should handle database initialization with different environments', async () => {
@@ -232,18 +232,18 @@ describe('Server Tests', () => {
         // Test development environment
         process.env.NODE_ENV = 'development';
         await sequelize.sequelize.sync();
-        expect(sequelize.sequelize.options.dialect).toBe('sqlite');
-        expect(sequelize.sequelize.options.storage).toBe('./database_test.sqlite');
+        expect(sequelize.sequelize.getDialect()).toBe('sqlite');
+        expect(sequelize.sequelize.config.storage).toBe('./database_test.sqlite');
 
         // Test production environment
         process.env.NODE_ENV = 'production';
         await sequelize.sequelize.sync();
-        expect(sequelize.sequelize.options.dialect).toBe('sqlite');
-        expect(sequelize.sequelize.options.storage).toBe('./database_test.sqlite');
+        expect(sequelize.sequelize.getDialect()).toBe('sqlite');
+        expect(sequelize.sequelize.config.storage).toBe('./database_test.sqlite');
       } finally {
-        // Restore environment and config
+        // Restore environment
         process.env.NODE_ENV = originalEnv;
-        sequelize.sequelize.config = originalConfig;
+        await sequelize.sequelize.sync();
       }
     });
 
