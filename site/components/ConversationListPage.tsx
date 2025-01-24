@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../App.css'; // Correct the import path
+import '../App.css';
 import ConversationList from '../../chat-components/ConversationList';
 import { Message as MessageType } from '../../chat-components/types/Message';
+import { fetchWithAuth } from '../utils/api';
 
 // Component to display the list of conversations
 const ConversationListPage: React.FC = () => {
@@ -18,11 +19,7 @@ const ConversationListPage: React.FC = () => {
     const fetchConversations = async () => {
       try {
         setIsLoadingConversations(true);
-        const response = await fetch('/api/conversations', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
+        const response = await fetchWithAuth('/api/conversations');
         if (!response.ok) {
           throw new Error('Failed to fetch conversations');
         }
@@ -59,11 +56,10 @@ const ConversationListPage: React.FC = () => {
     setIsLoading(true);
     setError(null); // Clear previous errors
     try {
-      const response = await fetch('/api/create_conversation', {
+      const response = await fetchWithAuth('/api/create_conversation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({ initialMessage, model, temperature })
       });
@@ -85,9 +81,9 @@ const ConversationListPage: React.FC = () => {
   return (
     <div>
       <h2>Your Conversations</h2>
-      {error && <p className="error-message">{error}</p>}
+      {error && <div className="error-message">{error}</div>}
       {isLoadingConversations ? (
-        <p>Loading conversations...</p>
+        <div className="loading-message">Loading conversations...</div>
       ) : (
         <>
           <form onSubmit={handleCreateConversation}>
