@@ -110,13 +110,24 @@ const generateAnthropicCompletion = async (content: string, model: string, tempe
         }
         emitter.emit('end', { messageId: -1 });
       } catch (error) {
-        emitter.emit('error', error instanceof Error ? error : new Error(String(error)));
+        if (error instanceof Error) {
+          if (error.message.includes('rate limit')) {
+            emitter.emit('error', new Error('Anthropic API rate limit exceeded'));
+          } else {
+            emitter.emit('error', error);
+          }
+        } else {
+          emitter.emit('error', new Error('Failed to generate Anthropic completion'));
+        }
       }
     })();
 
     return emitter;
   } catch (error) {
     if (error instanceof Error) {
+      if (error.message.includes('rate limit')) {
+        throw new Error('Anthropic API rate limit exceeded');
+      }
       throw error;
     }
     throw new Error('Failed to generate Anthropic completion');
@@ -161,13 +172,24 @@ const generateOpenAICompletion = async (content: string, model: string, temperat
         }
         emitter.emit('end', { messageId: -1 });
       } catch (error) {
-        emitter.emit('error', error instanceof Error ? error : new Error(String(error)));
+        if (error instanceof Error) {
+          if (error.message.includes('rate limit')) {
+            emitter.emit('error', new Error('OpenAI API rate limit exceeded'));
+          } else {
+            emitter.emit('error', error);
+          }
+        } else {
+          emitter.emit('error', new Error('Failed to generate OpenAI completion'));
+        }
       }
     })();
 
     return emitter;
   } catch (error) {
     if (error instanceof Error) {
+      if (error.message.includes('rate limit')) {
+        throw new Error('OpenAI API rate limit exceeded');
+      }
       throw error;
     }
     throw new Error('Failed to generate OpenAI completion');
@@ -175,86 +197,96 @@ const generateOpenAICompletion = async (content: string, model: string, temperat
 };
 
 export const generateCompletion = async (messageId: number, model: string, temperature: number, stream = false): Promise<Message | StreamingResponse> => {
-  // Validate model and API keys first
-  if (!model) {
-    throw new Error('Model is required');
-  }
-  if (model.startsWith('gpt-') && !process.env.OPENAI_API_KEY) {
-    throw new Error('OpenAI API key is not set');
-  }
-  if (model.startsWith('claude-') && !process.env.ANTHROPIC_API_KEY) {
-    throw new Error('Anthropic API key is not set');
-  }
-  if (!model.startsWith('gpt-') && !model.startsWith('claude-')) {
-    throw new Error('Invalid model specified');
-  }
-
-  const parentMessage: Message | null = await Message.findByPk(messageId);
-  if (!parentMessage) {
-    throw new Error(`Parent message with ID ${messageId} not found`);
-  }
-
-  const content = parentMessage.get('content') as string;
-  if (!content) {
-    throw new Error('Parent message has no content');
-  }
-
   try {
-    if (stream) {
-      const streamingResponse = isAnthropicModel(model)
-        ? await generateAnthropicCompletion(content, model, temperature, true)
-        : await generateOpenAICompletion(content, model, temperature, true);
+    // Validate model and API keys first
+    if (!model) {
+      throw new Error('Model is required');
+    }
+    if (model.startsWith('gpt-') && !process.env.OPENAI_API_KEY) {
+      throw new Error('OpenAI API key is not set');
+    }
+    if (model.startsWith('claude-') && !process.env.ANTHROPIC_API_KEY) {
+      throw new Error('Anthropic API key is not set');
+    }
+    if (!model.startsWith('gpt-') && !model.startsWith('claude-')) {
+      throw new Error('Invalid model specified');
+    }
 
-      if (isStreamingResponse(streamingResponse)) {
-        // Create an empty message that will be updated as the stream progresses
-        const completionMessage = await Message.create({
-          content: '',
-          parent_id: messageId,
-          conversation_id: parentMessage.get('conversation_id') as number,
-          user_id: parentMessage.get('user_id') as number,
-          model,
-          temperature,
-        });
+    const parentMessage: Message | null = await Message.findByPk(messageId);
+    if (!parentMessage) {
+      throw new Error(`Parent message with ID ${messageId} not found`);
+    }
 
-        let fullContent = '';
-        const enhancedEmitter = new EventEmitter();
+    const content = parentMessage.get('content') as string;
+    if (!content) {
+      throw new Error('Parent message has no content');
+    }
 
-        streamingResponse.on('data', (data: { chunk: string; messageId: number }) => {
-          fullContent += data.chunk;
-          enhancedEmitter.emit('data', { chunk: data.chunk, messageId: completionMessage.get('id') as number });
-        });
+    try {
+      if (stream) {
+        const streamingResponse = isAnthropicModel(model)
+          ? await generateAnthropicCompletion(content, model, temperature, true)
+          : await generateOpenAICompletion(content, model, temperature, true);
 
-        streamingResponse.on('end', async () => {
-          await completionMessage.update({ content: fullContent });
-          enhancedEmitter.emit('end', { messageId: completionMessage.get('id') as number });
-        });
+        if (isStreamingResponse(streamingResponse)) {
+          // Create an empty message that will be updated as the stream progresses
+          const completionMessage = await Message.create({
+            content: '',
+            parent_id: messageId,
+            conversation_id: parentMessage.get('conversation_id') as number,
+            user_id: parentMessage.get('user_id') as number,
+            model,
+            temperature,
+          });
 
-        streamingResponse.on('error', (error: Error) => {
-          enhancedEmitter.emit('error', error);
-        });
+          let fullContent = '';
+          const enhancedEmitter = new EventEmitter();
 
-        return enhancedEmitter;
+          streamingResponse.on('data', (data: { chunk: string; messageId: number }) => {
+            fullContent += data.chunk;
+            enhancedEmitter.emit('data', { chunk: data.chunk, messageId: completionMessage.get('id') as number });
+          });
+
+          streamingResponse.on('end', async () => {
+            await completionMessage.update({ content: fullContent });
+            enhancedEmitter.emit('end', { messageId: completionMessage.get('id') as number });
+          });
+
+          streamingResponse.on('error', (error: Error) => {
+            enhancedEmitter.emit('error', error);
+          });
+
+          return enhancedEmitter;
+        }
+        throw new Error('Unexpected response type from streaming completion');
       }
-      throw new Error('Unexpected response type from streaming completion');
+
+      const completionContent = isAnthropicModel(model)
+        ? await generateAnthropicCompletion(content, model, temperature)
+        : await generateOpenAICompletion(content, model, temperature);
+
+      if (typeof completionContent !== 'string') {
+        throw new Error('Unexpected response type from non-streaming completion');
+      }
+
+      const completionMessage: Message = await Message.create({
+        content: completionContent,
+        parent_id: messageId,
+        conversation_id: parentMessage.get('conversation_id') as number,
+        user_id: parentMessage.get('user_id') as number,
+        model,
+        temperature,
+      });
+      return completionMessage;
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message.includes('rate limit')) {
+          throw new Error(`${model.startsWith('gpt-') ? 'OpenAI' : 'Anthropic'} API rate limit exceeded`);
+        }
+        throw error;
+      }
+      throw new Error('Failed to generate completion');
     }
-
-    const completionContent = isAnthropicModel(model)
-      ? await generateAnthropicCompletion(content, model, temperature)
-      : await generateOpenAICompletion(content, model, temperature);
-
-    if (typeof completionContent !== 'string') {
-      throw new Error('Unexpected response type from non-streaming completion');
-    }
-
-    const completionMessage: Message = await Message.create({
-      content: completionContent,
-      parent_id: messageId,
-      conversation_id: parentMessage.get('conversation_id') as number,
-      user_id: parentMessage.get('user_id') as number,
-      model,
-      temperature,
-    });
-    return completionMessage;
   } catch (error) {
     if (error instanceof Error) {
       logger.error('Error generating completion:', { message: error.message });

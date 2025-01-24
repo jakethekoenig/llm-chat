@@ -1455,7 +1455,52 @@ describe('Server Tests', () => {
               .post(testCase.endpoint)
               .set('Authorization', `Bearer ${token}`)
               .send({ 
-                ...testCase.params,
+                messageId: message.get('id'),
+                model: testCase.model, 
+                temperature: 0.5 
+              });
+
+            expect(response.status).toBe(500);
+            expect(response.body.error).toBe(testCase.expectedError);
+          } finally {
+            process.env[testCase.envVar] = originalKey;
+            await message.destroy();
+            await conversation.destroy();
+          }
+        }
+      }, 60000);
+
+      it('should validate API keys in streaming requests', async () => {
+        const testCases = [
+          {
+            model: 'gpt-4',
+            envVar: 'OPENAI_API_KEY',
+            expectedError: 'OpenAI API key is not set'
+          },
+          {
+            model: 'claude-3-opus',
+            envVar: 'ANTHROPIC_API_KEY',
+            expectedError: 'Anthropic API key is not set'
+          }
+        ];
+
+        for (const testCase of testCases) {
+          const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
+          const message = await Message.create({
+            content: 'Test message',
+            conversation_id: conversation.get('id'),
+            user_id: 1
+          });
+
+          const originalKey = process.env[testCase.envVar];
+          delete process.env[testCase.envVar];
+
+          try {
+            const response = await request(app)
+              .post('/api/get_completion')
+              .set('Authorization', `Bearer ${token}`)
+              .send({ 
+                parentId: message.get('id'),
                 model: testCase.model, 
                 temperature: 0.5 
               });
@@ -1561,14 +1606,16 @@ describe('Server Tests', () => {
           {
             model: 'gpt-4',
             mockFn: mockOpenAICreate,
-            error: 'OpenAI API rate limit exceeded',
+            error: 'rate limit exceeded',
+            expectedError: 'OpenAI API rate limit exceeded',
             endpoint: '/api/get_completion_for_message',
             params: { messageId: 1 }
           },
           {
             model: 'claude-3-opus',
             mockFn: mockAnthropicCreate,
-            error: 'Anthropic API rate limit exceeded',
+            error: 'rate limit exceeded',
+            expectedError: 'Anthropic API rate limit exceeded',
             endpoint: '/api/get_completion_for_message',
             params: { messageId: 1 }
           }
@@ -1597,7 +1644,7 @@ describe('Server Tests', () => {
               });
 
             expect(response.status).toBe(429);
-            expect(response.body.error).toBe(testCase.error);
+            expect(response.body.error).toBe(testCase.expectedError);
           } finally {
             await message.destroy();
             await conversation.destroy();
@@ -1610,12 +1657,14 @@ describe('Server Tests', () => {
           {
             model: 'gpt-4',
             mockFn: mockOpenAICreate,
-            error: 'OpenAI API rate limit exceeded'
+            error: 'rate limit exceeded',
+            expectedError: 'OpenAI API rate limit exceeded'
           },
           {
             model: 'claude-3-opus',
             mockFn: mockAnthropicCreate,
-            error: 'Anthropic API rate limit exceeded'
+            error: 'rate limit exceeded',
+            expectedError: 'Anthropic API rate limit exceeded'
           }
         ];
 
@@ -1642,7 +1691,7 @@ describe('Server Tests', () => {
               });
 
             expect(response.status).toBe(429);
-            expect(response.body.error).toBe(testCase.error);
+            expect(response.body.error).toBe(testCase.expectedError);
           } finally {
             await message.destroy();
             await conversation.destroy();
@@ -1651,55 +1700,74 @@ describe('Server Tests', () => {
       }, 60000);
 
       it('should validate model parameter', async () => {
+        const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
+        const message = await Message.create({
+          content: 'Test message',
+          conversation_id: conversation.get('id'),
+          user_id: 1
+        });
+
         const testCases = [
           {
             endpoint: '/api/get_completion_for_message',
-            data: { messageId: 1, model: '', temperature: 0.5 },
+            data: { messageId: message.get('id'), model: '', temperature: 0.5 },
             expectedStatus: 400,
             expectedError: 'Model is required'
           },
           {
             endpoint: '/api/get_completion_for_message',
-            data: { messageId: 1, model: 'invalid-model', temperature: 0.5 },
+            data: { messageId: message.get('id'), model: 'invalid-model', temperature: 0.5 },
             expectedStatus: 400,
             expectedError: 'Invalid model specified'
           },
           {
             endpoint: '/api/get_completion',
-            data: { parentId: 1, model: '', temperature: 0.5 },
+            data: { parentId: message.get('id'), model: '', temperature: 0.5 },
             expectedStatus: 400,
             expectedError: 'Model is required'
           },
           {
             endpoint: '/api/get_completion',
-            data: { parentId: 1, model: 'invalid-model', temperature: 0.5 },
+            data: { parentId: message.get('id'), model: 'invalid-model', temperature: 0.5 },
             expectedStatus: 400,
             expectedError: 'Invalid model specified'
           }
         ];
 
-        for (const testCase of testCases) {
-          const response = await request(app)
-            .post(testCase.endpoint)
-            .set('Authorization', `Bearer ${token}`)
-            .send(testCase.data);
+        try {
+          for (const testCase of testCases) {
+            const response = await request(app)
+              .post(testCase.endpoint)
+              .set('Authorization', `Bearer ${token}`)
+              .send(testCase.data);
 
-          expect(response.status).toBe(testCase.expectedStatus);
-          if (testCase.data.model === '') {
-            expect(response.body.errors).toEqual(
-              expect.arrayContaining([
-                expect.objectContaining({ msg: testCase.expectedError })
-              ])
-            );
-          } else {
-            expect(response.body.errors).toEqual([
-              { msg: testCase.expectedError }
-            ]);
+            expect(response.status).toBe(testCase.expectedStatus);
+            if (testCase.data.model === '') {
+              expect(response.body.errors).toEqual(
+                expect.arrayContaining([
+                  expect.objectContaining({ msg: testCase.expectedError })
+                ])
+              );
+            } else {
+              expect(response.body.errors).toEqual([
+                { msg: testCase.expectedError }
+              ]);
+            }
           }
+        } finally {
+          await message.destroy();
+          await conversation.destroy();
         }
       }, 60000);
 
       it('should validate message existence', async () => {
+        const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
+        const message = await Message.create({
+          content: 'Test message',
+          conversation_id: conversation.get('id'),
+          user_id: 1
+        });
+
         const testCases = [
           {
             endpoint: '/api/get_completion_for_message',
@@ -1727,22 +1795,27 @@ describe('Server Tests', () => {
           }
         ];
 
-        for (const testCase of testCases) {
-          const response = await request(app)
-            .post(testCase.endpoint)
-            .set('Authorization', `Bearer ${token}`)
-            .send(testCase.data);
+        try {
+          for (const testCase of testCases) {
+            const response = await request(app)
+              .post(testCase.endpoint)
+              .set('Authorization', `Bearer ${token}`)
+              .send(testCase.data);
 
-          expect(response.status).toBe(testCase.expectedStatus);
-          if (testCase.expectedStatus === 400) {
-            expect(response.body.errors).toEqual(
-              expect.arrayContaining([
-                expect.objectContaining({ msg: testCase.expectedError })
-              ])
-            );
-          } else {
-            expect(response.body.error).toBe(testCase.expectedError);
+            expect(response.status).toBe(testCase.expectedStatus);
+            if (testCase.expectedStatus === 400) {
+              expect(response.body.errors).toEqual(
+                expect.arrayContaining([
+                  expect.objectContaining({ msg: testCase.expectedError })
+                ])
+              );
+            } else {
+              expect(response.body.error).toBe(testCase.expectedError);
+            }
           }
+        } finally {
+          await message.destroy();
+          await conversation.destroy();
         }
       }, 60000);
 
@@ -1783,7 +1856,44 @@ describe('Server Tests', () => {
         }
       }, 60000);
 
-      it('should handle concurrent message deletion', async () => {
+      it('should handle deleted messages', async () => {
+        const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
+        const message = await Message.create({
+          content: 'Test message',
+          conversation_id: conversation.get('id'),
+          user_id: 1
+        });
+
+        const messageId = message.get('id');
+        await message.destroy();
+
+        try {
+          const testCases = [
+            {
+              endpoint: '/api/get_completion_for_message',
+              data: { messageId, model: 'gpt-4', temperature: 0.5 }
+            },
+            {
+              endpoint: '/api/get_completion',
+              data: { parentId: messageId, model: 'gpt-4', temperature: 0.5 }
+            }
+          ];
+
+          for (const testCase of testCases) {
+            const response = await request(app)
+              .post(testCase.endpoint)
+              .set('Authorization', `Bearer ${token}`)
+              .send(testCase.data);
+
+            expect(response.status).toBe(404);
+            expect(response.body.error).toBe(`Parent message with ID ${messageId} not found`);
+          }
+        } finally {
+          await conversation.destroy();
+        }
+      }, 60000);
+
+      it('should handle concurrent message deletion in non-streaming endpoint', async () => {
         const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
         const message = await Message.create({
           content: 'Test message',
@@ -1799,6 +1909,36 @@ describe('Server Tests', () => {
             .post('/api/get_completion_for_message')
             .set('Authorization', `Bearer ${token}`)
             .send({ messageId, model: 'gpt-4', temperature: 0.5 });
+
+          // Delete the message while the completion is processing
+          await message.destroy();
+
+          // Wait for the completion response
+          const response = await completionPromise;
+
+          expect(response.status).toBe(404);
+          expect(response.body.error).toBe(`Parent message with ID ${messageId} not found`);
+        } finally {
+          await conversation.destroy();
+        }
+      }, 60000);
+
+      it('should handle concurrent message deletion in streaming endpoint', async () => {
+        const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
+        const message = await Message.create({
+          content: 'Test message',
+          conversation_id: conversation.get('id'),
+          user_id: 1
+        });
+
+        try {
+          const messageId = message.get('id');
+
+          // Start the completion request
+          const completionPromise = request(app)
+            .post('/api/get_completion')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ parentId: messageId, model: 'gpt-4', temperature: 0.5 });
 
           // Delete the message while the completion is processing
           await message.destroy();
