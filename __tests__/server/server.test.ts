@@ -392,7 +392,7 @@ describe('Server Tests', () => {
       it('should handle database errors gracefully', async () => {
         // Mock Conversation.create to throw an error
         const originalCreate = Conversation.create;
-        const mockCreate = jest.fn().mockRejectedValue({ message: 'Database error' } as Error);
+        const mockCreate = jest.fn().mockImplementation(() => Promise.reject(new Error('Database error')));
         (Conversation as any).create = mockCreate;
 
         const response = await request(app)
