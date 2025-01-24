@@ -227,18 +227,6 @@ describe('Server Tests', () => {
     });
 
     it('should handle model initialization', async () => {
-      // Initialize associations
-      Message.belongsTo(Conversation, { foreignKey: 'conversation_id', as: 'conversation' });
-      Message.belongsTo(Message, { foreignKey: 'parent_id', as: 'parent' });
-      Message.hasMany(Message, { foreignKey: 'parent_id', as: 'children' });
-      Message.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
-
-      Conversation.hasMany(Message, { foreignKey: 'conversation_id', as: 'messages' });
-      Conversation.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
-
-      User.hasMany(Conversation, { foreignKey: 'user_id', as: 'conversations' });
-      User.hasMany(Message, { foreignKey: 'user_id', as: 'messages' });
-
       // Test model initialization
       const message = Message.build({
         content: 'Test message',
@@ -387,6 +375,8 @@ describe('Server Tests', () => {
         .set('Authorization', `Bearer ${token}`);
       expect(response.status).toBe(200);
       expect(response.body).toBeInstanceOf(Array);
+      expect(response.body.length).toBeGreaterThan(0);
+      expect(response.body[0].title).toBe('Sample Conversation 1');
     });
 
     it('should fetch all messages in a specific conversation', async () => {
