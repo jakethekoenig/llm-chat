@@ -45,7 +45,7 @@ export const generateCompletion = async (messageId: number, model: string, tempe
     where: {
       conversation_id: conversationId,
     },
-    order: [['timestamp', 'ASC']], // Order messages chronologically
+    order: [['createdAt', 'ASC']], // Order messages chronologically
   });
 
   // Build the conversation history for the API
