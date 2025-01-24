@@ -175,6 +175,20 @@ const generateOpenAICompletion = async (content: string, model: string, temperat
 };
 
 export const generateCompletion = async (messageId: number, model: string, temperature: number, stream = false): Promise<Message | StreamingResponse> => {
+  // Validate model and API keys first
+  if (!model) {
+    throw new Error('Model is required');
+  }
+  if (model.startsWith('gpt-') && !process.env.OPENAI_API_KEY) {
+    throw new Error('OpenAI API key is not set');
+  }
+  if (model.startsWith('claude-') && !process.env.ANTHROPIC_API_KEY) {
+    throw new Error('Anthropic API key is not set');
+  }
+  if (!model.startsWith('gpt-') && !model.startsWith('claude-')) {
+    throw new Error('Invalid model specified');
+  }
+
   const parentMessage: Message | null = await Message.findByPk(messageId);
   if (!parentMessage) {
     throw new Error(`Parent message with ID ${messageId} not found`);
