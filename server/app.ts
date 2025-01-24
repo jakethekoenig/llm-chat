@@ -238,28 +238,6 @@ app.post('/api/get_completion', authenticateToken, [
     }
   }
 });
-  } catch (error) {
-    if (!res.headersSent) {
-      const errorMessage = error instanceof Error ? error.message : 'Internal server error';
-      if (errorMessage === 'Invalid model specified') {
-        return res.status(400).json({ errors: [{ msg: errorMessage }] });
-      }
-      if (errorMessage.includes('not found')) {
-        return res.status(404).json({ error: errorMessage });
-      }
-      if (errorMessage.includes('API key')) {
-        return res.status(500).json({ error: errorMessage });
-      }
-      if (errorMessage.includes('rate limit')) {
-        return res.status(429).json({ error: errorMessage });
-      }
-      res.status(500).json({ error: errorMessage });
-    } else {
-      res.write(`data: ${JSON.stringify({ error: errorMessage })}\n\n`);
-      res.end();
-    }
-  }
-});
 
 // Route to get all conversations for a logged-in user
 app.get('/api/conversations', authenticateToken, async (req: express.Request, res: express.Response) => {
