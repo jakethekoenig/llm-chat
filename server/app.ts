@@ -108,12 +108,12 @@ app.post('/api/add_message', authenticateToken, [
     }
 
     const message = await addMessage(content, conversationIdNumber, parentId, userId);
+    const messageId = message.get('id');
+    if (typeof messageId !== 'number') {
+      throw new Error('Invalid message ID');
+    }
 
     if (getCompletion) {
-      const messageId = message.get('id');
-      if (typeof messageId !== 'number') {
-        throw new Error('Invalid message ID');
-      }
       const completionMessage = await generateCompletion(messageId, model || 'gpt-4', temperature || 0.7);
       const completionId = completionMessage.get('id');
       if (typeof completionId !== 'number') {
