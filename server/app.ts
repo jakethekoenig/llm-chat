@@ -126,34 +126,51 @@ app.post('/api/get_completion', authenticateToken, [
   const { model, parentId, temperature } = req.body;
 
   try {
-    const completionMessage = await generateCompletion(parentId, model, temperature);
-    res.setHeader('Content-Type', 'application/json');
+    // Set headers for SSE
+    res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering for nginx
 
-    const streamData = JSON.stringify({ id: completionMessage.get('id'), content: completionMessage.get('content')});
-    res.write(`data: ${streamData}\n\n`);
+    // Helper function to send SSE data
+    const sendSSE = (event: string, data: any) => {
+      res.write(`event: ${event}\n`);
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    };
 
-    // Placeholder for actual streaming logic
-    const messages = [
-      { chunk: 'Example stream data part 1' },
-      { chunk: 'Example stream data part 2' },
-      { chunk: 'Example stream data part 3' }
-    ];
+    const streamingResponse = await generateCompletion(parentId, model, temperature, true);
+    
+    if (!(streamingResponse instanceof EventEmitter)) {
+      throw new Error('Expected streaming response');
+    }
 
-    let index = 0;
-    const interval = setInterval(() => {
-      if (index < messages.length) {
-        const chunkData = JSON.stringify(messages[index]);
-        res.write(`data: ${chunkData}\n\n`);
-        index++;
-      } else {
-        clearInterval(interval);
-        res.end();
-      }
-    }, 1000);
+    // Handle streaming events
+    streamingResponse.on('data', (data: { chunk: string; messageId: number }) => {
+      sendSSE('chunk', data);
+    });
+
+    streamingResponse.on('end', (data: { messageId: number }) => {
+      sendSSE('done', data);
+      res.end();
+    });
+
+    streamingResponse.on('error', (error: Error) => {
+      sendSSE('error', { error: error.message });
+      res.end();
+    });
+
+    // Handle client disconnect
+    req.on('close', () => {
+      streamingResponse.removeAllListeners();
+    });
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal server error' });
+    } else {
+      const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+      res.write(`data: ${JSON.stringify({ error: errorMessage })}\n\n`);
+      res.end();
+    }
   }
 });
 

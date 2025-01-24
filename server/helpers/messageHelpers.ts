@@ -6,6 +6,13 @@ import { OpenAI } from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { createLogger, transports, format } from 'winston';
 import * as messageHelpers from './messageHelpers';
+import { EventEmitter } from 'events';
+
+export interface StreamingResponse extends EventEmitter {
+  on(event: 'data', listener: (chunk: string) => void): this;
+  on(event: 'error', listener: (error: Error) => void): this;
+  on(event: 'end', listener: () => void): this;
+}
 const logger = createLogger({
   level: 'error',
   format: format.combine(
@@ -39,7 +46,7 @@ const isAnthropicModel = (model: string): boolean => {
   return anthropicIdentifiers.some(identifier => model.toLowerCase().includes(identifier));
 };
 
-const generateAnthropicCompletion = async (content: string, model: string, temperature: number) => {
+const generateAnthropicCompletion = async (content: string, model: string, temperature: number, stream = false): Promise<string | StreamingResponse> => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new Error('Anthropic API key is not set');
@@ -49,40 +56,94 @@ const generateAnthropicCompletion = async (content: string, model: string, tempe
     apiKey: apiKey,
   });
 
-  const response = await client.messages.create({
-    model,
-    max_tokens: 1024,
-    temperature,
-    messages: [{ role: 'user', content }],
-  });
+  if (!stream) {
+    const response = await client.messages.create({
+      model,
+      max_tokens: 1024,
+      temperature,
+      messages: [{ role: 'user', content }],
+    });
 
-  // Handle different content block types
-  const contentBlock = response.content[0];
-  if ('text' in contentBlock) {
-    return contentBlock.text;
-  } else {
-    logger.error('Unexpected content block type from Anthropic API');
-    throw new Error('Unexpected response format from Anthropic API');
+    const contentBlock = response.content[0];
+    if ('text' in contentBlock) {
+      return contentBlock.text;
+    } else {
+      logger.error('Unexpected content block type from Anthropic API');
+      throw new Error('Unexpected response format from Anthropic API');
+    }
   }
+
+  const emitter = new EventEmitter();
+  
+  (async () => {
+    try {
+      const stream = await client.messages.create({
+        model,
+        max_tokens: 1024,
+        temperature,
+        messages: [{ role: 'user', content }],
+        stream: true,
+      });
+
+      for await (const chunk of stream) {
+        if (chunk.type === 'content_block_delta' && chunk.delta.text) {
+          emitter.emit('data', chunk.delta.text);
+        }
+      }
+      emitter.emit('end');
+    } catch (error) {
+      emitter.emit('error', error instanceof Error ? error : new Error(String(error)));
+    }
+  })();
+
+  return emitter;
 };
 
-const generateOpenAICompletion = async (content: string, model: string, temperature: number) => {
+const generateOpenAICompletion = async (content: string, model: string, temperature: number, stream = false): Promise<string | StreamingResponse> => {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error('OpenAI API key is not set');
   }
 
   const openai = new OpenAI({ apiKey });
-  const response = await openai.chat.completions.create({
-    model,
-    messages: [{ role: "user", content }],
-    temperature,
-  });
 
-  return response.choices[0].message?.content || '';
+  if (!stream) {
+    const response = await openai.chat.completions.create({
+      model,
+      messages: [{ role: "user", content }],
+      temperature,
+    });
+
+    return response.choices[0].message?.content || '';
+  }
+
+  const emitter = new EventEmitter();
+  
+  (async () => {
+    try {
+      const stream = await openai.chat.completions.create({
+        model,
+        messages: [{ role: "user", content }],
+        temperature,
+        stream: true,
+      });
+
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content;
+        if (content) {
+          emitter.emit('data', content);
+        }
+      }
+      emitter.emit('end');
+    } catch (error) {
+      emitter.emit('error', error instanceof Error ? error : new Error(String(error)));
+    }
+  })();
+
+  return emitter;
 };
 
-export const generateCompletion = async (messageId: number, model: string, temperature: number) => {
+export const generateCompletion = async (messageId: number, model: string, temperature: number, stream = false): Promise<Message | StreamingResponse> => {
   const parentMessage: Message | null = await Message.findByPk(messageId);
   if (!parentMessage) {
     throw new Error(`Parent message with ID ${messageId} not found`);
@@ -94,11 +155,52 @@ export const generateCompletion = async (messageId: number, model: string, tempe
   }
 
   try {
+    if (stream) {
+      const streamingResponse = isAnthropicModel(model)
+        ? await generateAnthropicCompletion(content, model, temperature, true)
+        : await generateOpenAICompletion(content, model, temperature, true);
+
+      if (streamingResponse instanceof EventEmitter) {
+        // Create an empty message that will be updated as the stream progresses
+        const completionMessage = await Message.create({
+          content: '',
+          parent_id: messageId,
+          conversation_id: parentMessage.get('conversation_id') as number,
+          user_id: parentMessage.get('user_id') as number,
+          model,
+          temperature,
+        });
+
+        let fullContent = '';
+        const enhancedEmitter = new EventEmitter();
+
+        streamingResponse.on('data', (chunk: string) => {
+          fullContent += chunk;
+          enhancedEmitter.emit('data', { chunk, messageId: completionMessage.get('id') });
+        });
+
+        streamingResponse.on('end', async () => {
+          await completionMessage.update({ content: fullContent });
+          enhancedEmitter.emit('end', { messageId: completionMessage.get('id') });
+        });
+
+        streamingResponse.on('error', (error: Error) => {
+          enhancedEmitter.emit('error', error);
+        });
+
+        return enhancedEmitter;
+      }
+      throw new Error('Unexpected response type from streaming completion');
+    }
+
     const completionContent = isAnthropicModel(model)
       ? await generateAnthropicCompletion(content, model, temperature)
       : await generateOpenAICompletion(content, model, temperature);
 
-    console.log('completionContent:', completionContent);
+    if (typeof completionContent !== 'string') {
+      throw new Error('Unexpected response type from non-streaming completion');
+    }
+
     const completionMessage: Message = await Message.create({
       content: completionContent,
       parent_id: messageId,
