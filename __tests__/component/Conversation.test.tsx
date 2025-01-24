@@ -195,10 +195,10 @@ test('renders NewMessage component within Conversation with model and temperatur
 test('handles sending message without completion and dropdown interactions', async () => {
   render(<Conversation messages={messages} author="User" onSubmit={mockOnSubmit} />);
   const newMessageInput = screen.getByPlaceholderText('Type your message...');
-  const sendButton = screen.getByText('Send');
+  const sendButtonElement = screen.getByTestId('send-button');
 
   // Test dropdown opening and closing
-  fireEvent.contextMenu(sendButton);
+  fireEvent.contextMenu(sendButtonElement);
   const sendWithoutCompletionButton = screen.getByText('Send without completion');
   expect(sendWithoutCompletionButton).toBeInTheDocument();
 
@@ -213,8 +213,7 @@ test('handles sending message without completion and dropdown interactions', asy
   });
 
   // Test reopening dropdown
-  const sendButton = screen.getByTestId('send-button');
-  fireEvent.contextMenu(sendButton);
+  fireEvent.contextMenu(sendButtonElement);
   expect(screen.getByTestId('send-options-dropdown')).toBeInTheDocument();
 
   // Test ESC key
