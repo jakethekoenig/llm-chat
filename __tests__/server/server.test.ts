@@ -177,32 +177,34 @@ describe('Server Tests', () => {
       expect(User).toBeDefined();
     });
 
-    it('should handle model associations', () => {
-      // Initialize associations
-      Message.belongsTo(Conversation, { foreignKey: 'conversation_id', as: 'conversation' });
-      Message.belongsTo(Message, { foreignKey: 'parent_id', as: 'parent' });
-      Message.hasMany(Message, { foreignKey: 'parent_id', as: 'children' });
-      Message.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
-
-      Conversation.hasMany(Message, { foreignKey: 'conversation_id', as: 'messages' });
-      Conversation.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
-
-      User.hasMany(Conversation, { foreignKey: 'user_id', as: 'conversations' });
-      User.hasMany(Message, { foreignKey: 'user_id', as: 'messages' });
-
+    it('should have correct model associations', () => {
       // Test Message associations
       expect(Message.associations.conversation).toBeDefined();
       expect(Message.associations.parent).toBeDefined();
       expect(Message.associations.children).toBeDefined();
       expect(Message.associations.user).toBeDefined();
 
+      // Verify Message association details
+      expect(Message.associations.conversation.foreignKey).toBe('conversation_id');
+      expect(Message.associations.parent.foreignKey).toBe('parent_id');
+      expect(Message.associations.children.foreignKey).toBe('parent_id');
+      expect(Message.associations.user.foreignKey).toBe('user_id');
+
       // Test Conversation associations
       expect(Conversation.associations.messages).toBeDefined();
       expect(Conversation.associations.user).toBeDefined();
 
+      // Verify Conversation association details
+      expect(Conversation.associations.messages.foreignKey).toBe('conversation_id');
+      expect(Conversation.associations.user.foreignKey).toBe('user_id');
+
       // Test User associations
       expect(User.associations.conversations).toBeDefined();
       expect(User.associations.messages).toBeDefined();
+
+      // Verify User association details
+      expect(User.associations.conversations.foreignKey).toBe('user_id');
+      expect(User.associations.messages.foreignKey).toBe('user_id');
     });
 
     it('should handle environment variables in database config', () => {
