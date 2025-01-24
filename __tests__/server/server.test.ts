@@ -4,6 +4,8 @@ import app, { authenticateToken } from '../../server/app';
 import { sequelize } from '../../server/database/models';
 import { up, down } from '../../server/database/seeders/20240827043208-seed-test-data';
 import { Conversation } from '../../server/database/models/Conversation';
+import { User } from '../../server/database/models/User';
+import bcrypt from 'bcrypt';
 
 const obtainAuthToken = async () => {
   const response = await request(app)
