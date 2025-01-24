@@ -72,21 +72,66 @@ app.post('/api/register', async (req: express.Request, res: express.Response) =>
 // Add message submission endpoint
 app.post('/api/add_message', authenticateToken, [
   body('content').notEmpty().withMessage('Content is required'),
-  body('conversationId').isInt().withMessage('Conversation ID must be an integer'),
-  body('parentId').optional().isInt().withMessage('Parent ID must be an integer')
+  body('conversationId').optional().isInt().withMessage('Conversation ID must be an integer'),
+  body('parentId').optional().isInt().withMessage('Parent ID must be an integer'),
+  body('model').optional().isString().withMessage('Model must be a string'),
+  body('temperature').optional().isFloat().withMessage('Temperature must be a float'),
+  body('getCompletion').optional().isBoolean().withMessage('getCompletion must be a boolean')
 ], async (req: express.Request, res: express.Response) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { content, conversationId, parentId } = req.body;
+  const { content, conversationId, parentId, model, temperature, getCompletion } = req.body;
   const userId = (req as any).user.id;
 
   try {
-    const message = await addMessage(content, conversationId, parentId, userId);
-    res.status(201).json({ id: message.get('id') });
+    let targetConversationId = conversationId;
+    
+    // Create a new conversation if conversationId is null
+    if (!conversationId) {
+      const conversation = await Conversation.create({
+        title: content.slice(0, 50) + (content.length > 50 ? '...' : ''), // Use first 50 chars of message as title
+        user_id: userId
+      });
+      targetConversationId = conversation.get('id');
+    }
+
+    // Ensure targetConversationId is a number
+    const conversationIdNumber = typeof targetConversationId === 'string' 
+      ? parseInt(targetConversationId, 10) 
+      : targetConversationId;
+
+    if (isNaN(conversationIdNumber)) {
+      throw new Error('Invalid conversation ID');
+    }
+
+    const message = await addMessage(content, conversationIdNumber, parentId, userId);
+    const messageId = message.get('id');
+    if (typeof messageId !== 'number') {
+      throw new Error('Invalid message ID');
+    }
+
+    if (getCompletion) {
+      const completionMessage = await generateCompletion(messageId, model || 'gpt-4', temperature || 0.7);
+      const completionId = completionMessage.get('id');
+      if (typeof completionId !== 'number') {
+        throw new Error('Invalid completion ID');
+      }
+      res.status(201).json({
+        id: messageId,
+        conversationId: conversationIdNumber,
+        completionId: completionId
+      });
+    } else {
+      res.status(201).json({
+        id: messageId,
+        conversationId: conversationIdNumber
+      });
+    }
   } catch (error) {
+    console.error('Error in add_message:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

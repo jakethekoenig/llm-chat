@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import Conversation from '../../chat-components/Conversation';
+import NewMessage from '../../chat-components/NewMessage';
 import { Message as MessageType } from '../../chat-components/types/Message';
 import { fetchWithAuth } from '../utils/api';
 import '../App.css';
 
-// TODO: Refactor interface so this co-ercion isn't necessary.
 function snakeToCamelCase(obj) {
   if (typeof obj !== 'object' || obj === null) {
     return obj;
@@ -21,13 +21,20 @@ function snakeToCamelCase(obj) {
     return acc;
   }, {});
 }
+
 const ConversationPage: React.FC = () => {
   const { conversationId } = useParams<{ conversationId: string }>();
   const [messages, setMessages] = useState<MessageType[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
+    if (conversationId === 'new') {
+      setIsLoading(false);
+      return;
+    }
+
     const fetchMessages = async () => {
       try {
         setIsLoading(true);
@@ -48,18 +55,25 @@ const ConversationPage: React.FC = () => {
     fetchMessages();
   }, [conversationId]);
 
-  const handleNewMessageSubmit = async function* (message: string) {
+  const handleNewMessageSubmit = async function* (message: string, options: { model: string; temperature: number; getCompletion: boolean }) {
+    const mostRecentMessageId = messages.length > 0 ? messages[messages.length - 1].id : null;
     try {
       setError(null);
-      const mostRecentMessageId = messages.length > 0 ? messages[messages.length - 1].id : null;
-      const response = await fetchWithAuth(`/api/add_message`, {
+      const response = await fetchWithAuth('/api/add_message', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ content: message, conversationId: conversationId, parentId: mostRecentMessageId })
+        body: JSON.stringify({
+          content: message,
+          conversationId: conversationId === 'new' ? null : conversationId,
+          parentId: mostRecentMessageId,
+          model: options.model,
+          temperature: options.temperature,
+          getCompletion: options.getCompletion
+        })
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to send message');
       }
@@ -72,14 +86,46 @@ const ConversationPage: React.FC = () => {
         timestamp: new Date().toISOString(), 
         parentId: mostRecentMessageId 
       };
-      
+
+      if (conversationId === 'new') {
+        // If this is a new conversation, redirect to the newly created conversation
+        navigate(`/conversations/${data.conversationId}`);
+        yield message;
+        return;
+      }
+
       setMessages(prevMessages => [...prevMessages, newMessage]);
-      
-      // Yield the message content to support streaming interface
       yield message;
-      
+
+      if (options.getCompletion) {
+        // Get completion and stream it
+        const completionResponse = await fetchWithAuth('/api/get_completion_for_message', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messageId: data.id,
+            model: options.model,
+            temperature: options.temperature
+          })
+        });
+
+        if (!completionResponse.ok) {
+          throw new Error('Failed to get completion');
+        }
+
+        const reader = completionResponse.body?.getReader();
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            yield new TextDecoder().decode(value);
+          }
+        }
+      }
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('Error submitting message:', error);
       setError('Failed to send message. Please try again.');
       yield 'Error: Failed to send message';
     }
@@ -87,15 +133,48 @@ const ConversationPage: React.FC = () => {
 
   return (
     <div>
-      <h2>Conversation</h2>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '24px'
+      }}>
+        <h2>{conversationId === 'new' ? 'New Conversation' : 'Conversation'}</h2>
+        {conversationId === 'new' && (
+          <button
+            onClick={() => navigate('/conversations')}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#6c757d',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            ← Back to Conversations
+          </button>
+        )}
+      </div>
       {error && <div className="error-message">{error}</div>}
       {isLoading ? (
         <div className="loading-message">Loading messages...</div>
+      ) : conversationId === 'new' ? (
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <NewMessage onSubmit={handleNewMessageSubmit} />
+        </div>
       ) : (
-        <Conversation messages={messages} onSubmit={handleNewMessageSubmit} author="User" />
+        <Conversation
+          messages={messages}
+          onSubmit={(message) => handleNewMessageSubmit(message, { model: 'gpt-4', temperature: 0.7, getCompletion: true })}
+          author="User"
+        />
       )}
     </div>
   );
-}
+};
 
 export default ConversationPage;

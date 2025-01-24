@@ -1,9 +1,21 @@
 import request from 'supertest';
 import express from 'express';
+import jwt from 'jsonwebtoken';
+import { Op } from 'sequelize';
+import { OpenAI } from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
+import 'jest-styled-components';
 import app, { authenticateToken } from '../../server/app';
-import { sequelize } from '../../server/database/models';
+import db from '../../server/database';
 import { up, down } from '../../server/database/seeders/20240827043208-seed-test-data';
 import { Conversation } from '../../server/database/models/Conversation';
+import { User } from '../../server/database/models/User';
+import { Message } from '../../server/database/models/Message';
+import { logger } from '../../server/helpers/messageHelpers';
+import * as messageHelpers from '../../server/helpers/messageHelpers';
+import { jest } from '@jest/globals';
+
+const sequelize = db.sequelize;
 
 const obtainAuthToken = async () => {
   const response = await request(app)
@@ -12,22 +24,26 @@ const obtainAuthToken = async () => {
   return response.body.token;
 };
 
-beforeAll(() => {
+beforeAll(async () => {
   process.env.OPENAI_API_KEY = 'test-openai-key';
   process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
+  await sequelize.sync({ force: true });
+  await up(sequelize.getQueryInterface(), sequelize);
 });
 
-afterAll(() => {
+afterAll(async () => {
   delete process.env.OPENAI_API_KEY;
   delete process.env.ANTHROPIC_API_KEY;
+  await down(sequelize.getQueryInterface(), sequelize);
+  await sequelize.close();
 });
-import { Message } from '../../server/database/models/Message';
-import { OpenAI } from 'openai';
-import Anthropic from '@anthropic-ai/sdk';
-import 'jest-styled-components';
-import { logger } from '../../server/helpers/messageHelpers';
-import * as messageHelpers from '../../server/helpers/messageHelpers';
-import { jest } from '@jest/globals';
+
+beforeEach(async () => {
+  // Clear test data but keep the user1 from seed data
+  await Message.destroy({ where: {} });
+  await Conversation.destroy({ where: {} });
+  await User.destroy({ where: { username: { [Op.notIn]: ['user1'] } } });
+});
 
 // Mock OpenAI
 jest.mock('openai', () => ({
@@ -278,13 +294,164 @@ describe('Server Tests', () => {
     });
 
     describe('Add Message and Get Completion for Message Endpoints', () => {
-      it('should add a new message', async () => {
+      it('should add a new message with model options and create conversation', async () => {
+        // Create a test user and get a token
+        const user = await User.create({
+          username: 'testuser2',
+          email: 'test2@example.com',
+          hashed_password: 'hashedpassword'
+        });
+
+        const testToken = jwt.sign({ id: user.get('id') }, process.env.SECRET_KEY || 'fallback-secret-key');
+
+        // Create a conversation for the test user
+        const conversation = await Conversation.create({
+          title: 'Test Conversation',
+          user_id: user.get('id')
+        });
+
+        const response = await request(app)
+          .post('/api/add_message')
+          .set('Authorization', `Bearer ${testToken}`)
+          .send({
+            content: 'New Test Message',
+            conversationId: conversation.get('id'),
+            parentId: null,
+            model: 'gpt-4',
+            temperature: 0.7,
+            getCompletion: true
+          });
+        expect(response.status).toBe(201);
+        expect(response.body.id).toBeDefined();
+        expect(response.body.conversationId).toBeDefined();
+        expect(response.body.completionId).toBeDefined();
+
+        // Verify the conversation was created
+        const conversationResponse = await request(app)
+          .get(`/api/conversations/${response.body.conversationId}/messages`)
+          .set('Authorization', `Bearer ${testToken}`);
+        expect(conversationResponse.status).toBe(200);
+        expect(conversationResponse.body).toBeInstanceOf(Array);
+        expect(conversationResponse.body.length).toBeGreaterThan(0);
+
+        // Clean up
+        await Message.destroy({ where: { conversation_id: response.body.conversationId } });
+        await Conversation.destroy({ where: { id: response.body.conversationId } });
+        await user.destroy();
+      });
+
+      it('should add a message without requesting completion', async () => {
         const response = await request(app)
           .post('/api/add_message')
           .set('Authorization', `Bearer ${token}`)
-          .send({ content: 'New Test Message', conversationId: 1, parentId: 1 });
+          .send({
+            content: 'Message without completion',
+            conversationId: 1,
+            model: 'gpt-4',
+            temperature: 0.7,
+            getCompletion: false
+          });
         expect(response.status).toBe(201);
         expect(response.body.id).toBeDefined();
+        expect(response.body.conversationId).toBeDefined();
+        expect(response.body.completionId).toBeUndefined();
+      });
+
+      it('should handle various validation errors in add_message', async () => {
+        // Test missing content
+        let response = await request(app)
+          .post('/api/add_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({
+            conversationId: 1,
+            model: 'gpt-4',
+            temperature: 0.7,
+            getCompletion: true
+          });
+        expect(response.status).toBe(400);
+        expect(response.body.errors.some((error: any) => error.msg === 'Content is required')).toBe(true);
+
+        // Test invalid temperature
+        response = await request(app)
+          .post('/api/add_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({
+            content: 'Test message',
+            conversationId: 1,
+            model: 'gpt-4',
+            temperature: 'invalid',
+            getCompletion: true
+          });
+        expect(response.status).toBe(400);
+        expect(response.body.errors.some((error: any) => error.msg === 'Temperature must be a float')).toBe(true);
+
+        // Test invalid conversation ID format
+        response = await request(app)
+          .post('/api/add_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({
+            content: 'Test message',
+            conversationId: 'invalid-id',
+            model: 'gpt-4',
+            temperature: 0.7,
+            getCompletion: true
+          });
+        expect(response.status).toBe(400);
+        expect(response.body.errors.some((error: any) => error.msg === 'Conversation ID must be an integer')).toBe(true);
+
+        // Test non-existent conversation ID
+        response = await request(app)
+          .post('/api/add_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({
+            content: 'Test message',
+            conversationId: 99999,
+            model: 'gpt-4',
+            temperature: 0.7,
+            getCompletion: true
+          });
+        expect(response.status).toBe(500);
+        expect(response.body.error).toBe('Internal server error');
+      });
+
+      it('should handle database errors gracefully', async () => {
+        // Create a test user and get a token
+        const user = await User.create({
+          username: 'testuser3',
+          email: 'test3@example.com',
+          hashed_password: 'hashedpassword'
+        });
+
+        const testToken = jwt.sign({ id: user.get('id') }, process.env.SECRET_KEY || 'fallback-secret-key');
+
+        // Create a conversation for testing
+        const conversation = await Conversation.create({
+          title: 'Test Conversation',
+          user_id: user.get('id')
+        });
+
+        // Mock Message.create to throw an error
+        const originalMessageCreate = Message.create;
+        (Message as any).create = jest.fn().mockImplementation(() => Promise.reject(new Error('Database error')));
+
+        const response = await request(app)
+          .post('/api/add_message')
+          .set('Authorization', `Bearer ${testToken}`)
+          .send({
+            content: 'Test message',
+            conversationId: conversation.get('id'),
+            model: 'gpt-4',
+            temperature: 0.7,
+            getCompletion: true
+          });
+
+        expect(response.status).toBe(500);
+        expect(response.body.error).toBe('Internal server error');
+
+        // Restore original implementation and clean up
+        (Message as any).create = originalMessageCreate;
+        await conversation.destroy();
+        await user.destroy();
       });
 
       it('should return 400 for invalid add_message request', async () => {
@@ -296,12 +463,44 @@ describe('Server Tests', () => {
       });
 
       it('should get completion for a message', async () => {
+        // Create test user and conversation
+        const user = await User.create({
+          username: 'testuser4',
+          email: 'test4@example.com',
+          hashed_password: 'hashedpassword'
+        });
+
+        const testToken = jwt.sign({ id: user.get('id') }, process.env.SECRET_KEY || 'fallback-secret-key');
+
+        const conversation = await Conversation.create({
+          title: 'Test Conversation',
+          user_id: user.get('id')
+        });
+
+        // Create a message to get completion for
+        const message = await Message.create({
+          content: 'Test message',
+          conversation_id: conversation.get('id'),
+          user_id: user.get('id')
+        });
+
         const response = await request(app)
           .post('/api/get_completion_for_message')
-          .set('Authorization', `Bearer ${token}`)
-          .send({ messageId: 1, model: 'test-model', temperature: 0.5 });
+          .set('Authorization', `Bearer ${testToken}`)
+          .send({
+            messageId: message.get('id'),
+            model: 'gpt-4',
+            temperature: 0.7
+          });
+
         expect(response.status).toBe(201);
         expect(response.body.id).toBeDefined();
+        expect(response.body.content).toBeDefined();
+
+        // Clean up
+        await message.destroy();
+        await conversation.destroy();
+        await user.destroy();
       });
 
       it('should return 400 for invalid get_completion_for_message request', async () => {
@@ -313,14 +512,41 @@ describe('Server Tests', () => {
       });
 
       it('should create a new conversation with valid data', async () => {
+        // Create a test user and get a token
+        const user = await User.create({
+          username: 'testuser5',
+          email: 'test5@example.com',
+          hashed_password: 'hashedpassword'
+        });
+
+        const testToken = jwt.sign({ id: user.get('id') }, process.env.SECRET_KEY || 'fallback-secret-key');
+
         const response = await request(app)
           .post('/api/create_conversation')
-          .set('Authorization', `Bearer ${token}`)
-          .send({ initialMessage: 'Hello, world!', model: 'gpt-4o', temperature: 0.0 });
+          .set('Authorization', `Bearer ${testToken}`)
+          .send({ 
+            initialMessage: 'Hello, world!', 
+            model: 'gpt-4', 
+            temperature: 0.7 
+          });
+
         expect(response.status).toBe(201);
         expect(response.body.conversationId).toBeDefined();
         expect(response.body.initialMessageId).toBeDefined();
         expect(response.body.completionMessageId).toBeDefined();
+
+        // Verify conversation and messages were created
+        const conversation = await Conversation.findByPk(response.body.conversationId);
+        expect(conversation).toBeDefined();
+        expect(conversation?.get('user_id')).toBe(user.get('id'));
+
+        const messages = await Message.findAll({ where: { conversation_id: response.body.conversationId } });
+        expect(messages.length).toBeGreaterThan(0);
+
+        // Clean up
+        await Message.destroy({ where: { conversation_id: response.body.conversationId } });
+        await conversation?.destroy();
+        await user.destroy();
       });
 
       it('should return 400 for missing initialMessage', async () => {

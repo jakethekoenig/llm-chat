@@ -39,6 +39,8 @@ const AppContent = () => {
   const [isSidePaneOpen, setIsSidePaneOpen] = React.useState(true);
   const [isAuthInitialized, setIsAuthInitialized] = React.useState(false);
   const toggleSidePane = () => { setIsSidePaneOpen(!isSidePaneOpen); };
+  const location = window.location.pathname;
+  const isNewConversation = location === '/conversations/new';
   const auth = useAuth();
 
   React.useEffect(() => {
@@ -59,13 +61,15 @@ const AppContent = () => {
       <div className="app-container">
         <Header onToggleSidePane={toggleSidePane} />
         <div className="main-content">
-          <aside className={`side-pane ${isSidePaneOpen ? 'open' : 'closed'}`}>
-            <ProtectedRoute>
-              <ConversationListPage />
-            </ProtectedRoute>
-          </aside>
-          <main className="page-content">
-            <h1>LLM Chat Component Showcase</h1>
+          {!isNewConversation && (
+            <aside className={`side-pane ${isSidePaneOpen ? 'open' : 'closed'}`}>
+              <ProtectedRoute>
+                <ConversationListPage />
+              </ProtectedRoute>
+            </aside>
+          )}
+          <main className={`page-content ${isNewConversation ? 'full-width' : ''}`}>
+            {!isNewConversation && <h1>LLM Chat Component Showcase</h1>}
             <Routes>
               <Route path="/signin" element={<SignIn />} />
               <Route path="/register" element={<Register />} />
