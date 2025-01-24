@@ -220,8 +220,9 @@ describe('Server Tests', () => {
       expect(Message.associations.user).toBeDefined();
 
       // Test database configuration
+      const config = require('../../config/config.json')['test'];
       expect(sequelize.sequelize.getDialect()).toBe('sqlite');
-      expect((sequelize.sequelize.config as any).storage).toBe('./database_test.sqlite');
+      expect(config.storage).toBe('./database_test.sqlite');
     });
 
     it('should handle database initialization with different environments', async () => {
@@ -231,15 +232,17 @@ describe('Server Tests', () => {
       try {
         // Test development environment
         process.env.NODE_ENV = 'development';
+        const devConfig = require('../../config/config.json')['development'];
         await sequelize.sequelize.sync();
         expect(sequelize.sequelize.getDialect()).toBe('sqlite');
-        expect((sequelize.sequelize.config as any).storage).toBe('./database_test.sqlite');
+        expect(devConfig.storage).toBe('./database_development.sqlite');
 
         // Test production environment
         process.env.NODE_ENV = 'production';
+        const prodConfig = require('../../config/config.json')['production'];
         await sequelize.sequelize.sync();
         expect(sequelize.sequelize.getDialect()).toBe('sqlite');
-        expect((sequelize.sequelize.config as any).storage).toBe('./database_test.sqlite');
+        expect(prodConfig.storage).toBe('./database_production.sqlite');
       } finally {
         // Restore environment
         process.env.NODE_ENV = originalEnv;
