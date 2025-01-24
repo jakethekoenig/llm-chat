@@ -88,7 +88,8 @@ app.post('/api/add_message', authenticateToken, [
     const message = await addMessage(content, conversationId, parentId, userId);
     res.status(201).json({ id: message.get('id') });
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    res.status(500).json({ error: errorMessage });
   }
 });
 
@@ -160,17 +161,34 @@ app.post('/api/get_completion', authenticateToken, [
 
     // Handle streaming events
     response.on('data', (data: { chunk: string; messageId: number }) => {
-      sendSSE('chunk', data);
+      try {
+        sendSSE('chunk', data);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Error sending chunk';
+        sendSSE('error', { error: errorMessage });
+        res.end();
+      }
     });
 
     response.on('end', (data: { messageId: number }) => {
-      sendSSE('done', data);
-      res.end();
+      try {
+        sendSSE('done', data);
+        res.end();
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Error ending stream';
+        sendSSE('error', { error: errorMessage });
+        res.end();
+      }
     });
 
     response.on('error', (error: Error) => {
-      sendSSE('error', { error: error.message });
-      res.end();
+      try {
+        sendSSE('error', { error: error.message });
+        res.end();
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Error handling stream error';
+        res.status(500).json({ error: errorMessage });
+      }
     });
 
     // Handle client disconnect
