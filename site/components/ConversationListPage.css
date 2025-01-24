@@ -1,0 +1,14 @@
+/* site/components/ConversationListPage.css */
+
+.create-conversation-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.form-input {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}

@@ -97,8 +97,14 @@ test('renders conversation list', () => {
     { id: '2', content: 'Conversation 2', author: 'User2', timestamp: new Date().toISOString(), parentId: null },
   ];
   render(<ConversationList conversations={conversations} onConversationClick={() => {}} />);
-  expect(screen.getByText('Conversation 1 - User1')).toBeInTheDocument();
-  expect(screen.getByText('Conversation 2 - User2')).toBeInTheDocument();
+  const conversation1 = screen.getByText('Conversation 1');
+  const author1 = screen.getByText('User1');
+  const conversation2 = screen.getByText('Conversation 2');
+  const author2 = screen.getByText('User2');
+  expect(conversation1).toBeInTheDocument();
+  expect(author1).toBeInTheDocument();
+  expect(conversation2).toBeInTheDocument();
+  expect(author2).toBeInTheDocument();
 });
 
 test('handles new message input and submission', async () => {

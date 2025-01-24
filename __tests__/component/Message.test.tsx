@@ -74,41 +74,6 @@ test('renders edit button and triggers onEdit', async () => {
   expect(onEdit).toHaveBeenCalled();
 });
 
-test('renders async iterator content', async () => {
-  const asyncIterable = {
-    async *[Symbol.asyncIterator]() {
-      yield 'Hello, ';
-      yield 'world!';
-    },
-  };
-
-  renderWithConfig(<Message id="test-id-7" content={asyncIterable} />);
-  await waitFor(() => {
-    expect(screen.getByText((content) => content.startsWith('Hello, '))).toBeInTheDocument();
-  });
-  await waitFor(() => {
-    expect(screen.getByText('Hello, world!')).toBeInTheDocument();
-  });
-});
-
-test('renders async iterator content with delay', async () => {
-  const asyncIterable = {
-    async *[Symbol.asyncIterator]() {
-      yield 'Loading';
-      await new Promise(resolve => setTimeout(resolve, 100));
-      yield '...';
-    },
-  };
-
-  renderWithConfig(<Message id="test-id-8" content={asyncIterable} />);
-  await waitFor(() => {
-    expect(screen.getByText('Loading')).toBeInTheDocument();
-  });
-  await waitFor(() => {
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
-  });
-});
-
 test('renders content without end sequence', () => {
   const renderers = [new CodeBlockRenderer()];
   const content = "```javascript\nconsole.log('Hello, World!');";

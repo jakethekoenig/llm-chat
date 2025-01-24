@@ -1,9 +1,11 @@
 // server/helpers/messageHelpers.ts
 import { Message } from '../database/models/Message';
 import 'openai/shims/node';
+import '@anthropic-ai/sdk/shims/node';
 import { OpenAI } from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 import { createLogger, transports, format } from 'winston';
-
+import * as messageHelpers from './messageHelpers';
 const logger = createLogger({
   level: 'error',
   format: format.combine(
@@ -15,7 +17,7 @@ const logger = createLogger({
   ]
 });
 
-export { logger }; // Removed generateCompletion to prevent duplicate export
+export { logger };
 
 export const addMessage = async (
   content: string,
@@ -32,6 +34,54 @@ export const addMessage = async (
   return message;
 };
 
+const isAnthropicModel = (model: string): boolean => {
+  const anthropicIdentifiers = ['claude', 'sonnet', 'haiku', 'opus'];
+  return anthropicIdentifiers.some(identifier => model.toLowerCase().includes(identifier));
+};
+
+const generateAnthropicCompletion = async (content: string, model: string, temperature: number) => {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new Error('Anthropic API key is not set');
+  }
+
+  const client = new Anthropic({
+    apiKey: apiKey,
+  });
+
+  const response = await client.messages.create({
+    model,
+    max_tokens: 1024,
+    temperature,
+    messages: [{ role: 'user', content }],
+  });
+
+  // Handle different content block types
+  const contentBlock = response.content[0];
+  if ('text' in contentBlock) {
+    return contentBlock.text;
+  } else {
+    logger.error('Unexpected content block type from Anthropic API');
+    throw new Error('Unexpected response format from Anthropic API');
+  }
+};
+
+const generateOpenAICompletion = async (content: string, model: string, temperature: number) => {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OpenAI API key is not set');
+  }
+
+  const openai = new OpenAI({ apiKey });
+  const response = await openai.chat.completions.create({
+    model,
+    messages: [{ role: "user", content }],
+    temperature,
+  });
+
+  return response.choices[0].message?.content || '';
+};
+
 export const generateCompletion = async (messageId: number, model: string, temperature: number) => {
   const parentMessage: Message | null = await Message.findByPk(messageId);
   if (!parentMessage) {
@@ -39,26 +89,15 @@ export const generateCompletion = async (messageId: number, model: string, tempe
   }
 
   const content = parentMessage.get('content') as string;
-
   if (!content) {
     throw new Error('Parent message has no content');
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OpenAI API key is not set');
-  }
-
-  const openai = new OpenAI({ apiKey: apiKey});
-
   try {
-    const response = await openai.chat.completions.create({
-      model,
-      messages: [{"role": "user", "content": content}],
-      temperature,
-    });
+    const completionContent = isAnthropicModel(model)
+      ? await generateAnthropicCompletion(content, model, temperature)
+      : await generateOpenAICompletion(content, model, temperature);
 
-    const completionContent = response.choices[0].message?.content || '';
     console.log('completionContent:', completionContent);
     const completionMessage: Message = await Message.create({
       content: completionContent,
