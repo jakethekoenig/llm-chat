@@ -142,6 +142,27 @@ describe('Server Tests', () => {
       expect(connection).toBeUndefined();
     });
 
+    it('should initialize database with options', async () => {
+      const options = {
+        database: ':memory:',
+        dialect: 'sqlite',
+        logging: false
+      };
+      const db = await sequelize.initializeDatabase(options);
+      expect(db).toBeDefined();
+      expect(db.sequelize).toBeDefined();
+      await db.sequelize.close();
+    });
+
+    it('should handle database initialization errors', async () => {
+      const badOptions = {
+        database: '/nonexistent/path',
+        dialect: 'sqlite',
+        logging: false
+      };
+      await expect(sequelize.initializeDatabase(badOptions)).rejects.toThrow();
+    });
+
     it('should handle database errors', async () => {
       const badSequelize = new Sequelize('sqlite::memory:', {
         storage: '/nonexistent/path',
