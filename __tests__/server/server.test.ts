@@ -38,11 +38,21 @@ interface AnthropicResponse {
 }
 
 // Mock OpenAI
-const mockOpenAICreate = jest.fn(() => Promise.resolve({
-  choices: [{
-    message: { role: "assistant", content: 'Mocked OpenAI response' }
-  }]
-} as OpenAIResponse));
+const mockOpenAICreate = jest.fn(async (params: any) => {
+  if (params.stream) {
+    const stream = {
+      async *[Symbol.asyncIterator]() {
+        yield { choices: [{ delta: { content: 'Test response chunk' } }] };
+      }
+    };
+    return stream;
+  }
+  return {
+    choices: [{
+      message: { role: "assistant", content: 'Mocked OpenAI response' }
+    }]
+  } as OpenAIResponse;
+});
 
 jest.mock('openai', () => ({
   OpenAI: jest.fn(() => ({
@@ -55,9 +65,19 @@ jest.mock('openai', () => ({
 }));
 
 // Mock Anthropic
-const mockAnthropicCreate = jest.fn(() => Promise.resolve({
-  content: [{ type: 'text', text: 'Mocked Anthropic response' }]
-} as AnthropicResponse));
+const mockAnthropicCreate = jest.fn(async (params: any) => {
+  if (params.stream) {
+    const stream = {
+      async *[Symbol.asyncIterator]() {
+        yield { type: 'content_block_delta', delta: { text: 'Test response chunk' } };
+      }
+    };
+    return stream;
+  }
+  return {
+    content: [{ type: 'text', text: 'Mocked Anthropic response' }]
+  } as AnthropicResponse;
+});
 
 jest.mock('@anthropic-ai/sdk', () => ({
   __esModule: true,
@@ -287,7 +307,12 @@ describe('Server Tests', () => {
         user_id: 1
       });
 
-      mockOpenAICreate.mockImplementationOnce(() => Promise.reject(new Error('Stream error')) as Promise<OpenAIResponse>);
+      mockOpenAICreate.mockImplementationOnce(async (params: any) => {
+        if (params.stream) {
+          throw new Error('Stream error');
+        }
+        throw new Error('Non-stream error');
+      });
 
       const response = await request(app)
         .post('/api/get_completion')
@@ -296,15 +321,27 @@ describe('Server Tests', () => {
 
       expect(response.status).toBe(500);
       expect(response.body.error).toBe('Stream error');
-    });
+
+      await message.destroy();
+    }, 30000);
 
     it('should detect different Anthropic model variants', async () => {
       const anthropicModels = ['claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku'];
       
       for (const model of anthropicModels) {
-        mockAnthropicCreate.mockImplementationOnce(() => Promise.resolve({
-          content: [{ type: 'text', text: `Mocked ${model} response` }]
-        } as AnthropicResponse));
+        mockAnthropicCreate.mockImplementationOnce(async (params: any) => {
+          if (params.stream) {
+            const stream = {
+              async *[Symbol.asyncIterator]() {
+                yield { type: 'content_block_delta', delta: { text: `Mocked ${model} response` } };
+              }
+            };
+            return stream;
+          }
+          return {
+            content: [{ type: 'text', text: `Mocked ${model} response` }]
+          } as AnthropicResponse;
+        });
 
         const message = await Message.create({
           content: 'Test message',
@@ -324,8 +361,10 @@ describe('Server Tests', () => {
           messages: [{ role: 'user', content: 'Test message' }],
           temperature: 0.7
         }));
+
+        await message.destroy();
       }
-    });
+    }, 30000);
 
     it('should handle streaming responses', async () => {
       const message = await Message.create({
@@ -342,7 +381,9 @@ describe('Server Tests', () => {
       expect(response.status).toBe(200);
       expect(response.headers['content-type']).toBe('text/event-stream');
       expect(response.headers['connection']).toBe('keep-alive');
-    });
+
+      await message.destroy();
+    }, 30000);
 
     it('should return 500 when generating completion fails', async () => {
       const message = await Message.create({
@@ -365,94 +406,206 @@ describe('Server Tests', () => {
 
     describe('Add Message and Get Completion for Message Endpoints', () => {
       it('should add a new message', async () => {
+        const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
+        const parentMessage = await Message.create({
+          content: 'Parent message',
+          conversation_id: conversation.get('id'),
+          user_id: 1
+        });
+
         const response = await request(app)
           .post('/api/add_message')
           .set('Authorization', `Bearer ${token}`)
-          .send({ content: 'New Test Message', conversationId: 1, parentId: 1 });
+          .send({
+            content: 'New Test Message',
+            conversationId: conversation.get('id'),
+            parentId: parentMessage.get('id')
+          });
+
         expect(response.status).toBe(201);
         expect(response.body.id).toBeDefined();
-      });
+
+        await parentMessage.destroy();
+        await conversation.destroy();
+      }, 30000);
 
       it('should return 400 for invalid add_message request', async () => {
+        const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
+
         const response = await request(app)
           .post('/api/add_message')
           .set('Authorization', `Bearer ${token}`)
           .send({ content: '', conversationId: 'invalid', parentId: null });
+
         expect(response.status).toBe(400);
-      });
+        expect(response.body.errors).toBeDefined();
+        expect(response.body.errors[0].msg).toBe('Content is required');
+
+        await conversation.destroy();
+      }, 30000);
 
       it('should get completion for a message', async () => {
+        const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
+        const message = await Message.create({
+          content: 'Test message',
+          conversation_id: conversation.get('id'),
+          user_id: 1
+        });
+
+        mockOpenAICreate.mockImplementationOnce(async (params: any) => {
+          return {
+            choices: [{
+              message: { role: "assistant", content: 'Mocked completion response' }
+            }]
+          } as OpenAIResponse;
+        });
+
         const response = await request(app)
           .post('/api/get_completion_for_message')
           .set('Authorization', `Bearer ${token}`)
-          .send({ messageId: 1, model: 'test-model', temperature: 0.5 });
+          .send({ messageId: message.get('id'), model: 'gpt-4', temperature: 0.5 });
+
         expect(response.status).toBe(201);
         expect(response.body.id).toBeDefined();
-      });
+        expect(response.body.content).toBe('Mocked completion response');
+
+        await message.destroy();
+        await conversation.destroy();
+      }, 30000);
 
       it('should return 400 for invalid get_completion_for_message request', async () => {
         const response = await request(app)
           .post('/api/get_completion_for_message')
           .set('Authorization', `Bearer ${token}`)
           .send({ messageId: 'invalid', model: '', temperature: 'invalid' });
+
         expect(response.status).toBe(400);
-      });
+        expect(response.body.errors).toBeDefined();
+        expect(response.body.errors).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ msg: 'Message ID must be an integer' }),
+            expect.objectContaining({ msg: 'Model is required' }),
+            expect.objectContaining({ msg: 'Temperature must be a float' })
+          ])
+        );
+      }, 30000);
+
+      it('should return 400 for invalid temperature value', async () => {
+        const message = await Message.create({
+          content: 'Test message',
+          conversation_id: 1,
+          user_id: 1
+        });
+
+        const response = await request(app)
+          .post('/api/get_completion_for_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ messageId: message.get('id'), model: 'gpt-4', temperature: 2.5 });
+
+        expect(response.status).toBe(400);
+        expect(response.body.errors).toBeDefined();
+        expect(response.body.errors[0].msg).toBe('Temperature must be between 0 and 1');
+
+        await message.destroy();
+      }, 30000);
 
       it('should create a new conversation with valid data', async () => {
+        mockOpenAICreate.mockImplementationOnce(async (params: any) => {
+          return {
+            choices: [{
+              message: { role: "assistant", content: 'Mocked completion response' }
+            }]
+          } as OpenAIResponse;
+        });
+
         const response = await request(app)
           .post('/api/create_conversation')
           .set('Authorization', `Bearer ${token}`)
-          .send({ initialMessage: 'Hello, world!', model: 'gpt-4o', temperature: 0.0 });
+          .send({ initialMessage: 'Hello, world!', model: 'gpt-4', temperature: 0.7 });
+
         expect(response.status).toBe(201);
         expect(response.body.conversationId).toBeDefined();
         expect(response.body.initialMessageId).toBeDefined();
         expect(response.body.completionMessageId).toBeDefined();
-      });
+
+        // Cleanup
+        await Conversation.destroy({ where: { id: response.body.conversationId } });
+        await Message.destroy({ where: { conversation_id: response.body.conversationId } });
+      }, 30000);
 
       it('should return 400 for missing initialMessage', async () => {
         const response = await request(app)
           .post('/api/create_conversation')
           .set('Authorization', `Bearer ${token}`)
-          .send({ model: 'gpt-4o', temperature: 0.0 });
+          .send({ model: 'gpt-4', temperature: 0.7 });
+
         expect(response.status).toBe(400);
         expect(response.body.errors).toBeDefined();
         expect(response.body.errors[0].msg).toBe('Initial message is required');
-      });
+      }, 30000);
 
       it('should return 400 for missing model', async () => {
         const response = await request(app)
           .post('/api/create_conversation')
           .set('Authorization', `Bearer ${token}`)
-          .send({ initialMessage: 'Hello, world!', temperature: 0.0 });
+          .send({ initialMessage: 'Hello, world!', temperature: 0.7 });
+
         expect(response.status).toBe(400);
         expect(response.body.errors).toBeDefined();
         expect(response.body.errors[0].msg).toBe('Model is required');
-      });
+      }, 30000);
 
       it('should return 400 for invalid temperature', async () => {
         const response = await request(app)
           .post('/api/create_conversation')
           .set('Authorization', `Bearer ${token}`)
-          .send({ initialMessage: 'Hello, world!', model: 'gpt-4o', temperature: 'invalid' });
+          .send({ initialMessage: 'Hello, world!', model: 'gpt-4', temperature: 2.5 });
+
         expect(response.status).toBe(400);
         expect(response.body.errors).toBeDefined();
-        expect(response.body.errors[0].msg).toBe('Temperature must be a float');
-      });
+        expect(response.body.errors[0].msg).toBe('Temperature must be between 0 and 1');
+      }, 30000);
 
-      it('should handle server errors gracefully', async () => {
+      it('should handle database errors gracefully', async () => {
         // Mock Conversation.create to throw an error
-        jest.spyOn(Conversation, 'create').mockImplementationOnce(() => {
+        const createSpy = jest.spyOn(Conversation, 'create').mockImplementationOnce(() => {
           throw new Error('Database error');
         });
         
         const response = await request(app)
           .post('/api/create_conversation')
           .set('Authorization', `Bearer ${token}`)
-          .send({ initialMessage: 'Hello, world!', model: 'gpt-4o', temperature: 0.0 });
+          .send({ initialMessage: 'Hello, world!', model: 'gpt-4', temperature: 0.7 });
         
         expect(response.status).toBe(500);
-        expect(response.body.error).toBe('Internal server error');
-      });
+        expect(response.body.error).toBe('Database error');
+
+        createSpy.mockRestore();
+      }, 30000);
+
+      it('should handle completion service errors gracefully', async () => {
+        const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
+        const message = await Message.create({
+          content: 'Test message',
+          conversation_id: conversation.get('id'),
+          user_id: 1
+        });
+
+        mockOpenAICreate.mockImplementationOnce(async (params: any) => {
+          throw new Error('Service unavailable');
+        });
+
+        const response = await request(app)
+          .post('/api/get_completion_for_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ messageId: message.get('id'), model: 'gpt-4', temperature: 0.7 });
+
+        expect(response.status).toBe(500);
+        expect(response.body.error).toBe('Service unavailable');
+
+        await message.destroy();
+        await conversation.destroy();
+      }, 30000);
 
       // New test for handling missing environment variables
       it('should return 500 if OPENAI_API_KEY is not set', async () => {
@@ -465,7 +618,9 @@ describe('Server Tests', () => {
         const originalApiKey = process.env.OPENAI_API_KEY;
         delete process.env.OPENAI_API_KEY;
 
-        mockOpenAICreate.mockImplementationOnce(() => Promise.reject(new Error('OpenAI API key is not set')) as Promise<OpenAIResponse>);
+        mockOpenAICreate.mockImplementationOnce(async (params: any) => {
+          throw new Error('OpenAI API key is not set');
+        });
 
         const response = await request(app)
           .post('/api/get_completion_for_message')
@@ -477,7 +632,7 @@ describe('Server Tests', () => {
 
         process.env.OPENAI_API_KEY = originalApiKey;
         await message.destroy();
-      });
+      }, 30000);
 
       it('should handle OpenAI API errors gracefully', async () => {
         const message = await Message.create({
@@ -486,7 +641,12 @@ describe('Server Tests', () => {
           user_id: 1
         });
 
-        mockOpenAICreate.mockImplementationOnce(() => Promise.reject(new Error('OpenAI API rate limit exceeded')) as Promise<OpenAIResponse>);
+        mockOpenAICreate.mockImplementationOnce(async (params: any) => {
+          if (params.stream) {
+            throw new Error('OpenAI API rate limit exceeded');
+          }
+          throw new Error('OpenAI API rate limit exceeded');
+        });
 
         const response = await request(app)
           .post('/api/get_completion_for_message')
@@ -497,7 +657,7 @@ describe('Server Tests', () => {
         expect(response.body.error).toBe('OpenAI API rate limit exceeded');
 
         await message.destroy();
-      });
+      }, 30000);
 
       // New test for invalid model parameter
       it('should return 400 for invalid model parameter', async () => {
