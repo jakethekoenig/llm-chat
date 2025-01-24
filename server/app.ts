@@ -334,6 +334,18 @@ app.get('/api/conversations', authenticateToken, async (req: express.Request, re
 app.get('/api/conversations/:conversationId/messages', authenticateToken, async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   try {
     const { conversationId } = req.params;
+    
+    // Validate conversation ID format
+    if (isNaN(parseInt(conversationId))) {
+      console.warn({
+        timestamp: new Date().toISOString(),
+        event: 'validation_error',
+        error: 'Invalid conversation ID format',
+        conversationId
+      });
+      return res.status(400).json({ error: 'Invalid conversation ID' });
+    }
+
     const messages = await Message.findAll({
       where: { conversation_id: conversationId }
     });
