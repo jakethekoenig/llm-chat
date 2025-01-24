@@ -27,12 +27,15 @@ const NewMessage: React.FC<NewMessageProps> = ({ conversationId, parentId, onMes
         'gpt-4', // TODO: Make model configurable
         0.7, // TODO: Make temperature configurable
         {
-          onChunk: ({ chunk }) => {
+          onChunk: ({ chunk, messageId }) => {
             setStreamingContent(prev => prev + chunk);
           },
           onDone: ({ messageId }) => {
+            if (onMessageComplete) {
+              onMessageComplete(messageId);
+            }
             setLoading(false);
-            onMessageComplete?.(messageId);
+            setInputValue('');
           },
           onError: (error) => {
             setError(error.message);
@@ -43,12 +46,11 @@ const NewMessage: React.FC<NewMessageProps> = ({ conversationId, parentId, onMes
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An error occurred');
       setLoading(false);
-    } finally {
       setInputValue('');
     }
   }, [inputValue, parentId, onMessageComplete]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
@@ -61,7 +63,7 @@ const NewMessage: React.FC<NewMessageProps> = ({ conversationId, parentId, onMes
         <textarea
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          onKeyPress={handleKeyPress}
+          onKeyDown={handleKeyDown}
           placeholder="Type your message... (Press Enter to send, Shift+Enter for new line)"
           style={{
             width: '100%',

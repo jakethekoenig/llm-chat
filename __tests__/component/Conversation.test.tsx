@@ -4,21 +4,27 @@ import '@testing-library/jest-dom';
 import Conversation from '../../chat-components/Conversation';
 import ConversationList from '../../chat-components/ConversationList';
 
-jest.mock('openai', () => {
-  return {
-    OpenAI: jest.fn().mockImplementation(() => ({
-      chat: {
-        completions: {
-          create: jest.fn().mockResolvedValue({
-            choices: [{ message: { role: "assistant", content: 'Mocked completion response' }}]
-          })
-        }
-      }
-    }))
-  };
+import { fetchStreamingCompletion, StreamingOptions } from '../../site/utils/api';
+
+const mockFetchStreamingCompletion = jest.fn(async (parentId, model, temperature, options) => {
+  // Simulate streaming response
+  options.onChunk?.({ chunk: 'Test response chunk', messageId: 1 });
+  options.onDone?.({ messageId: 1 });
+  return Promise.resolve();
 });
 
+jest.mock('../../site/utils/api', () => ({
+  fetchStreamingCompletion: (...args: Parameters<typeof mockFetchStreamingCompletion>) => 
+    mockFetchStreamingCompletion(...args)
+}));
+
 const mockOnMessageComplete = jest.fn();
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockFetchStreamingCompletion.mockClear();
+  mockOnMessageComplete.mockClear();
+});
 
 const messages = [
   { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
@@ -166,7 +172,9 @@ test('handles new message input and submission', async () => {
   
   // Wait for streaming to complete
   await waitFor(() => {
-    expect(mockOnMessageComplete).toHaveBeenCalled();
+    expect(screen.getByText('Test response chunk')).toBeInTheDocument();
+    expect(mockOnMessageComplete).toHaveBeenCalledWith(1);
+    expect(input).toHaveValue('');
   });
 });
 
@@ -180,13 +188,17 @@ test('submits a new message and updates the conversation', async () => {
     />
   );
   
-  fireEvent.change(screen.getByPlaceholderText('Type your message... (Press Enter to send, Shift+Enter for new line)'), {
+  const input = screen.getByPlaceholderText('Type your message... (Press Enter to send, Shift+Enter for new line)');
+  fireEvent.change(input, {
     target: { value: 'New message' }
   });
   fireEvent.click(screen.getByText('Send'));
   
+  // Wait for streaming to complete
   await waitFor(() => {
-    expect(mockOnMessageComplete).toHaveBeenCalled();
+    expect(screen.getByText('Test response chunk')).toBeInTheDocument();
+    expect(mockOnMessageComplete).toHaveBeenCalledWith(1);
+    expect(input).toHaveValue('');
   });
 });
 
@@ -232,7 +244,7 @@ test('passes isAuthor prop correctly to Message components', () => {
   expect(user2Message).toHaveStyle('background-color: #fff');
 });
 
-test('renders NewMessage component within Conversation', () => {
+test('renders NewMessage component within Conversation', async () => {
   render(
     <Conversation 
       messages={messages} 
@@ -246,4 +258,22 @@ test('renders NewMessage component within Conversation', () => {
 
   expect(newMessageInput).toBeInTheDocument();
   expect(sendButton).toBeInTheDocument();
+
+  // Test Enter key submission
+  fireEvent.change(newMessageInput, { target: { value: 'Test message' } });
+  fireEvent.keyDown(newMessageInput, { key: 'Enter', code: 'Enter' });
+
+  // Wait for streaming to complete
+  await waitFor(() => {
+    expect(screen.getByText('Test response chunk')).toBeInTheDocument();
+    expect(mockOnMessageComplete).toHaveBeenCalledWith(1);
+    expect(newMessageInput).toHaveValue('');
+  });
+
+  // Test that Shift+Enter doesn't submit
+  fireEvent.change(newMessageInput, { target: { value: 'Test message 2' } });
+  fireEvent.keyDown(newMessageInput, { key: 'Enter', code: 'Enter', shiftKey: true });
+
+  expect(newMessageInput).toHaveValue('Test message 2');
+  expect(mockOnMessageComplete).toHaveBeenCalledTimes(1); // Should not have been called again
 });

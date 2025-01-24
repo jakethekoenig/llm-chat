@@ -230,9 +230,10 @@ export const generateCompletion = async (messageId: number, model: string, tempe
   } catch (error) {
     if (error instanceof Error) {
       logger.error('Error generating completion:', { message: error.message });
+      throw error;
     } else {
       logger.error('Error generating completion:', { error });
+      throw new Error('Failed to generate completion');
     }
-    throw new Error('Failed to generate completion');
   }
 };

@@ -243,7 +243,7 @@ describe('Server Tests', () => {
         .send({ messageId: 1, model: 'claude-3-opus', temperature: 0.7 });
       
       expect(response.status).toBe(500);
-      expect(response.body.error).toBe('Internal server error');
+      expect(response.body.error).toBe('Anthropic API key is not set');
 
       // Restore API key
       process.env.ANTHROPIC_API_KEY = originalKey;
@@ -412,7 +412,7 @@ describe('Server Tests', () => {
           .send({ messageId: 9999, model: 'test-model', temperature: 0.5 });
 
         expect(invalidMessageResponse.status).toBe(500);
-        expect(invalidMessageResponse.body.error).toBe('Internal server error');
+        expect(invalidMessageResponse.body.error).toBe('Parent message with ID 9999 not found');
       });
 
       it('should return 500 when generating completion with non-existent messageId', async () => {
@@ -422,7 +422,7 @@ describe('Server Tests', () => {
           .send({ messageId: 9999, model: 'test-model', temperature: 0.5 });
 
         expect(invalidMessageResponse.status).toBe(500);
-        expect(invalidMessageResponse.body.error).toBe('Internal server error');
+        expect(invalidMessageResponse.body.error).toBe('Parent message with ID 9999 not found');
       });
 
       // New test for invalid temperature parameter

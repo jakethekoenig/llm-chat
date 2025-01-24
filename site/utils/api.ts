@@ -4,7 +4,7 @@ interface FetchOptions extends RequestInit {
   requiresAuth?: boolean;
 }
 
-interface StreamingOptions {
+export interface StreamingOptions {
   onChunk?: (chunk: { chunk: string; messageId: number }) => void;
   onDone?: (data: { messageId: number }) => void;
   onError?: (error: Error) => void;
