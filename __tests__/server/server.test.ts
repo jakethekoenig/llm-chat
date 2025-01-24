@@ -277,9 +277,9 @@ describe('Server Tests', () => {
       expect(Message.associations.user).toBeDefined();
 
       // Test model association functions
-      expect(typeof Message.associate).toBe('function');
-      expect(typeof Conversation.associate).toBe('function');
-      expect(typeof User.associate).toBe('function');
+      expect(typeof (Message as any).associate).toBe('function');
+      expect(typeof (Conversation as any).associate).toBe('function');
+      expect(typeof (User as any).associate).toBe('function');
 
       // Test model initialization
       await sequelize.sequelize.sync();
