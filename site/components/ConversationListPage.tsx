@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import '../App.css';
 import ConversationList from '../../chat-components/ConversationList';
 import { Message as MessageType } from '../../chat-components/types/Message';
+import { fetchWithAuth } from '../utils/api';
 
 const ConversationListPage: React.FC = () => {
   const [conversations, setConversations] = useState<MessageType[]>([]);
@@ -14,11 +15,7 @@ const ConversationListPage: React.FC = () => {
     const fetchConversations = async () => {
       try {
         setIsLoadingConversations(true);
-        const response = await fetch('/api/conversations', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
+        const response = await fetchWithAuth('/api/conversations');
         if (!response.ok) {
           throw new Error('Failed to fetch conversations');
         }
@@ -69,9 +66,9 @@ const ConversationListPage: React.FC = () => {
           New Conversation
         </button>
       </div>
-      {error && <p className="error-message">{error}</p>}
+      {error && <div className="error-message">{error}</div>}
       {isLoadingConversations ? (
-        <p>Loading conversations...</p>
+        <div className="loading-message">Loading conversations...</div>
       ) : (
         <ConversationList conversations={conversations} onConversationClick={handleConversationClick} />
       )}

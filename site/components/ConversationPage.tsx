@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Conversation from '../../chat-components/Conversation';
 import NewMessage from '../../chat-components/NewMessage';
 import { Message as MessageType } from '../../chat-components/types/Message';
+import { fetchWithAuth } from '../utils/api';
 import '../App.css';
 
 function snakeToCamelCase(obj) {
@@ -24,19 +25,32 @@ function snakeToCamelCase(obj) {
 const ConversationPage: React.FC = () => {
   const { conversationId } = useParams<{ conversationId: string }>();
   const [messages, setMessages] = useState<MessageType[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (conversationId === 'new') return;
+    if (conversationId === 'new') {
+      setIsLoading(false);
+      return;
+    }
 
     const fetchMessages = async () => {
-      const response = await fetch(`/api/conversations/${conversationId}/messages`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await fetchWithAuth(`/api/conversations/${conversationId}/messages`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch messages');
         }
-      });
-      const data = await response.json();
-      setMessages(snakeToCamelCase(data));
+        const data = await response.json();
+        setMessages(snakeToCamelCase(data));
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+        setError('Failed to load messages. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
     };
     fetchMessages();
   }, [conversationId]);
@@ -45,11 +59,11 @@ const ConversationPage: React.FC = () => {
     const mostRecentMessageId = messages.length > 0 ? messages[messages.length - 1].id : null;
     
     try {
-      const response = await fetch('/api/add_message', {
+      setError(null);
+      const response = await fetchWithAuth('/api/add_message', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
           content: message,
@@ -60,6 +74,10 @@ const ConversationPage: React.FC = () => {
           getCompletion: options.getCompletion
         })
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to send message');
+      }
 
       const data = await response.json();
 
@@ -79,11 +97,10 @@ const ConversationPage: React.FC = () => {
 
       if (options.getCompletion) {
         // Return a stream for the completion
-        const completionResponse = await fetch('/api/get_completion_for_message', {
+        const completionResponse = await fetchWithAuth('/api/get_completion_for_message', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
           },
           body: JSON.stringify({
             messageId: data.id,
@@ -92,12 +109,17 @@ const ConversationPage: React.FC = () => {
           })
         });
 
+        if (!completionResponse.ok) {
+          throw new Error('Failed to get completion');
+        }
+
         return completionResponse.body;
       }
 
       return new ReadableStream();
     } catch (error) {
       console.error('Error submitting message:', error);
+      setError('Failed to send message. Please try again.');
       throw error;
     }
   };
@@ -130,7 +152,10 @@ const ConversationPage: React.FC = () => {
           </button>
         )}
       </div>
-      {conversationId === 'new' ? (
+      {error && <div className="error-message">{error}</div>}
+      {isLoading ? (
+        <div className="loading-message">Loading messages...</div>
+      ) : conversationId === 'new' ? (
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
           <NewMessage onSubmit={handleNewMessageSubmit} />
         </div>

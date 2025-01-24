@@ -1,13 +1,24 @@
 import * as React from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, Navigate } from 'react-router-dom';
 import MessageDemo from './components/MessageDemo';
 import SignIn from './components/SignIn';
 import Register from './components/Register';
 import Header from './components/Header';
 import ConversationPage from './components/ConversationPage';
 import ConversationListPage from './components/ConversationListPage';
+import { AuthProvider, useAuth } from './components/AuthContext';
 import './App.css';
 import { MathJaxContext } from 'better-react-mathjax';
+
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated } = useAuth();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/signin" replace />;
+  }
+
+  return <>{children}</>;
+};
 
 const mathjaxConfig = {
   loader: { load: ["[tex]/html"] },
@@ -24,11 +35,18 @@ const mathjaxConfig = {
   }
 };
 
-const App = () => {
+const AppContent = () => {
   const [isSidePaneOpen, setIsSidePaneOpen] = React.useState(true);
   const toggleSidePane = () => { setIsSidePaneOpen(!isSidePaneOpen); };
   const location = window.location.pathname;
   const isNewConversation = location === '/conversations/new';
+  const auth = useAuth();
+
+  React.useEffect(() => {
+    import('./utils/api').then(({ setAuthInstance }) => {
+      setAuthInstance(auth);
+    });
+  }, [auth]);
 
   return (
     <MathJaxContext config={mathjaxConfig as any}>
@@ -37,7 +55,9 @@ const App = () => {
         <div className="main-content">
           {!isNewConversation && (
             <aside className={`side-pane ${isSidePaneOpen ? 'open' : 'closed'}`}>
-              <ConversationListPage />
+              <ProtectedRoute>
+                <ConversationListPage />
+              </ProtectedRoute>
             </aside>
           )}
           <main className={`page-content ${isNewConversation ? 'full-width' : ''}`}>
@@ -46,13 +66,28 @@ const App = () => {
               <Route path="/signin" element={<SignIn />} />
               <Route path="/register" element={<Register />} />
               <Route path="/showcase" element={<MessageDemo />} />
-              <Route path="/conversations/:conversationId" element={<ConversationPage />} />
+              <Route 
+                path="/conversations/:conversationId" 
+                element={
+                  <ProtectedRoute>
+                    <ConversationPage />
+                  </ProtectedRoute>
+                } 
+              />
               <Route path="*" element={<div>Page Not Found</div>} />
             </Routes>
           </main>
         </div>
       </div>
     </MathJaxContext>
+  );
+};
+
+const App = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 };
 export default App;
