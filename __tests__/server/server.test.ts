@@ -77,9 +77,22 @@ jest.mock('@anthropic-ai/sdk', () => ({
   __esModule: true,
   default: jest.fn(() => ({
     messages: {
-      create: jest.fn().mockImplementation(() => Promise.resolve({
-        content: [{ type: 'text', text: 'Mocked Anthropic response' }]
-      } as any))
+      create: jest.fn().mockImplementation((params: any) => {
+        try {
+          // Validate required parameters
+          if (!params.model) {
+            throw new Error('Model is required');
+          }
+
+          // Return successful mock response
+          return Promise.resolve({
+            content: [{ type: 'text', text: 'Mocked Anthropic response' }]
+          } as any);
+        } catch (error) {
+          // Ensure we're returning a rejected promise for error cases
+          return Promise.reject(error);
+        }
+      })
     }
   }))
 }));

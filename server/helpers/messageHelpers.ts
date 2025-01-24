@@ -179,6 +179,8 @@ export const generateCompletion = async (messageId: number, model: string, tempe
         model,
         temperature
       });
+      // Re-throw the original error to preserve the message
+      throw error;
     } else {
       logger.error('Unknown error in generateCompletion:', { 
         error,
@@ -186,7 +188,7 @@ export const generateCompletion = async (messageId: number, model: string, tempe
         model,
         temperature
       });
+      throw new Error('Failed to generate completion');
     }
-    throw new Error('Failed to generate completion');
   }
 };
