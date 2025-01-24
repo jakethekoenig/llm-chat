@@ -167,9 +167,10 @@ app.get('/api/conversations', authenticateToken, async (req: express.Request, re
   try {
     const userId = (req as any).user.id;
     const conversations = await Conversation.findAll({
-      where: { user_id: userId }, // Ensure the user_id condition is applied
+      where: { user_id: userId },
       include: [{
         model: Message,
+        as: 'messages',
         required: false
       }]
     });
