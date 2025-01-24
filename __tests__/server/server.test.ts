@@ -29,39 +29,36 @@ import { logger } from '../../server/helpers/messageHelpers';
 import * as messageHelpers from '../../server/helpers/messageHelpers';
 import { jest } from '@jest/globals';
 
-// Define the type for our mock parameters
-type MockCompletionParams = {
-  model: string;
-  messages: Array<{ role: string; content: string }>;
-  temperature?: number;
-};
-
 // Mock OpenAI
-jest.mock('openai', () => ({
-  OpenAI: jest.fn(() => ({
-    chat: {
-      completions: {
-        create: jest.fn().mockImplementation((params: MockCompletionParams) => {
-          // Validate that messages is an array and has at least one message
-          if (!Array.isArray(params.messages) || params.messages.length === 0) {
-            throw new Error('Invalid messages format');
-          }
-          return Promise.resolve({
-            id: 'mock-completion-id',
-            object: 'chat.completion',
-            created: Date.now(),
-            model: params.model,
-            choices: [{
-              index: 0,
-              message: { role: "assistant", content: 'Mocked OpenAI response' },
-              finish_reason: 'stop'
-            }]
-          });
-        })
-      }
+jest.mock('openai', () => {
+  const mockCreate = jest.fn((params: any) => {
+    // Validate that messages is an array and has at least one message
+    if (!Array.isArray(params.messages) || params.messages.length === 0) {
+      throw new Error('Invalid messages format');
     }
-  }))
-}));
+    return Promise.resolve({
+      id: 'mock-completion-id',
+      object: 'chat.completion',
+      created: Date.now(),
+      model: params.model,
+      choices: [{
+        index: 0,
+        message: { role: "assistant", content: 'Mocked OpenAI response' },
+        finish_reason: 'stop'
+      }]
+    });
+  });
+
+  return {
+    OpenAI: jest.fn().mockImplementation(() => ({
+      chat: {
+        completions: {
+          create: mockCreate
+        }
+      }
+    }))
+  };
+});
 
 // Mock Anthropic
 jest.mock('@anthropic-ai/sdk', () => ({
