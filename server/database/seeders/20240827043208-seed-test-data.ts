@@ -4,6 +4,16 @@ import bcrypt from 'bcrypt';
 import { User, Conversation, Message } from '../models';
 import { QueryInterface, Sequelize } from 'sequelize';
 
+// Export test data IDs for use in tests
+export let testData: {
+  firstMessageId?: number;
+  assistantResponseId?: number;
+  secondMessageId?: number;
+  conversationIds: number[];
+} = {
+  conversationIds: []
+};
+
 export async function up(queryInterface: QueryInterface, sequelize: Sequelize) {
   // Create Users
   const hashedPassword1 = await bcrypt.hash('password1', 10);
@@ -19,6 +29,8 @@ export async function up(queryInterface: QueryInterface, sequelize: Sequelize) {
     { title: 'Sample Conversation 2', user_id: 2, createdAt: new Date(), updatedAt: new Date() },
   ]);
 
+  testData.conversationIds = conversations.map(conv => conv.get('id') as number);
+
   // Create Messages sequentially to get proper IDs
   const firstMessage = await Message.create({ 
     content: 'Sample Message 1', 
@@ -27,6 +39,7 @@ export async function up(queryInterface: QueryInterface, sequelize: Sequelize) {
     createdAt: new Date(), 
     updatedAt: new Date() 
   });
+  testData.firstMessageId = firstMessage.get('id') as number;
 
   const assistantResponse = await Message.create({ 
     content: 'Assistant Response 1', 
@@ -38,6 +51,7 @@ export async function up(queryInterface: QueryInterface, sequelize: Sequelize) {
     createdAt: new Date(Date.now() + 1000), 
     updatedAt: new Date(Date.now() + 1000) 
   });
+  testData.assistantResponseId = assistantResponse.get('id') as number;
 
   const secondMessage = await Message.create({ 
     content: 'Sample Message 2', 
@@ -46,9 +60,7 @@ export async function up(queryInterface: QueryInterface, sequelize: Sequelize) {
     createdAt: new Date(), 
     updatedAt: new Date() 
   });
-
-  // Store all messages for reference
-  const messages = [firstMessage, assistantResponse, secondMessage];
+  testData.secondMessageId = secondMessage.get('id') as number;
 }
 
 export async function down(queryInterface: QueryInterface, sequelize: Sequelize) {

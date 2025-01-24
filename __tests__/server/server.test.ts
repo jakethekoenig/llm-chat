@@ -2,7 +2,7 @@ import request from 'supertest';
 import express from 'express';
 import app, { authenticateToken } from '../../server/app';
 import { sequelize } from '../../server/database/models';
-import { up, down } from '../../server/database/seeders/20240827043208-seed-test-data';
+import { up, down, testData } from '../../server/database/seeders/20240827043208-seed-test-data';
 import { Conversation } from '../../server/database/models/Conversation';
 
 const obtainAuthToken = async () => {
@@ -144,7 +144,7 @@ describe('Server Tests', () => {
     const response = await request(app)
       .post('/api/get_completion_for_message')
       .set('Authorization', `Bearer ${token}`)
-      .send({ messageId: 1, model: 'test-model', temperature: 0.5 });
+      .send({ messageId: testData.firstMessageId, model: 'test-model', temperature: 0.5 });
     expect(response.status).toBe(201);
     expect(response.body.id).toBeDefined();
     expect(response.body.content).toBe('Mocked completion response');
@@ -204,7 +204,7 @@ describe('Server Tests', () => {
       const response = await request(app)
         .post('/api/get_completion_for_message')
         .set('Authorization', `Bearer ${token}`)
-        .send({ messageId: 1, model: 'gpt-4', temperature: 0.7 });
+        .send({ messageId: testData.firstMessageId, model: 'gpt-4', temperature: 0.7 });
       expect(response.status).toBe(201);
       expect(response.body.id).toBeDefined();
       expect(response.body.content).toBe('Mocked completion response');
@@ -229,7 +229,11 @@ describe('Server Tests', () => {
         const response = await request(app)
           .post('/api/add_message')
           .set('Authorization', `Bearer ${token}`)
-          .send({ content: 'New Test Message', conversationId: 1, parentId: 1 });
+          .send({ 
+            content: 'New Test Message', 
+            conversationId: testData.conversationIds[0], 
+            parentId: testData.firstMessageId 
+          });
         expect(response.status).toBe(201);
         expect(response.body.id).toBeDefined();
       });
@@ -246,7 +250,7 @@ describe('Server Tests', () => {
         const response = await request(app)
           .post('/api/get_completion_for_message')
           .set('Authorization', `Bearer ${token}`)
-          .send({ messageId: 1, model: 'test-model', temperature: 0.5 });
+          .send({ messageId: testData.firstMessageId, model: 'test-model', temperature: 0.5 });
         expect(response.status).toBe(201);
         expect(response.body.id).toBeDefined();
       });
