@@ -192,17 +192,22 @@ test('renders NewMessage component within Conversation with model and temperatur
   expect(temperatureSelect).toHaveValue('0.5');
 });
 
-test('handles sending message without completion', async () => {
+test('handles sending message without completion and dropdown interactions', async () => {
   render(<Conversation messages={messages} author="User" onSubmit={mockOnSubmit} />);
   const newMessageInput = screen.getByPlaceholderText('Type your message...');
   const sendButton = screen.getByText('Send');
 
-  // Open send options dropdown
+  // Test dropdown opening and closing
   fireEvent.contextMenu(sendButton);
   const sendWithoutCompletionButton = screen.getByText('Send without completion');
   expect(sendWithoutCompletionButton).toBeInTheDocument();
 
-  // Send message without completion
+  // Test closing dropdown by clicking outside
+  fireEvent.click(document.body);
+  expect(screen.queryByText('Send without completion')).not.toBeInTheDocument();
+
+  // Test sending without completion
+  fireEvent.contextMenu(sendButton);
   fireEvent.change(newMessageInput, { target: { value: 'Test without completion' } });
   fireEvent.click(sendWithoutCompletionButton);
 
@@ -211,4 +216,55 @@ test('handles sending message without completion', async () => {
     temperature: 0.7,
     getCompletion: false
   }));
+
+  // Verify input is cleared after sending
+  expect(newMessageInput).toHaveValue('');
+});
+
+test('handles model and temperature changes with validation', async () => {
+  render(<Conversation messages={messages} author="User" onSubmit={mockOnSubmit} />);
+  const modelSelect = screen.getByLabelText('model');
+  const temperatureSelect = screen.getByLabelText('temperature');
+  const newMessageInput = screen.getByPlaceholderText('Type your message...');
+  const sendButton = screen.getByText('Send');
+
+  // Test model change
+  fireEvent.change(modelSelect, { target: { value: 'gpt-3.5-turbo' } });
+  expect(modelSelect).toHaveValue('gpt-3.5-turbo');
+
+  // Test temperature change
+  fireEvent.change(temperatureSelect, { target: { value: '0.5' } });
+  expect(temperatureSelect).toHaveValue('0.5');
+
+  // Test sending with changed options
+  fireEvent.change(newMessageInput, { target: { value: 'Test with options' } });
+  fireEvent.click(sendButton);
+
+  await waitFor(() => expect(mockOnSubmit).toHaveBeenCalledWith('Test with options', {
+    model: 'gpt-3.5-turbo',
+    temperature: 0.5,
+    getCompletion: true
+  }));
+});
+
+test('handles loading state during message submission', async () => {
+  render(<Conversation messages={messages} author="User" onSubmit={mockOnSubmit} />);
+  const newMessageInput = screen.getByPlaceholderText('Type your message...');
+  const sendButton = screen.getByText('Send');
+
+  // Start submission
+  fireEvent.change(newMessageInput, { target: { value: 'Test loading' } });
+  fireEvent.click(sendButton);
+
+  // Verify loading state
+  expect(sendButton).toBeDisabled();
+  expect(newMessageInput).toBeDisabled();
+  expect(screen.getByText('Sending...')).toBeInTheDocument();
+
+  // Wait for submission to complete
+  await waitFor(() => {
+    expect(sendButton).not.toBeDisabled();
+    expect(newMessageInput).not.toBeDisabled();
+    expect(screen.getByText('Send')).toBeInTheDocument();
+  });
 });

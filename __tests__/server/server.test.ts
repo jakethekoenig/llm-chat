@@ -278,13 +278,61 @@ describe('Server Tests', () => {
     });
 
     describe('Add Message and Get Completion for Message Endpoints', () => {
-      it('should add a new message', async () => {
+      it('should add a new message with model options and create conversation', async () => {
         const response = await request(app)
           .post('/api/add_message')
           .set('Authorization', `Bearer ${token}`)
-          .send({ content: 'New Test Message', conversationId: 1, parentId: 1 });
+          .send({
+            content: 'New Test Message',
+            conversationId: null,
+            model: 'gpt-4',
+            temperature: 0.7,
+            getCompletion: true
+          });
         expect(response.status).toBe(201);
         expect(response.body.id).toBeDefined();
+        expect(response.body.conversationId).toBeDefined();
+        expect(response.body.completionId).toBeDefined();
+
+        // Verify the conversation was created
+        const conversationResponse = await request(app)
+          .get(`/api/conversations/${response.body.conversationId}/messages`)
+          .set('Authorization', `Bearer ${token}`);
+        expect(conversationResponse.status).toBe(200);
+        expect(conversationResponse.body).toBeInstanceOf(Array);
+        expect(conversationResponse.body.length).toBeGreaterThan(0);
+      });
+
+      it('should add a message without requesting completion', async () => {
+        const response = await request(app)
+          .post('/api/add_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({
+            content: 'Message without completion',
+            conversationId: 1,
+            model: 'gpt-4',
+            temperature: 0.7,
+            getCompletion: false
+          });
+        expect(response.status).toBe(201);
+        expect(response.body.id).toBeDefined();
+        expect(response.body.conversationId).toBeDefined();
+        expect(response.body.completionId).toBeUndefined();
+      });
+
+      it('should handle invalid model and temperature values', async () => {
+        const response = await request(app)
+          .post('/api/add_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({
+            content: 'Test message',
+            conversationId: 1,
+            model: '',  // Invalid model
+            temperature: 2.0,  // Invalid temperature
+            getCompletion: true
+          });
+        expect(response.status).toBe(400);
+        expect(response.body.errors).toBeDefined();
       });
 
       it('should return 400 for invalid add_message request', async () => {
