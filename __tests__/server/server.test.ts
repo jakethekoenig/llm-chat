@@ -276,21 +276,23 @@ describe('Server Tests', () => {
       expect(Message.associations.children).toBeDefined();
       expect(Message.associations.user).toBeDefined();
 
-      // Test model association functions
-      expect(typeof (Message as any).associate).toBe('function');
-      expect(typeof (Conversation as any).associate).toBe('function');
-      expect(typeof (User as any).associate).toBe('function');
-
-      // Test model initialization
-      await sequelize.sequelize.sync();
+      // Test model relationships
       const message = await Message.create({
         content: 'Test message',
         conversation_id: 1,
         user_id: 1
       });
-      expect(message).toBeDefined();
-      expect(message.get('content')).toBe('Test message');
+
+      const conversation = await message.getConversation();
+      expect(conversation).toBeDefined();
+      expect(conversation?.get('id')).toBe(1);
+
+      const user = await message.getUser();
+      expect(user).toBeDefined();
+      expect(user?.get('id')).toBe(1);
+
       await message.destroy();
+
     });
 
     it('should handle model initialization', async () => {
