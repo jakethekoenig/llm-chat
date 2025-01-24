@@ -5,7 +5,7 @@ import OpenAI from 'openai';
 import { createLogger, transports, format } from 'winston';
 import * as messageHelpers from './messageHelpers';
 const logger = createLogger({
-  level: 'error',
+  level: 'info',
   format: format.combine(
     format.timestamp(),
     format.json()
@@ -33,45 +33,58 @@ export const addMessage = async (
 };
 
 export const generateCompletion = async (messageId: number, model: string, temperature: number) => {
-  const parentMessage: Message | null = await Message.findByPk(messageId);
-  if (!parentMessage) {
-    throw new Error(`Parent message with ID ${messageId} not found`);
-  }
+  try {
+    const parentMessage: Message | null = await Message.findByPk(messageId);
+    if (!parentMessage) {
+      logger.error('Parent message not found:', { messageId });
+      throw new Error(`Parent message with ID ${messageId} not found`);
+    }
 
-  const conversationId = parentMessage.get('conversation_id');
+    const conversationId = parentMessage.get('conversation_id');
+    logger.info('Found parent message:', { messageId, conversationId });
 
-  // Fetch all messages in the conversation
-  const conversationMessages = await Message.findAll({
-    where: {
-      conversation_id: conversationId,
-    },
-    order: [['createdAt', 'ASC']], // Order messages chronologically
-  });
-
-  // Build the conversation history for the API
-  const apiMessages = conversationMessages
-    .filter(msg => (msg.get('id') as number) <= messageId) // Only include messages up to the current one
-    .map(msg => {
-      const hasModel = msg.get('model') !== null; // Check if the message is from the assistant
-      const role = hasModel ? "assistant" as const : "user" as const;
-      return {
-        role,
-        content: msg.get('content') as string
-      };
+    // Fetch all messages in the conversation
+    const conversationMessages = await Message.findAll({
+      where: {
+        conversation_id: conversationId,
+      },
+      order: [['createdAt', 'ASC']], // Order messages chronologically
+    });
+    logger.info('Found conversation messages:', { 
+      count: conversationMessages.length,
+      messageIds: conversationMessages.map(msg => msg.get('id'))
     });
 
-  if (apiMessages.length === 0 || !apiMessages[apiMessages.length - 1].content) {
-    throw new Error('No valid messages found in conversation');
-  }
+    // Build the conversation history for the API
+    const apiMessages = conversationMessages
+      .filter(msg => (msg.get('id') as number) <= messageId) // Only include messages up to the current one
+      .map(msg => {
+        const hasModel = msg.get('model') !== null; // Check if the message is from the assistant
+        const role = hasModel ? "assistant" as const : "user" as const;
+        return {
+          role,
+          content: msg.get('content') as string
+        };
+      });
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OpenAI API key is not set');
-  }
+    logger.info('Built API messages:', { 
+      count: apiMessages.length,
+      messages: apiMessages
+    });
 
-  const openai = new OpenAI({ apiKey: apiKey});
+    if (apiMessages.length === 0 || !apiMessages[apiMessages.length - 1].content) {
+      logger.error('No valid messages found');
+      throw new Error('No valid messages found in conversation');
+    }
 
-  try {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      logger.error('OpenAI API key not set');
+      throw new Error('OpenAI API key is not set');
+    }
+
+    const openai = new OpenAI({ apiKey: apiKey});
+
     const response = await openai.chat.completions.create({
       model,
       messages: apiMessages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
@@ -79,7 +92,8 @@ export const generateCompletion = async (messageId: number, model: string, tempe
     });
 
     const completionContent = response.choices[0].message?.content || '';
-    console.log('completionContent:', completionContent);
+    logger.info('Generated completion:', { completionContent });
+
     const completionMessage: Message = await Message.create({
       content: completionContent,
       parent_id: messageId,
@@ -88,12 +102,24 @@ export const generateCompletion = async (messageId: number, model: string, tempe
       model,
       temperature,
     });
+    logger.info('Created completion message:', { messageId: completionMessage.get('id') });
+
     return completionMessage;
   } catch (error) {
     if (error instanceof Error) {
-      logger.error('Error generating completion:', { message: error.message });
+      logger.error('Error in generateCompletion:', { 
+        message: error.message,
+        messageId,
+        model,
+        temperature
+      });
     } else {
-      logger.error('Error generating completion:', { error });
+      logger.error('Unknown error in generateCompletion:', { 
+        error,
+        messageId,
+        model,
+        temperature
+      });
     }
     throw new Error('Failed to generate completion');
   }
