@@ -23,6 +23,7 @@ afterAll(() => {
 });
 import { Message } from '../../server/database/models/Message';
 import { OpenAI } from 'openai';
+import type { ChatCompletionCreateParams } from 'openai/resources/chat/completions';
 import Anthropic from '@anthropic-ai/sdk';
 import 'jest-styled-components';
 import { logger } from '../../server/helpers/messageHelpers';
@@ -34,14 +35,20 @@ jest.mock('openai', () => ({
   OpenAI: jest.fn(() => ({
     chat: {
       completions: {
-        create: jest.fn().mockImplementation((params: { messages: Array<{ role: string; content: string }> }) => {
+        create: jest.fn().mockImplementation((params: ChatCompletionCreateParams) => {
           // Validate that messages is an array and has at least one message
           if (!Array.isArray(params.messages) || params.messages.length === 0) {
             throw new Error('Invalid messages format');
           }
           return Promise.resolve({
+            id: 'mock-completion-id',
+            object: 'chat.completion',
+            created: Date.now(),
+            model: params.model,
             choices: [{
-              message: { role: "assistant", content: 'Mocked OpenAI response' }
+              index: 0,
+              message: { role: "assistant", content: 'Mocked OpenAI response' },
+              finish_reason: 'stop'
             }]
           });
         })
