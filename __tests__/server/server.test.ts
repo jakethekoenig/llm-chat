@@ -32,21 +32,33 @@ import { jest } from '@jest/globals';
 // Mock OpenAI
 jest.mock('openai', () => {
   const mockCreate = jest.fn((params: any) => {
-    // Validate that messages is an array and has at least one message
-    if (!Array.isArray(params.messages) || params.messages.length === 0) {
-      throw new Error('Invalid messages format');
+    try {
+      // Validate that messages is an array and has at least one message
+      if (!Array.isArray(params.messages) || params.messages.length === 0) {
+        throw new Error('Invalid messages format');
+      }
+
+      // Validate required parameters
+      if (!params.model) {
+        throw new Error('Model is required');
+      }
+
+      // Return successful mock response
+      return Promise.resolve({
+        id: 'mock-completion-id',
+        object: 'chat.completion',
+        created: Date.now(),
+        model: params.model,
+        choices: [{
+          index: 0,
+          message: { role: "assistant", content: 'Mocked OpenAI response' },
+          finish_reason: 'stop'
+        }]
+      });
+    } catch (error) {
+      // Ensure we're returning a rejected promise for error cases
+      return Promise.reject(error);
     }
-    return Promise.resolve({
-      id: 'mock-completion-id',
-      object: 'chat.completion',
-      created: Date.now(),
-      model: params.model,
-      choices: [{
-        index: 0,
-        message: { role: "assistant", content: 'Mocked OpenAI response' },
-        finish_reason: 'stop'
-      }]
-    });
   });
 
   return {
@@ -285,7 +297,7 @@ describe('Server Tests', () => {
         .send({ messageId: 1, model: 'claude-3-opus', temperature: 0.7 });
       
       expect(response.status).toBe(500);
-      expect(response.body.error).toBe('Internal server error');
+      expect(response.body.error).toBe('Anthropic API key is not set');
 
       // Restore API key
       process.env.ANTHROPIC_API_KEY = originalKey;
@@ -316,7 +328,7 @@ describe('Server Tests', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({ messageId: 1, model: 'gpt-4', temperature: 0.7 });
       expect(response.status).toBe(500);
-      expect(response.body.error).toBe('Internal server error');
+      expect(response.body.error).toBe('Completion service unavailable');
     });
 
     describe('Add Message and Get Completion for Message Endpoints', () => {
@@ -428,7 +440,7 @@ describe('Server Tests', () => {
           .send({ messageId: 1, model: 'test-model', temperature: 0.5 });
 
         expect(response.status).toBe(500);
-        expect(response.body.error).toBe('Internal server error');
+        expect(response.body.error).toBe('OpenAI API key is not set');
 
         // Restore the API key
         process.env.OPENAI_API_KEY = originalApiKey;
@@ -458,7 +470,7 @@ describe('Server Tests', () => {
           .send({ messageId: 9999, model: 'test-model', temperature: 0.5 });
 
         expect(invalidMessageResponse.status).toBe(500);
-        expect(invalidMessageResponse.body.error).toBe('Internal server error');
+        expect(invalidMessageResponse.body.error).toBe('Parent message with ID 9999 not found');
       });
 
       it('should return 500 when generating completion with non-existent messageId', async () => {
@@ -468,7 +480,7 @@ describe('Server Tests', () => {
           .send({ messageId: 9999, model: 'test-model', temperature: 0.5 });
 
         expect(invalidMessageResponse.status).toBe(500);
-        expect(invalidMessageResponse.body.error).toBe('Internal server error');
+        expect(invalidMessageResponse.body.error).toBe('Parent message with ID 9999 not found');
       });
 
       // New test for invalid temperature parameter
