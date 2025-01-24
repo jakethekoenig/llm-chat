@@ -13,32 +13,49 @@ const obtainAuthToken = async () => {
 };
 
 beforeAll(() => {
-  process.env.OPENAI_API_KEY = 'test-api-key';
+  process.env.OPENAI_API_KEY = 'test-openai-key';
+  process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
 });
 
 afterAll(() => {
   delete process.env.OPENAI_API_KEY;
+  delete process.env.ANTHROPIC_API_KEY;
 });
 import { Message } from '../../server/database/models/Message';
 import { OpenAI } from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 import 'jest-styled-components';
 import { logger } from '../../server/helpers/messageHelpers';
 import * as messageHelpers from '../../server/helpers/messageHelpers';
+import { jest } from '@jest/globals';
 
-jest.mock('openai', () => {
-  return {
-    OpenAI: jest.fn().mockImplementation(() => ({
-      chat: {
-        completions: {
-          create: jest.fn().mockResolvedValue({
-            choices: [{message: { role: "assistant", content: 'Mocked completion response' }}]
-          })
-        }
+// Mock OpenAI
+jest.mock('openai', () => ({
+  OpenAI: jest.fn(() => ({
+    chat: {
+      completions: {
+        create: jest.fn().mockImplementation(() => Promise.resolve({
+          choices: [{
+            message: { role: "assistant", content: 'Mocked OpenAI response' }
+          }]
+        } as any))
       }
-    }))
-  };
-});
-process.env.OPENAI_API_KEY = 'test';
+    }
+  }))
+}));
+
+// Mock Anthropic
+jest.mock('@anthropic-ai/sdk', () => ({
+  __esModule: true,
+  default: jest.fn(() => ({
+    messages: {
+      create: jest.fn().mockImplementation(() => Promise.resolve({
+        content: [{ type: 'text', text: 'Mocked Anthropic response' }]
+      } as any))
+    }
+  }))
+}));
+// API keys are set in beforeAll
 
 beforeAll(async () => {
   await sequelize.sequelize.sync({ force: true });
@@ -141,7 +158,7 @@ describe('Server Tests', () => {
       .send({ messageId: 1, model: 'test-model', temperature: 0.5 });
     expect(response.status).toBe(201);
     expect(response.body.id).toBeDefined();
-    expect(response.body.content).toBe('Mocked completion response');
+    expect(response.body.content).toBe('Mocked OpenAI response');
   });
 
   it('should return 400 for invalid messageId', async () => {
@@ -194,14 +211,56 @@ describe('Server Tests', () => {
       expect(response.status).toBe(401);
     });
 
-    it('should generate completion with valid parameters', async () => {
+    it('should generate completion with OpenAI model', async () => {
       const response = await request(app)
         .post('/api/get_completion_for_message')
         .set('Authorization', `Bearer ${token}`)
         .send({ messageId: 1, model: 'gpt-4', temperature: 0.7 });
       expect(response.status).toBe(201);
       expect(response.body.id).toBeDefined();
-      expect(response.body.content).toBe('Mocked completion response');
+      expect(response.body.content).toBe('Mocked OpenAI response');
+    });
+
+    it('should generate completion with Anthropic model', async () => {
+      const response = await request(app)
+        .post('/api/get_completion_for_message')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ messageId: 1, model: 'claude-3-opus', temperature: 0.7 });
+      expect(response.status).toBe(201);
+      expect(response.body.id).toBeDefined();
+      expect(response.body.content).toBe('Mocked Anthropic response');
+    });
+
+
+    it('should handle Anthropic API errors and missing API key', async () => {
+      // Test with missing API key
+      const originalKey = process.env.ANTHROPIC_API_KEY;
+      delete process.env.ANTHROPIC_API_KEY;
+
+      const response = await request(app)
+        .post('/api/get_completion_for_message')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ messageId: 1, model: 'claude-3-opus', temperature: 0.7 });
+      
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Internal server error');
+
+      // Restore API key
+      process.env.ANTHROPIC_API_KEY = originalKey;
+    });
+
+    it('should detect different Anthropic model variants', async () => {
+      const anthropicModels = ['claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku'];
+      
+      for (const model of anthropicModels) {
+        const response = await request(app)
+          .post('/api/get_completion_for_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ messageId: 1, model, temperature: 0.7 });
+        
+        expect(response.status).toBe(201);
+        expect(response.body.content).toBe('Mocked Anthropic response');
+      }
     });
 
     it('should return 500 when generating completion fails', async () => {
