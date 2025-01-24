@@ -332,20 +332,84 @@ describe('Server Tests', () => {
         expect(response.body.completionId).toBeUndefined();
       });
 
-      it('should handle invalid model and temperature values', async () => {
-        const response = await request(app)
+      it('should handle various validation errors in add_message', async () => {
+        // Test missing content
+        let response = await request(app)
+          .post('/api/add_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({
+            conversationId: 1,
+            model: 'gpt-4',
+            temperature: 0.7,
+            getCompletion: true
+          });
+        expect(response.status).toBe(400);
+        expect(response.body.errors.some((error: any) => error.msg === 'Content is required')).toBe(true);
+
+        // Test invalid temperature
+        response = await request(app)
           .post('/api/add_message')
           .set('Authorization', `Bearer ${token}`)
           .send({
             content: 'Test message',
             conversationId: 1,
-            model: undefined,  // Missing model
-            temperature: 'invalid',  // Invalid temperature type
+            model: 'gpt-4',
+            temperature: 'invalid',
             getCompletion: true
           });
         expect(response.status).toBe(400);
-        expect(response.body.errors).toBeDefined();
         expect(response.body.errors.some((error: any) => error.msg === 'Temperature must be a float')).toBe(true);
+
+        // Test invalid conversation ID format
+        response = await request(app)
+          .post('/api/add_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({
+            content: 'Test message',
+            conversationId: 'invalid-id',
+            model: 'gpt-4',
+            temperature: 0.7,
+            getCompletion: true
+          });
+        expect(response.status).toBe(400);
+        expect(response.body.errors.some((error: any) => error.msg === 'Conversation ID must be an integer')).toBe(true);
+
+        // Test non-existent conversation ID
+        response = await request(app)
+          .post('/api/add_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({
+            content: 'Test message',
+            conversationId: 99999,
+            model: 'gpt-4',
+            temperature: 0.7,
+            getCompletion: true
+          });
+        expect(response.status).toBe(500);
+        expect(response.body.error).toBe('Internal server error');
+      });
+
+      it('should handle database errors gracefully', async () => {
+        // Mock Conversation.create to throw an error
+        const originalCreate = Conversation.create;
+        Conversation.create = jest.fn().mockRejectedValue(new Error('Database error'));
+
+        const response = await request(app)
+          .post('/api/add_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({
+            content: 'Test message',
+            conversationId: null,
+            model: 'gpt-4',
+            temperature: 0.7,
+            getCompletion: true
+          });
+
+        expect(response.status).toBe(500);
+        expect(response.body.error).toBe('Internal server error');
+
+        // Restore original implementation
+        Conversation.create = originalCreate;
       });
 
       it('should return 400 for invalid add_message request', async () => {

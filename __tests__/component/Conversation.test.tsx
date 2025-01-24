@@ -202,23 +202,47 @@ test('handles sending message without completion and dropdown interactions', asy
   const sendWithoutCompletionButton = screen.getByText('Send without completion');
   expect(sendWithoutCompletionButton).toBeInTheDocument();
 
-  // Test closing dropdown by clicking outside
+  // Test clicking outside dropdown
+  const outsideDiv = document.createElement('div');
+  document.body.appendChild(outsideDiv);
   await act(async () => {
-    fireEvent.mouseDown(document.body);
+    fireEvent.mouseDown(outsideDiv);
   });
   await waitFor(() => {
-    expect(screen.queryByText('Send without completion')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('send-options-dropdown')).not.toBeInTheDocument();
   });
 
-  // Test closing dropdown with ESC key
+  // Test reopening dropdown
+  const sendButton = screen.getByTestId('send-button');
   fireEvent.contextMenu(sendButton);
-  expect(screen.getByText('Send without completion')).toBeInTheDocument();
-  
+  expect(screen.getByTestId('send-options-dropdown')).toBeInTheDocument();
+
+  // Test ESC key
   await act(async () => {
     fireEvent.keyDown(document, { key: 'Escape' });
   });
   await waitFor(() => {
     expect(screen.queryByText('Send without completion')).not.toBeInTheDocument();
+  });
+
+  // Test model and temperature changes
+  fireEvent.contextMenu(sendButton);
+  const modelSelect = screen.getByLabelText('model');
+  const temperatureSelect = screen.getByLabelText('temperature');
+
+  await act(async () => {
+    fireEvent.change(modelSelect, { target: { value: 'gpt-3.5-turbo' } });
+    fireEvent.change(temperatureSelect, { target: { value: '0.5' } });
+  });
+
+  // Send message with new settings
+  fireEvent.click(screen.getByText('Send without completion'));
+  await waitFor(() => {
+    expect(mockOnSubmit).toHaveBeenCalledWith('Test without completion', {
+      model: 'gpt-3.5-turbo',
+      temperature: 0.5,
+      getCompletion: false
+    });
   });
 
   // Test sending without completion

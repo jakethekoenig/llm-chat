@@ -24,19 +24,19 @@ const NewMessage: React.FC<NewMessageProps> = ({
     if (!showSendOptions) return;
 
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as HTMLElement;
+      const isButton = target.closest('[data-testid="send-button"]');
+      const isDropdown = target.closest('[data-testid="send-options-dropdown"]');
+
+      if (!isButton && !isDropdown) {
         setShowSendOptions(false);
       }
     };
 
-    // Add event listener on next tick to avoid immediate trigger
-    const timeoutId = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-    }, 0);
+    document.addEventListener('mousedown', handleClickOutside);
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      clearTimeout(timeoutId);
     };
   }, [showSendOptions]);
 
@@ -139,8 +139,9 @@ const NewMessage: React.FC<NewMessageProps> = ({
           }}
           disabled={loading}
         />
-        <div ref={dropdownRef} style={{ position: 'relative' }}>
+        <div style={{ position: 'relative' }}>
           <button 
+            data-testid="send-button"
             disabled={loading}
             onClick={(e) => {
               if (loading) return;
@@ -166,6 +167,7 @@ const NewMessage: React.FC<NewMessageProps> = ({
           {showSendOptions && (
             <div 
               ref={dropdownRef}
+              data-testid="send-options-dropdown"
               style={{
                 position: 'absolute',
                 top: '100%',
