@@ -96,7 +96,9 @@ app.post('/api/add_message', authenticateToken, [
 app.post('/api/get_completion_for_message', authenticateToken, [
   body('messageId').isInt().withMessage('Message ID must be an integer'),
   body('model').notEmpty().withMessage('Model is required'),
-  body('temperature').isFloat().withMessage('Temperature must be a float')
+  body('temperature')
+    .isFloat({ min: 0, max: 1 })
+    .withMessage('Temperature must be between 0 and 1')
 ], async (req: express.Request, res: express.Response) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -126,7 +128,9 @@ app.post('/api/get_completion_for_message', authenticateToken, [
 app.post('/api/get_completion', authenticateToken, [
   body('model').notEmpty().withMessage('Model is required'),
   body('parentId').isInt().withMessage('Parent ID must be an integer'),
-  body('temperature').isFloat().withMessage('Temperature must be a float')
+  body('temperature')
+    .isFloat({ min: 0, max: 1 })
+    .withMessage('Temperature must be between 0 and 1')
 ], async (req: express.Request, res: express.Response) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -218,7 +222,9 @@ app.get('/api/conversations/:conversationId/messages', authenticateToken, async 
 app.post('/api/create_conversation', authenticateToken, [
   body('initialMessage').notEmpty().withMessage('Initial message is required'),
   body('model').notEmpty().withMessage('Model is required'),
-  body('temperature').isFloat().withMessage('Temperature must be a float')
+  body('temperature')
+    .isFloat({ min: 0, max: 1 })
+    .withMessage('Temperature must be between 0 and 1')
 ], async (req: express.Request, res: express.Response) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {

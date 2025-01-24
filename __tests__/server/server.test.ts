@@ -301,17 +301,15 @@ describe('Server Tests', () => {
     });
 
     it('should handle streaming API errors', async () => {
+      const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
       const message = await Message.create({
         content: 'Test message',
-        conversation_id: 1,
+        conversation_id: conversation.get('id'),
         user_id: 1
       });
 
       mockOpenAICreate.mockImplementationOnce(async (params: any) => {
-        if (params.stream) {
-          throw new Error('Stream error');
-        }
-        throw new Error('Non-stream error');
+        throw new Error('Stream error');
       });
 
       const response = await request(app)
@@ -323,29 +321,39 @@ describe('Server Tests', () => {
       expect(response.body.error).toBe('Stream error');
 
       await message.destroy();
+      await conversation.destroy();
+    }, 30000);
+
+    it('should validate temperature range', async () => {
+      const message = await Message.create({
+        content: 'Test message',
+        conversation_id: 1,
+        user_id: 1
+      });
+
+      const response = await request(app)
+        .post('/api/get_completion')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ parentId: message.get('id'), model: 'gpt-4', temperature: 1.5 });
+
+      expect(response.status).toBe(400);
+      expect(response.body.errors[0].msg).toBe('Temperature must be between 0 and 1');
+
+      await message.destroy();
     }, 30000);
 
     it('should detect different Anthropic model variants', async () => {
       const anthropicModels = ['claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku'];
+      const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
       
       for (const model of anthropicModels) {
-        mockAnthropicCreate.mockImplementationOnce(async (params: any) => {
-          if (params.stream) {
-            const stream = {
-              async *[Symbol.asyncIterator]() {
-                yield { type: 'content_block_delta', delta: { text: `Mocked ${model} response` } };
-              }
-            };
-            return stream;
-          }
-          return {
-            content: [{ type: 'text', text: `Mocked ${model} response` }]
-          } as AnthropicResponse;
-        });
+        mockAnthropicCreate.mockImplementationOnce(async () => ({
+          content: [{ type: 'text', text: `Mocked ${model} response` }]
+        } as AnthropicResponse));
 
         const message = await Message.create({
           content: 'Test message',
-          conversation_id: 1,
+          conversation_id: conversation.get('id'),
           user_id: 1
         });
 
@@ -364,13 +372,27 @@ describe('Server Tests', () => {
 
         await message.destroy();
       }
+
+      await conversation.destroy();
     }, 30000);
 
     it('should handle streaming responses', async () => {
+      const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
       const message = await Message.create({
         content: 'Test message',
-        conversation_id: 1,
+        conversation_id: conversation.get('id'),
         user_id: 1
+      });
+
+      mockOpenAICreate.mockImplementationOnce(async (params: any) => {
+        if (params.stream) {
+          return {
+            [Symbol.asyncIterator]: async function* () {
+              yield { choices: [{ delta: { content: 'Test response chunk' } }] };
+            }
+          };
+        }
+        throw new Error('Expected streaming request');
       });
 
       const response = await request(app)
@@ -383,12 +405,34 @@ describe('Server Tests', () => {
       expect(response.headers['connection']).toBe('keep-alive');
 
       await message.destroy();
+      await conversation.destroy();
+    }, 30000);
+
+    it('should validate temperature for streaming requests', async () => {
+      const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
+      const message = await Message.create({
+        content: 'Test message',
+        conversation_id: conversation.get('id'),
+        user_id: 1
+      });
+
+      const response = await request(app)
+        .post('/api/get_completion')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ parentId: message.get('id'), model: 'gpt-4', temperature: 2.0 });
+
+      expect(response.status).toBe(400);
+      expect(response.body.errors[0].msg).toBe('Temperature must be between 0 and 1');
+
+      await message.destroy();
+      await conversation.destroy();
     }, 30000);
 
     it('should return 500 when generating completion fails', async () => {
+      const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
       const message = await Message.create({
         content: 'Test message',
-        conversation_id: 1,
+        conversation_id: conversation.get('id'),
         user_id: 1
       });
 
@@ -398,11 +442,13 @@ describe('Server Tests', () => {
         .post('/api/get_completion_for_message')
         .set('Authorization', `Bearer ${token}`)
         .send({ messageId: message.get('id'), model: 'gpt-4', temperature: 0.7 });
+
       expect(response.status).toBe(500);
       expect(response.body.error).toBe('Completion service unavailable');
 
       await message.destroy();
-    });
+      await conversation.destroy();
+    }, 30000);
 
     describe('Add Message and Get Completion for Message Endpoints', () => {
       it('should add a new message', async () => {
@@ -567,20 +613,45 @@ describe('Server Tests', () => {
       }, 30000);
 
       it('should handle database errors gracefully', async () => {
-        // Mock Conversation.create to throw an error
         const createSpy = jest.spyOn(Conversation, 'create').mockImplementationOnce(() => {
-          throw new Error('Database error');
+          throw new Error('Database connection failed');
         });
         
         const response = await request(app)
           .post('/api/create_conversation')
           .set('Authorization', `Bearer ${token}`)
-          .send({ initialMessage: 'Hello, world!', model: 'gpt-4', temperature: 0.7 });
+          .send({ 
+            initialMessage: 'Hello, world!', 
+            model: 'gpt-4', 
+            temperature: 0.7 
+          });
         
         expect(response.status).toBe(500);
-        expect(response.body.error).toBe('Database error');
+        expect(response.body.error).toBe('Database connection failed');
 
         createSpy.mockRestore();
+      }, 30000);
+
+      it('should handle message creation errors', async () => {
+        const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
+        const addMessageSpy = jest.spyOn(Message, 'create').mockImplementationOnce(() => {
+          throw new Error('Message creation failed');
+        });
+
+        const response = await request(app)
+          .post('/api/add_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ 
+            content: 'Test message', 
+            conversationId: conversation.get('id'),
+            parentId: null 
+          });
+
+        expect(response.status).toBe(500);
+        expect(response.body.error).toBe('Message creation failed');
+
+        addMessageSpy.mockRestore();
+        await conversation.destroy();
       }, 30000);
 
       it('should handle completion service errors gracefully', async () => {
@@ -635,16 +706,14 @@ describe('Server Tests', () => {
       }, 30000);
 
       it('should handle OpenAI API errors gracefully', async () => {
+        const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
         const message = await Message.create({
           content: 'Test message',
-          conversation_id: 1,
+          conversation_id: conversation.get('id'),
           user_id: 1
         });
 
-        mockOpenAICreate.mockImplementationOnce(async (params: any) => {
-          if (params.stream) {
-            throw new Error('OpenAI API rate limit exceeded');
-          }
+        mockOpenAICreate.mockImplementationOnce(async () => {
           throw new Error('OpenAI API rate limit exceeded');
         });
 
@@ -657,6 +726,7 @@ describe('Server Tests', () => {
         expect(response.body.error).toBe('OpenAI API rate limit exceeded');
 
         await message.destroy();
+        await conversation.destroy();
       }, 30000);
 
       // New test for invalid model parameter
