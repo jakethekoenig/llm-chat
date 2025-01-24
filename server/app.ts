@@ -98,19 +98,36 @@ app.post('/api/add_message', authenticateToken, [
       targetConversationId = conversation.get('id');
     }
 
-    const message = await addMessage(content, targetConversationId, parentId, userId);
+    // Ensure targetConversationId is a number
+    const conversationIdNumber = typeof targetConversationId === 'string' 
+      ? parseInt(targetConversationId, 10) 
+      : targetConversationId;
+
+    if (isNaN(conversationIdNumber)) {
+      throw new Error('Invalid conversation ID');
+    }
+
+    const message = await addMessage(content, conversationIdNumber, parentId, userId);
 
     if (getCompletion) {
-      const completionMessage = await generateCompletion(message.get('id'), model || 'gpt-4', temperature || 0.7);
+      const messageId = message.get('id');
+      if (typeof messageId !== 'number') {
+        throw new Error('Invalid message ID');
+      }
+      const completionMessage = await generateCompletion(messageId, model || 'gpt-4', temperature || 0.7);
+      const completionId = completionMessage.get('id');
+      if (typeof completionId !== 'number') {
+        throw new Error('Invalid completion ID');
+      }
       res.status(201).json({
-        id: message.get('id'),
-        conversationId: targetConversationId,
-        completionId: completionMessage.get('id')
+        id: messageId,
+        conversationId: conversationIdNumber,
+        completionId: completionId
       });
     } else {
       res.status(201).json({
-        id: message.get('id'),
-        conversationId: targetConversationId
+        id: messageId,
+        conversationId: conversationIdNumber
       });
     }
   } catch (error) {
