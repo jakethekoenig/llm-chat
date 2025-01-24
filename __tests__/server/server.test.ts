@@ -13,6 +13,7 @@ import { Conversation } from '../../server/database/models/Conversation';
 import { up, down, testData } from '../../server/database/seeders/20240827043208-seed-test-data';
 import { logger } from '../../server/helpers/messageHelpers';
 import * as messageHelpers from '../../server/helpers/messageHelpers';
+import { initializeDatabase } from '../../server/database';
 
 const obtainAuthToken = async () => {
   const response = await request(app)
@@ -148,7 +149,7 @@ describe('Server Tests', () => {
         dialect: 'sqlite',
         logging: false
       };
-      const db = await sequelize.initializeDatabase(options);
+      const db = await initializeDatabase(options);
       expect(db).toBeDefined();
       expect(db.sequelize).toBeDefined();
       await db.sequelize.close();
@@ -160,7 +161,7 @@ describe('Server Tests', () => {
         dialect: 'sqlite',
         logging: false
       };
-      await expect(sequelize.initializeDatabase(badOptions)).rejects.toThrow();
+      await expect(initializeDatabase(badOptions)).rejects.toThrow();
     });
 
     it('should handle database errors', async () => {
