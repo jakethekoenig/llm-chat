@@ -140,7 +140,6 @@ app.post('/api/get_completion_for_message', authenticateToken, [
     res.status(500).json({ error: errorMessage });
   }
 });
-});
 
 // Streaming endpoint with validation
 app.post('/api/get_completion', authenticateToken, [
@@ -226,6 +225,12 @@ app.post('/api/get_completion', authenticateToken, [
       if (errorMessage.includes('not found')) {
         return res.status(404).json({ error: errorMessage });
       }
+      if (errorMessage.includes('API key')) {
+        return res.status(500).json({ error: errorMessage });
+      }
+      if (errorMessage.includes('rate limit')) {
+        return res.status(429).json({ error: errorMessage });
+      }
       res.status(500).json({ error: errorMessage });
     } else {
       res.write(`data: ${JSON.stringify({ error: errorMessage })}\n\n`);
@@ -233,64 +238,23 @@ app.post('/api/get_completion', authenticateToken, [
     }
   }
 });
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering for nginx
-
-    // Helper function to send SSE data
-    const sendSSE = (event: string, data: any) => {
-      res.write(`event: ${event}\n`);
-      res.write(`data: ${JSON.stringify(data)}\n\n`);
-    };
-
-    const response = await generateCompletion(parentId, model, temperature, true);
-    
-    if (!isStreamingResponse(response)) {
-      throw new Error('Expected streaming response');
-    }
-
-    // Handle streaming events
-    response.on('data', (data: { chunk: string; messageId: number }) => {
-      try {
-        sendSSE('chunk', data);
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Error sending chunk';
-        sendSSE('error', { error: errorMessage });
-        res.end();
-      }
-    });
-
-    response.on('end', (data: { messageId: number }) => {
-      try {
-        sendSSE('done', data);
-        res.end();
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Error ending stream';
-        sendSSE('error', { error: errorMessage });
-        res.end();
-      }
-    });
-
-    response.on('error', (error: Error) => {
-      try {
-        sendSSE('error', { error: error.message });
-        res.end();
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Error handling stream error';
-        res.status(500).json({ error: errorMessage });
-      }
-    });
-
-    // Handle client disconnect
-    req.on('close', () => {
-      response.removeAllListeners();
-    });
   } catch (error) {
     if (!res.headersSent) {
       const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+      if (errorMessage === 'Invalid model specified') {
+        return res.status(400).json({ errors: [{ msg: errorMessage }] });
+      }
+      if (errorMessage.includes('not found')) {
+        return res.status(404).json({ error: errorMessage });
+      }
+      if (errorMessage.includes('API key')) {
+        return res.status(500).json({ error: errorMessage });
+      }
+      if (errorMessage.includes('rate limit')) {
+        return res.status(429).json({ error: errorMessage });
+      }
       res.status(500).json({ error: errorMessage });
     } else {
-      const errorMessage = error instanceof Error ? error.message : 'Internal server error';
       res.write(`data: ${JSON.stringify({ error: errorMessage })}\n\n`);
       res.end();
     }
