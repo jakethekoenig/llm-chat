@@ -19,33 +19,36 @@ export async function up(queryInterface: QueryInterface, sequelize: Sequelize) {
     { title: 'Sample Conversation 2', user_id: 2, createdAt: new Date(), updatedAt: new Date() },
   ]);
 
-  // Create Messages
-  const messages = await Message.bulkCreate([
-    { 
-      content: 'Sample Message 1', 
-      conversation_id: conversations[0].get('id'), 
-      user_id: 1, 
-      createdAt: new Date(), 
-      updatedAt: new Date() 
-    },
-    { 
-      content: 'Assistant Response 1', 
-      conversation_id: conversations[0].get('id'), 
-      user_id: 1, 
-      parent_id: 1,
-      model: 'test-model',
-      temperature: 0.5,
-      createdAt: new Date(Date.now() + 1000), 
-      updatedAt: new Date(Date.now() + 1000) 
-    },
-    { 
-      content: 'Sample Message 2', 
-      conversation_id: conversations[1].get('id'), 
-      user_id: 2, 
-      createdAt: new Date(), 
-      updatedAt: new Date() 
-    },
-  ]);
+  // Create Messages sequentially to get proper IDs
+  const firstMessage = await Message.create({ 
+    content: 'Sample Message 1', 
+    conversation_id: conversations[0].get('id'), 
+    user_id: 1, 
+    createdAt: new Date(), 
+    updatedAt: new Date() 
+  });
+
+  const assistantResponse = await Message.create({ 
+    content: 'Assistant Response 1', 
+    conversation_id: conversations[0].get('id'), 
+    user_id: 1, 
+    parent_id: firstMessage.get('id'),
+    model: 'test-model',
+    temperature: 0.5,
+    createdAt: new Date(Date.now() + 1000), 
+    updatedAt: new Date(Date.now() + 1000) 
+  });
+
+  const secondMessage = await Message.create({ 
+    content: 'Sample Message 2', 
+    conversation_id: conversations[1].get('id'), 
+    user_id: 2, 
+    createdAt: new Date(), 
+    updatedAt: new Date() 
+  });
+
+  // Store all messages for reference
+  const messages = [firstMessage, assistantResponse, secondMessage];
 }
 
 export async function down(queryInterface: QueryInterface, sequelize: Sequelize) {
