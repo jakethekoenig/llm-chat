@@ -25,7 +25,6 @@ afterAll(() => {
   delete process.env.OPENAI_API_KEY;
   delete process.env.ANTHROPIC_API_KEY;
 });
-import { Message } from '../../server/database/models/Message';
 import { OpenAI } from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import 'jest-styled-components';
@@ -486,8 +485,11 @@ describe('Server Tests', () => {
         expect(response.body.completionMessageId).toBeDefined();
 
         // Clean up
-        await Message.destroy({ where: { conversation_id: conversation.get('id') } });
-        await conversation.destroy();
+        const createdConversation = await Conversation.findOne({ where: { user_id: user.get('id') } });
+        if (createdConversation) {
+          await Message.destroy({ where: { conversation_id: createdConversation.get('id') } });
+          await createdConversation.destroy();
+        }
         await user.destroy();
       });
 
