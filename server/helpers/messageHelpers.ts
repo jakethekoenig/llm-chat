@@ -1,7 +1,9 @@
 // server/helpers/messageHelpers.ts
 import { Message } from '../database/models/Message';
 import 'openai/shims/node';
-import OpenAI from 'openai';
+import '@anthropic-ai/sdk/shims/node';
+import { OpenAI } from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 import { createLogger, transports, format } from 'winston';
 import * as messageHelpers from './messageHelpers';
 const logger = createLogger({
@@ -15,7 +17,7 @@ const logger = createLogger({
   ]
 });
 
-export { logger }; // Removed generateCompletion to prevent duplicate export
+export { logger };
 
 export const addMessage = async (
   content: string,
@@ -30,6 +32,63 @@ export const addMessage = async (
     user_id: userId,
   });
   return message;
+};
+
+const isAnthropicModel = (model: string): boolean => {
+  const anthropicIdentifiers = ['claude', 'sonnet', 'haiku', 'opus'];
+  return anthropicIdentifiers.some(identifier => model.toLowerCase().includes(identifier));
+};
+
+const generateAnthropicCompletion = async (messages: { role: string; content: string }[], model: string, temperature: number) => {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    logger.error('Anthropic API key not set');
+    throw new Error('Anthropic API key is not set');
+  }
+
+  const client = new Anthropic({
+    apiKey: apiKey,
+  });
+
+  logger.info('Sending request to Anthropic API:', { model, temperature, messageCount: messages.length });
+  const response = await client.messages.create({
+    model,
+    max_tokens: 1024,
+    temperature,
+    messages: messages.map(msg => ({
+      role: msg.role === 'assistant' ? 'assistant' : 'user',
+      content: msg.content
+    })),
+  });
+
+  // Handle different content block types
+  const contentBlock = response.content[0];
+  if ('text' in contentBlock) {
+    logger.info('Received response from Anthropic API');
+    return contentBlock.text;
+  } else {
+    logger.error('Unexpected content block type from Anthropic API');
+    throw new Error('Unexpected response format from Anthropic API');
+  }
+};
+
+const generateOpenAICompletion = async (messages: { role: string; content: string }[], model: string, temperature: number) => {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    logger.error('OpenAI API key not set');
+    throw new Error('OpenAI API key is not set');
+  }
+
+  const openai = new OpenAI({ apiKey });
+  logger.info('Sending request to OpenAI API:', { model, temperature, messageCount: messages.length });
+  const response = await openai.chat.completions.create({
+    model,
+    messages: messages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+    temperature,
+  });
+
+  logger.info('Received response from OpenAI API');
+  return response.choices[0].message?.content || '';
 };
 
 export const generateCompletion = async (messageId: number, model: string, temperature: number) => {
@@ -55,43 +114,32 @@ export const generateCompletion = async (messageId: number, model: string, tempe
       messageIds: conversationMessages.map(msg => msg.get('id'))
     });
 
-    // Build the conversation history for the API
-    const apiMessages = conversationMessages
+    // Build the conversation history
+    const conversationHistory = conversationMessages
       .filter(msg => (msg.get('id') as number) <= messageId) // Only include messages up to the current one
       .map(msg => {
         const hasModel = msg.get('model') !== null; // Check if the message is from the assistant
-        const role = hasModel ? "assistant" as const : "user" as const;
         return {
-          role,
+          role: hasModel ? "assistant" as const : "user" as const,
           content: msg.get('content') as string
         };
       });
 
-    logger.info('Built API messages:', { 
-      count: apiMessages.length,
-      messages: apiMessages
+    logger.info('Built conversation history:', { 
+      count: conversationHistory.length,
+      messages: conversationHistory
     });
 
-    if (apiMessages.length === 0 || !apiMessages[apiMessages.length - 1].content) {
+    if (conversationHistory.length === 0 || !conversationHistory[conversationHistory.length - 1].content) {
       logger.error('No valid messages found');
       throw new Error('No valid messages found in conversation');
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      logger.error('OpenAI API key not set');
-      throw new Error('OpenAI API key is not set');
-    }
+    // Generate completion using either Anthropic or OpenAI
+    const completionContent = isAnthropicModel(model)
+      ? await generateAnthropicCompletion(conversationHistory, model, temperature)
+      : await generateOpenAICompletion(conversationHistory, model, temperature);
 
-    const openai = new OpenAI({ apiKey: apiKey});
-
-    const response = await openai.chat.completions.create({
-      model,
-      messages: apiMessages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
-      temperature,
-    });
-
-    const completionContent = response.choices[0].message?.content || '';
     logger.info('Generated completion:', { completionContent });
 
     const completionMessage: Message = await Message.create({
