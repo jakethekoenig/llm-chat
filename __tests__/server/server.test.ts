@@ -4,6 +4,7 @@ import { jest } from '@jest/globals';
 import 'jest-styled-components';
 import { OpenAI } from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
+import { Sequelize } from 'sequelize';
 import app, { authenticateToken } from '../../server/app';
 import { sequelize } from '../../server/database/models';
 import { Message } from '../../server/database/models/Message';
