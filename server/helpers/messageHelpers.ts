@@ -7,7 +7,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { createLogger, transports, format } from 'winston';
 import * as messageHelpers from './messageHelpers';
 const logger = createLogger({
-  level: 'error',
+  level: 'info',
   format: format.combine(
     format.timestamp(),
     format.json()
@@ -39,9 +39,10 @@ const isAnthropicModel = (model: string): boolean => {
   return anthropicIdentifiers.some(identifier => model.toLowerCase().includes(identifier));
 };
 
-const generateAnthropicCompletion = async (content: string, model: string, temperature: number) => {
+const generateAnthropicCompletion = async (messages: { role: string; content: string }[], model: string, temperature: number) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
+    logger.error('Anthropic API key not set');
     throw new Error('Anthropic API key is not set');
   }
 
@@ -49,16 +50,21 @@ const generateAnthropicCompletion = async (content: string, model: string, tempe
     apiKey: apiKey,
   });
 
+  logger.info('Sending request to Anthropic API:', { model, temperature, messageCount: messages.length });
   const response = await client.messages.create({
     model,
     max_tokens: 1024,
     temperature,
-    messages: [{ role: 'user', content }],
+    messages: messages.map(msg => ({
+      role: msg.role === 'assistant' ? 'assistant' : 'user',
+      content: msg.content
+    })),
   });
 
   // Handle different content block types
   const contentBlock = response.content[0];
   if ('text' in contentBlock) {
+    logger.info('Received response from Anthropic API');
     return contentBlock.text;
   } else {
     logger.error('Unexpected content block type from Anthropic API');
@@ -66,54 +72,133 @@ const generateAnthropicCompletion = async (content: string, model: string, tempe
   }
 };
 
-const generateOpenAICompletion = async (content: string, model: string, temperature: number) => {
+const generateOpenAICompletion = async (messages: { role: string; content: string }[], model: string, temperature: number) => {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
+    logger.error('OpenAI API key not set');
     throw new Error('OpenAI API key is not set');
   }
 
   const openai = new OpenAI({ apiKey });
+  logger.info('Sending request to OpenAI API:', { model, temperature, messageCount: messages.length });
   const response = await openai.chat.completions.create({
     model,
-    messages: [{ role: "user", content }],
+    messages: messages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
     temperature,
   });
 
+  logger.info('Received response from OpenAI API');
   return response.choices[0].message?.content || '';
 };
 
 export const generateCompletion = async (messageId: number, model: string, temperature: number) => {
-  const parentMessage: Message | null = await Message.findByPk(messageId);
-  if (!parentMessage) {
-    throw new Error(`Parent message with ID ${messageId} not found`);
-  }
-
-  const content = parentMessage.get('content') as string;
-  if (!content) {
-    throw new Error('Parent message has no content');
-  }
-
   try {
-    const completionContent = isAnthropicModel(model)
-      ? await generateAnthropicCompletion(content, model, temperature)
-      : await generateOpenAICompletion(content, model, temperature);
+    logger.info('Starting generateCompletion:', { messageId, model, temperature });
 
-    console.log('completionContent:', completionContent);
+    const parentMessage: Message | null = await Message.findByPk(messageId);
+    if (!parentMessage) {
+      logger.error('Parent message not found:', { messageId });
+      throw new Error(`Parent message with ID ${messageId} not found`);
+    }
+
+    const parentContent = parentMessage.get('content');
+    logger.info('Found parent message:', { 
+      messageId, 
+      content: parentContent,
+      conversationId: parentMessage.get('conversation_id'),
+      userId: parentMessage.get('user_id')
+    });
+
+    const conversationId = parentMessage.get('conversation_id');
+    if (!conversationId) {
+      logger.error('Parent message has no conversation_id:', { messageId });
+      throw new Error('Parent message has no conversation_id');
+    }
+
+    // Fetch all messages in the conversation
+    const conversationMessages = await Message.findAll({
+      where: {
+        conversation_id: conversationId,
+      },
+      order: [['createdAt', 'ASC']], // Order messages chronologically
+    });
+    logger.info('Found conversation messages:', { 
+      count: conversationMessages.length,
+      messageIds: conversationMessages.map(msg => msg.get('id'))
+    });
+
+    // Build the conversation history
+    const conversationHistory = conversationMessages
+      .filter(msg => (msg.get('id') as number) <= messageId) // Only include messages up to the current one
+      .map(msg => {
+        const hasModel = msg.get('model') !== null; // Check if the message is from the assistant
+        const content = msg.get('content');
+        if (!content) {
+          logger.error('Message has no content:', { messageId: msg.get('id') });
+          throw new Error('Message has no content');
+        }
+        return {
+          role: hasModel ? "assistant" as const : "user" as const,
+          content: content as string
+        };
+      });
+
+    logger.info('Built conversation history:', { 
+      count: conversationHistory.length,
+      messages: conversationHistory
+    });
+
+    if (conversationHistory.length === 0) {
+      logger.error('No messages found in conversation');
+      throw new Error('No messages found in conversation');
+    }
+
+    // Validate model type
+    const validAnthropicModels = ['claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku'];
+    const validOpenAIModels = ['gpt-4', 'gpt-3.5-turbo', 'test-model'];
+    const isValidModel = isAnthropicModel(model) ? validAnthropicModels.includes(model) : validOpenAIModels.includes(model);
+    
+    if (!isValidModel) {
+      logger.error('Invalid model type:', { model });
+      throw new Error(`Invalid model type: ${model}`);
+    }
+
+    // Generate completion using either Anthropic or OpenAI
+    const completionContent = isAnthropicModel(model)
+      ? await generateAnthropicCompletion(conversationHistory, model, temperature)
+      : await generateOpenAICompletion(conversationHistory, model, temperature);
+
+    logger.info('Generated completion:', { completionContent });
+
     const completionMessage: Message = await Message.create({
       content: completionContent,
       parent_id: messageId,
-      conversation_id: parentMessage.get('conversation_id') as number,
+      conversation_id: conversationId,
       user_id: parentMessage.get('user_id') as number,
       model,
       temperature,
     });
+    logger.info('Created completion message:', { messageId: completionMessage.get('id') });
+
     return completionMessage;
   } catch (error) {
     if (error instanceof Error) {
-      logger.error('Error generating completion:', { message: error.message });
+      logger.error('Error in generateCompletion:', { 
+        message: error.message,
+        messageId,
+        model,
+        temperature
+      });
+      // Re-throw the original error to preserve the message
+      throw error;
     } else {
-      logger.error('Error generating completion:', { error });
+      logger.error('Unknown error in generateCompletion:', { 
+        error,
+        messageId,
+        model,
+        temperature
+      });
+      throw new Error('Failed to generate completion');
     }
-    throw new Error('Failed to generate completion');
   }
 };

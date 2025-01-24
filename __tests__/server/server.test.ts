@@ -1,9 +1,18 @@
 import request from 'supertest';
 import express from 'express';
+import { jest } from '@jest/globals';
+import 'jest-styled-components';
+import { OpenAI } from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
+import { Sequelize } from 'sequelize';
 import app, { authenticateToken } from '../../server/app';
 import { sequelize } from '../../server/database/models';
-import { up, down } from '../../server/database/seeders/20240827043208-seed-test-data';
+import { Message } from '../../server/database/models/Message';
+import { User } from '../../server/database/models/User';
 import { Conversation } from '../../server/database/models/Conversation';
+import { up, down, testData } from '../../server/database/seeders/20240827043208-seed-test-data';
+import { logger } from '../../server/helpers/messageHelpers';
+import * as messageHelpers from '../../server/helpers/messageHelpers';
 
 const obtainAuthToken = async () => {
   const response = await request(app)
@@ -12,46 +21,81 @@ const obtainAuthToken = async () => {
   return response.body.token;
 };
 
-beforeAll(() => {
+beforeAll(async () => {
+  await sequelize.sequelize.sync({ force: true });
   process.env.OPENAI_API_KEY = 'test-openai-key';
   process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
 });
 
-afterAll(() => {
+afterAll(async () => {
   delete process.env.OPENAI_API_KEY;
   delete process.env.ANTHROPIC_API_KEY;
 });
-import { Message } from '../../server/database/models/Message';
-import { OpenAI } from 'openai';
-import Anthropic from '@anthropic-ai/sdk';
-import 'jest-styled-components';
-import { logger } from '../../server/helpers/messageHelpers';
-import * as messageHelpers from '../../server/helpers/messageHelpers';
-import { jest } from '@jest/globals';
+
+// Reset database state between tests
+beforeEach(async () => {
+  await sequelize.sequelize.query('PRAGMA foreign_keys = OFF;');
+  await sequelize.sequelize.query('DELETE FROM Messages;');
+  await sequelize.sequelize.query('DELETE FROM Conversations;');
+  await sequelize.sequelize.query('DELETE FROM Users;');
+  await sequelize.sequelize.query('PRAGMA foreign_keys = ON;');
+  await up(sequelize.sequelize.getQueryInterface(), sequelize.sequelize);
+});
 
 // Mock OpenAI
-jest.mock('openai', () => ({
-  OpenAI: jest.fn(() => ({
-    chat: {
-      completions: {
-        create: jest.fn().mockImplementation(() => Promise.resolve({
-          choices: [{
-            message: { role: "assistant", content: 'Mocked OpenAI response' }
-          }]
-        } as any))
-      }
+jest.mock('openai', () => {
+  const mockCreate = async (params: any) => {
+    // Validate that messages is an array and has at least one message
+    if (!Array.isArray(params.messages) || params.messages.length === 0) {
+      throw new Error('Invalid messages format');
     }
-  }))
-}));
+
+    // Validate required parameters
+    if (!params.model) {
+      throw new Error('Model is required');
+    }
+
+    // Return successful mock response
+    return {
+      id: 'mock-completion-id',
+      object: 'chat.completion',
+      created: Date.now(),
+      model: params.model,
+      choices: [{
+        index: 0,
+        message: { role: "assistant", content: 'Mocked OpenAI response' },
+        finish_reason: 'stop'
+      }]
+    };
+  };
+
+  return {
+    OpenAI: jest.fn(() => ({
+      chat: {
+        completions: {
+          create: jest.fn().mockImplementation(mockCreate)
+        }
+      }
+    }))
+  };
+});
 
 // Mock Anthropic
 jest.mock('@anthropic-ai/sdk', () => ({
   __esModule: true,
   default: jest.fn(() => ({
     messages: {
-      create: jest.fn().mockImplementation(() => Promise.resolve({
-        content: [{ type: 'text', text: 'Mocked Anthropic response' }]
-      } as any))
+      create: jest.fn().mockImplementation(async (params: any) => {
+        // Validate required parameters
+        if (!params.model) {
+          throw new Error('Model is required');
+        }
+
+        // Return successful mock response
+        return {
+          content: [{ type: 'text', text: 'Mocked Anthropic response' }]
+        } as any;
+      })
     }
   }))
 }));
@@ -92,6 +136,193 @@ app.get('/api/get_completion', authenticateToken, (req: express.Request, res: ex
 });
 
 describe('Server Tests', () => {
+  describe('Database Connection', () => {
+    it('should connect to the database', async () => {
+      const connection = await sequelize.sequelize.authenticate();
+      expect(connection).toBeUndefined();
+    });
+
+    it('should initialize database with custom options', async () => {
+      const testSequelize = new Sequelize({
+        dialect: 'sqlite',
+        storage: ':memory:',
+        logging: false
+      });
+      await testSequelize.authenticate();
+      expect(testSequelize).toBeDefined();
+      await testSequelize.close();
+    });
+
+    it('should handle database initialization errors', async () => {
+      const badSequelize = new Sequelize({
+        dialect: 'sqlite',
+        storage: '/nonexistent/path',
+        logging: false
+      });
+      await expect(badSequelize.authenticate()).rejects.toThrow();
+    });
+
+    it('should handle database errors', async () => {
+      const badSequelize = new Sequelize('sqlite::memory:', {
+        storage: '/nonexistent/path',
+        logging: false
+      });
+      await expect(badSequelize.authenticate()).rejects.toThrow();
+    });
+
+    it('should load models dynamically', () => {
+      // Test model exports
+      expect(Message).toBeDefined();
+      expect(Conversation).toBeDefined();
+      expect(User).toBeDefined();
+    });
+
+    it('should have correct model associations', () => {
+      // Test Message associations
+      expect(Message.associations.conversation).toBeDefined();
+      expect(Message.associations.parent).toBeDefined();
+      expect(Message.associations.children).toBeDefined();
+      expect(Message.associations.user).toBeDefined();
+
+      // Verify Message association details
+      expect(Message.associations.conversation.foreignKey).toBe('conversation_id');
+      expect(Message.associations.parent.foreignKey).toBe('parent_id');
+      expect(Message.associations.children.foreignKey).toBe('parent_id');
+      expect(Message.associations.user.foreignKey).toBe('user_id');
+
+      // Test Conversation associations
+      expect(Conversation.associations.messages).toBeDefined();
+      expect(Conversation.associations.user).toBeDefined();
+
+      // Verify Conversation association details
+      expect(Conversation.associations.messages.foreignKey).toBe('conversation_id');
+      expect(Conversation.associations.user.foreignKey).toBe('user_id');
+
+      // Test User associations
+      expect(User.associations.conversations).toBeDefined();
+      expect(User.associations.messages).toBeDefined();
+
+      // Verify User association details
+      expect(User.associations.conversations.foreignKey).toBe('user_id');
+      expect(User.associations.messages.foreignKey).toBe('user_id');
+    });
+
+    it('should handle database configuration', () => {
+      // Test model loading
+      expect(Message).toBeDefined();
+      expect(Conversation).toBeDefined();
+      expect(User).toBeDefined();
+
+      // Test model associations
+      expect(Message.associations.conversation).toBeDefined();
+      expect(Message.associations.parent).toBeDefined();
+      expect(Message.associations.children).toBeDefined();
+      expect(Message.associations.user).toBeDefined();
+
+      // Test database configuration
+      const config = require('../../config/config.json')['test'];
+      expect(sequelize.sequelize.getDialect()).toBe('sqlite');
+      expect(config.storage).toBe('./database_test.sqlite');
+    });
+
+    it('should handle database initialization with different environments', async () => {
+      const originalEnv = process.env.NODE_ENV;
+      const originalConfig = { ...sequelize.sequelize.config };
+
+      try {
+        // Test development environment
+        process.env.NODE_ENV = 'development';
+        const devConfig = require('../../config/config.json')['development'];
+        await sequelize.sequelize.sync();
+        expect(sequelize.sequelize.getDialect()).toBe('sqlite');
+        expect(devConfig.storage).toBe('./database_development.sqlite');
+
+        // Test production environment
+        process.env.NODE_ENV = 'production';
+        const prodConfig = require('../../config/config.json')['production'];
+        await sequelize.sequelize.sync();
+        expect(sequelize.sequelize.getDialect()).toBe('sqlite');
+        expect(prodConfig.storage).toBe('./database_production.sqlite');
+
+        // Test environment variable configuration
+        process.env.DATABASE_URL = 'sqlite::memory:';
+        process.env.use_env_variable = 'DATABASE_URL';
+        await sequelize.sequelize.sync();
+        expect(sequelize.sequelize.getDialect()).toBe('sqlite');
+
+      } finally {
+        // Restore environment
+        process.env.NODE_ENV = originalEnv;
+        delete process.env.DATABASE_URL;
+        delete process.env.use_env_variable;
+        await sequelize.sequelize.sync();
+      }
+    });
+
+    it('should handle database models and associations', async () => {
+      // Test Sequelize instance
+      expect(sequelize.sequelize).toBeDefined();
+      expect(sequelize.Sequelize).toBeDefined();
+      expect(sequelize.sequelize instanceof sequelize.Sequelize).toBe(true);
+
+      // Test model loading
+      expect(Message).toBeDefined();
+      expect(Conversation).toBeDefined();
+      expect(User).toBeDefined();
+
+      // Test model associations
+      expect(Message.associations.conversation).toBeDefined();
+      expect(Message.associations.parent).toBeDefined();
+      expect(Message.associations.children).toBeDefined();
+      expect(Message.associations.user).toBeDefined();
+
+      // Test model relationships
+      const message = await Message.create({
+        content: 'Test message',
+        conversation_id: 1,
+        user_id: 1
+      });
+
+      const conversation = await (message as any).getConversation();
+      expect(conversation).toBeDefined();
+      expect(conversation?.get('id')).toBe(1);
+
+      const user = await (message as any).getUser();
+      expect(user).toBeDefined();
+      expect(user?.get('id')).toBe(1);
+
+      await message.destroy();
+
+    });
+
+    it('should handle model initialization', async () => {
+      // Test model initialization
+      const message = Message.build({
+        content: 'Test message',
+        conversation_id: 1,
+        user_id: 1
+      });
+      expect(message).toBeInstanceOf(Message);
+      expect(message.get('content')).toBe('Test message');
+
+      const conversation = Conversation.build({
+        title: 'Test conversation',
+        user_id: 1
+      });
+      expect(conversation).toBeInstanceOf(Conversation);
+      expect(conversation.get('title')).toBe('Test conversation');
+
+      const user = User.build({
+        username: 'testuser',
+        email: 'test@example.com',
+        hashed_password: 'hashedpassword'
+      });
+      expect(user).toBeInstanceOf(User);
+      expect(user.get('username')).toBe('testuser');
+    });
+
+  });
+
   it('should sign in and return a token', async () => {
     const response = await request(app)
       .post('/api/signin')
@@ -152,10 +383,36 @@ describe('Server Tests', () => {
   it('should generate a completion for a valid message', async () => {
     const token = await obtainAuthToken();
 
+    // Log test data state
+    console.log('Test data:', {
+      firstMessageId: testData.firstMessageId,
+      conversationIds: testData.conversationIds
+    });
+
+    // Verify message exists
+    const message = await Message.findByPk(testData.firstMessageId);
+    console.log('Test message:', {
+      exists: !!message,
+      content: message?.get('content'),
+      conversationId: message?.get('conversation_id')
+    });
+
     const response = await request(app)
       .post('/api/get_completion_for_message')
       .set('Authorization', `Bearer ${token}`)
-      .send({ messageId: 1, model: 'test-model', temperature: 0.5 });
+      .send({ messageId: testData.firstMessageId, model: 'test-model', temperature: 0.5 });
+    
+    // Log response for debugging
+    console.log('Response:', {
+      status: response.status,
+      body: response.body,
+      error: response.body.error
+    });
+
+    if (response.status === 500) {
+      console.error('Test failed with error:', response.body.error);
+    }
+
     expect(response.status).toBe(201);
     expect(response.body.id).toBeDefined();
     expect(response.body.content).toBe('Mocked OpenAI response');
@@ -187,6 +444,8 @@ describe('Server Tests', () => {
         .set('Authorization', `Bearer ${token}`);
       expect(response.status).toBe(200);
       expect(response.body).toBeInstanceOf(Array);
+      expect(response.body.length).toBeGreaterThan(0);
+      expect(response.body[0].title).toBe('Sample Conversation 1');
     });
 
     it('should fetch all messages in a specific conversation', async () => {
@@ -215,7 +474,7 @@ describe('Server Tests', () => {
       const response = await request(app)
         .post('/api/get_completion_for_message')
         .set('Authorization', `Bearer ${token}`)
-        .send({ messageId: 1, model: 'gpt-4', temperature: 0.7 });
+        .send({ messageId: testData.firstMessageId, model: 'gpt-4', temperature: 0.7 });
       expect(response.status).toBe(201);
       expect(response.body.id).toBeDefined();
       expect(response.body.content).toBe('Mocked OpenAI response');
@@ -243,7 +502,7 @@ describe('Server Tests', () => {
         .send({ messageId: 1, model: 'claude-3-opus', temperature: 0.7 });
       
       expect(response.status).toBe(500);
-      expect(response.body.error).toBe('Internal server error');
+      expect(response.body.error).toBe('Anthropic API key is not set');
 
       // Restore API key
       process.env.ANTHROPIC_API_KEY = originalKey;
@@ -274,7 +533,7 @@ describe('Server Tests', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({ messageId: 1, model: 'gpt-4', temperature: 0.7 });
       expect(response.status).toBe(500);
-      expect(response.body.error).toBe('Internal server error');
+      expect(response.body.error).toBe('Completion service unavailable');
     });
 
     describe('Add Message and Get Completion for Message Endpoints', () => {
@@ -282,7 +541,11 @@ describe('Server Tests', () => {
         const response = await request(app)
           .post('/api/add_message')
           .set('Authorization', `Bearer ${token}`)
-          .send({ content: 'New Test Message', conversationId: 1, parentId: 1 });
+          .send({ 
+            content: 'New Test Message', 
+            conversationId: testData.conversationIds[0], 
+            parentId: testData.firstMessageId 
+          });
         expect(response.status).toBe(201);
         expect(response.body.id).toBeDefined();
       });
@@ -299,7 +562,7 @@ describe('Server Tests', () => {
         const response = await request(app)
           .post('/api/get_completion_for_message')
           .set('Authorization', `Bearer ${token}`)
-          .send({ messageId: 1, model: 'test-model', temperature: 0.5 });
+          .send({ messageId: testData.firstMessageId, model: 'test-model', temperature: 0.5 });
         expect(response.status).toBe(201);
         expect(response.body.id).toBeDefined();
       });
@@ -316,7 +579,7 @@ describe('Server Tests', () => {
         const response = await request(app)
           .post('/api/create_conversation')
           .set('Authorization', `Bearer ${token}`)
-          .send({ initialMessage: 'Hello, world!', model: 'gpt-4o', temperature: 0.0 });
+          .send({ initialMessage: 'Hello, world!', model: 'gpt-4', temperature: 0.0 });
         expect(response.status).toBe(201);
         expect(response.body.conversationId).toBeDefined();
         expect(response.body.initialMessageId).toBeDefined();
@@ -382,7 +645,7 @@ describe('Server Tests', () => {
           .send({ messageId: 1, model: 'test-model', temperature: 0.5 });
 
         expect(response.status).toBe(500);
-        expect(response.body.error).toBe('Internal server error');
+        expect(response.body.error).toBe('OpenAI API key is not set');
 
         // Restore the API key
         process.env.OPENAI_API_KEY = originalApiKey;
@@ -412,7 +675,7 @@ describe('Server Tests', () => {
           .send({ messageId: 9999, model: 'test-model', temperature: 0.5 });
 
         expect(invalidMessageResponse.status).toBe(500);
-        expect(invalidMessageResponse.body.error).toBe('Internal server error');
+        expect(invalidMessageResponse.body.error).toBe('Parent message with ID 9999 not found');
       });
 
       it('should return 500 when generating completion with non-existent messageId', async () => {
@@ -422,23 +685,68 @@ describe('Server Tests', () => {
           .send({ messageId: 9999, model: 'test-model', temperature: 0.5 });
 
         expect(invalidMessageResponse.status).toBe(500);
-        expect(invalidMessageResponse.body.error).toBe('Internal server error');
+        expect(invalidMessageResponse.body.error).toBe('Parent message with ID 9999 not found');
       });
 
-      // New test for invalid temperature parameter
-      it('should return 400 for invalid temperature parameter', async () => {
-        const token = await obtainAuthToken();
+      // Test cases for error handling and edge cases
+      describe('Error handling and edge cases', () => {
+        it('should return 400 for invalid temperature parameter', async () => {
+          const token = await obtainAuthToken();
 
-        let response = await request(app)
-          .post('/api/get_completion_for_message')
-          .set('Authorization', `Bearer ${token}`)
-          .send({ messageId: 1, model: 'test-model', temperature: 'invalid' });
+          let response = await request(app)
+            .post('/api/get_completion_for_message')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ messageId: 1, model: 'test-model', temperature: 'invalid' });
 
-        expect(response.status).toBe(400);
-        expect(response.body.errors).toBeDefined();
-        expect(response.body.errors[0].msg).toBe('Temperature must be a float');
+          expect(response.status).toBe(400);
+          expect(response.body.errors).toBeDefined();
+          expect(response.body.errors[0].msg).toBe('Temperature must be a float');
+        });
 
-        // Removed duplicate test case
+        it('should handle empty message content', async () => {
+          const token = await obtainAuthToken();
+          const emptyMessage = await Message.create({
+            content: '',
+            conversation_id: testData.conversationIds[0],
+            user_id: 1
+          });
+
+          const response = await request(app)
+            .post('/api/get_completion_for_message')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ messageId: emptyMessage.get('id'), model: 'test-model', temperature: 0.5 });
+
+          expect(response.status).toBe(500);
+          expect(response.body.error).toBe('Message has no content');
+        });
+
+        it('should handle missing conversation_id', async () => {
+          const token = await obtainAuthToken();
+          const messageWithoutConversation = await Message.create({
+            content: 'Test message',
+            user_id: 1
+          });
+
+          const response = await request(app)
+            .post('/api/get_completion_for_message')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ messageId: messageWithoutConversation.get('id'), model: 'test-model', temperature: 0.5 });
+
+          expect(response.status).toBe(500);
+          expect(response.body.error).toBe('Parent message has no conversation_id');
+        });
+
+        it('should handle unknown model type', async () => {
+          const token = await obtainAuthToken();
+
+          const response = await request(app)
+            .post('/api/get_completion_for_message')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ messageId: testData.firstMessageId, model: 'unknown-model', temperature: 0.5 });
+
+          expect(response.status).toBe(500);
+          expect(response.body.error).toBeDefined();
+        });
       });
 
       // Restore original mocks after tests

@@ -54,13 +54,4 @@ Message.init({
   modelName: 'Message',
 });
 
-User.hasMany(Message, { foreignKey: 'user_id' });
-Message.belongsTo(User, { foreignKey: 'user_id' });
-
-Conversation.hasMany(Message, { foreignKey: 'conversation_id' });
-Message.belongsTo(Conversation, { foreignKey: 'conversation_id' });
-
-Message.hasMany(Message, { as: 'Replies', foreignKey: 'parent_id' });
-Message.belongsTo(Message, { as: 'Parent', foreignKey: 'parent_id' });
-
 export { Message };

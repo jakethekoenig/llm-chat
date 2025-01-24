@@ -108,7 +108,12 @@ app.post('/api/get_completion_for_message', authenticateToken, [
     const completionMessage = await generateCompletion(messageId, model, temperature);
     res.status(201).json({ id: completionMessage.get('id'), content: completionMessage.get('content')});
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error in get_completion_for_message:', error);
+    if (error instanceof Error) {
+      res.status(500).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: 'Internal server error' });
+    }
   }
 });
 
@@ -162,9 +167,10 @@ app.get('/api/conversations', authenticateToken, async (req: express.Request, re
   try {
     const userId = (req as any).user.id;
     const conversations = await Conversation.findAll({
-      where: { user_id: userId }, // Ensure the user_id condition is applied
+      where: { user_id: userId },
       include: [{
         model: Message,
+        as: 'messages',
         required: false
       }]
     });
