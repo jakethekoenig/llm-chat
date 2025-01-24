@@ -1,7 +1,7 @@
 // server/helpers/messageHelpers.ts
 import { Message } from '../database/models/Message';
 import 'openai/shims/node';
-import { OpenAI } from 'openai';
+import OpenAI from 'openai';
 import { createLogger, transports, format } from 'winston';
 import * as messageHelpers from './messageHelpers';
 const logger = createLogger({
@@ -50,11 +50,12 @@ export const generateCompletion = async (messageId: number, model: string, tempe
 
   // Build the conversation history for the API
   const apiMessages = conversationMessages
-    .filter(msg => msg.get('id') <= messageId) // Only include messages up to the current one
+    .filter(msg => (msg.get('id') as number) <= messageId) // Only include messages up to the current one
     .map(msg => {
       const hasModel = msg.get('model') !== null; // Check if the message is from the assistant
+      const role = hasModel ? "assistant" as const : "user" as const;
       return {
-        role: hasModel ? "assistant" : "user",
+        role,
         content: msg.get('content') as string
       };
     });
@@ -73,7 +74,7 @@ export const generateCompletion = async (messageId: number, model: string, tempe
   try {
     const response = await openai.chat.completions.create({
       model,
-      messages: apiMessages,
+      messages: apiMessages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
       temperature,
     });
 
