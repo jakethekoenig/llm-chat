@@ -125,16 +125,15 @@ const NewMessage: React.FC<NewMessageProps> = ({
         />
         <div ref={dropdownRef} style={{ position: 'relative' }}>
           <button 
-            onClick={() => handleSubmit(true)} 
             disabled={loading}
+            onClick={(e) => {
+              if (loading) return;
+              handleSubmit(true);
+            }}
             onContextMenu={(e) => {
               e.preventDefault();
               e.stopPropagation();
               setShowSendOptions(true);
-            }}
-            onClick={(e) => {
-              if (loading) return;
-              handleSubmit(true);
             }}
             style={{
               padding: '12px 24px',

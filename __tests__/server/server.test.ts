@@ -279,10 +279,14 @@ describe('Server Tests', () => {
 
     describe('Add Message and Get Completion for Message Endpoints', () => {
       it('should add a new message with model options and create conversation', async () => {
-        // First create a conversation to get a valid ID
+        // Get the user ID from the token
+        const decodedToken = jwt.verify(token, process.env.SECRET_KEY || 'fallback-secret-key') as { id: number };
+        const userId = decodedToken.id;
+
+        // Create a conversation for the authenticated user
         const conversation = await Conversation.create({
           title: 'Test Conversation',
-          user_id: 1
+          user_id: userId
         });
 
         const response = await request(app)
