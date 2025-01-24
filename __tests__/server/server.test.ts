@@ -210,19 +210,15 @@ describe('Server Tests', () => {
     it('should handle environment variables in database config', () => {
       const originalEnv = process.env.NODE_ENV;
       const originalVar = process.env.DATABASE_URL;
-      const originalUsername = process.env.DB_USERNAME;
-      const originalPassword = process.env.DB_PASSWORD;
 
       // Test with environment variable
       process.env.NODE_ENV = 'test';
       process.env.DATABASE_URL = 'sqlite::memory:';
-      process.env.DB_USERNAME = 'testuser';
-      process.env.DB_PASSWORD = 'testpass';
 
       const testDb = require('../../server/database').default;
       expect(testDb.sequelize).toBeDefined();
-      expect(testDb.sequelize.config.username).toBe('testuser');
-      expect(testDb.sequelize.config.password).toBe('testpass');
+      expect(testDb.sequelize.options.dialect).toBe('sqlite');
+      expect(testDb.sequelize.options.storage).toBe('./database_test.sqlite');
 
       // Test model loading
       expect(testDb.Message).toBeDefined();
@@ -237,8 +233,6 @@ describe('Server Tests', () => {
 
       // Restore environment
       process.env.NODE_ENV = originalEnv;
-      process.env.DB_USERNAME = originalUsername;
-      process.env.DB_PASSWORD = originalPassword;
       if (originalVar) {
         process.env.DATABASE_URL = originalVar;
       } else {
@@ -253,13 +247,15 @@ describe('Server Tests', () => {
       process.env.NODE_ENV = 'development';
       const devDb = require('../../server/database').default;
       expect(devDb.sequelize).toBeDefined();
-      expect(devDb.sequelize.config.dialect).toBe('sqlite');
+      expect(devDb.sequelize.options.dialect).toBe('sqlite');
+      expect(devDb.sequelize.options.storage).toBe('./database_development.sqlite');
 
       // Test production environment
       process.env.NODE_ENV = 'production';
       const prodDb = require('../../server/database').default;
       expect(prodDb.sequelize).toBeDefined();
-      expect(prodDb.sequelize.config.dialect).toBe('sqlite');
+      expect(prodDb.sequelize.options.dialect).toBe('sqlite');
+      expect(prodDb.sequelize.options.storage).toBe('./database_production.sqlite');
 
       // Restore environment
       process.env.NODE_ENV = originalEnv;
