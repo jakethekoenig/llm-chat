@@ -18,8 +18,8 @@ jest.mock('openai', () => {
   };
 });
 
-const mockOnSubmit = jest.fn(async function* (message: string) {
-  yield `You typed: ${message}\nProcessing...\nDone!\n`;
+const mockOnSubmit = jest.fn(async function* (message: string, options: { model: string; temperature: number; getCompletion: boolean }) {
+  yield `You typed: ${message}\nProcessing with ${options.model} at temperature ${options.temperature}...\nDone!\n`;
 });
 
 const messages = [
@@ -124,15 +124,23 @@ test('handles new message input and submission', async () => {
   // Simulate clicking the send button
   fireEvent.click(sendButton);
   
-  // Verify that onSubmit was called with the correct message
-  await waitFor(() => expect(mockOnSubmit).toHaveBeenCalledWith('Test message'));
+  // Verify that onSubmit was called with the correct message and default options
+  await waitFor(() => expect(mockOnSubmit).toHaveBeenCalledWith('Test message', {
+    model: 'gpt-4',
+    temperature: 0.7,
+    getCompletion: true
+  }));
 });
 
 test('submits a new message and updates the conversation', async () => {
   render(<Conversation messages={messages} onSubmit={mockOnSubmit} author="TestUser" />);
   fireEvent.change(screen.getByPlaceholderText('Type your message...'), { target: { value: 'New message' } });
   fireEvent.click(screen.getByText('Send'));
-  await waitFor(() => expect(mockOnSubmit).toHaveBeenCalledWith('New message'));
+  await waitFor(() => expect(mockOnSubmit).toHaveBeenCalledWith('New message', {
+    model: 'gpt-4',
+    temperature: 0.7,
+    getCompletion: true
+  }));
 });
 
 test('renders author messages with right justification and different background', () => {
