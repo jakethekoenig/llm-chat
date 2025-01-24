@@ -135,6 +135,64 @@ app.get('/api/get_completion', authenticateToken, (req: express.Request, res: ex
 });
 
 describe('Server Tests', () => {
+  describe('Database Connection', () => {
+    it('should connect to the database', async () => {
+      const connection = await sequelize.sequelize.authenticate();
+      expect(connection).toBeUndefined();
+    });
+
+    it('should handle database errors', async () => {
+      const badConfig = { ...sequelize.sequelize.config, storage: '/nonexistent/path' };
+      const badSequelize = new Sequelize({
+        ...badConfig,
+        dialect: 'sqlite',
+        logging: false
+      });
+      await expect(badSequelize.authenticate()).rejects.toThrow();
+    });
+
+    it('should handle model associations', () => {
+      expect(Message.associations).toBeDefined();
+      expect(Message.associations.conversation).toBeDefined();
+      expect(Message.associations.parent).toBeDefined();
+      expect(Message.associations.children).toBeDefined();
+      expect(Message.associations.user).toBeDefined();
+
+      expect(Conversation.associations).toBeDefined();
+      expect(Conversation.associations.messages).toBeDefined();
+      expect(Conversation.associations.user).toBeDefined();
+
+      expect(User.associations).toBeDefined();
+      expect(User.associations.conversations).toBeDefined();
+      expect(User.associations.messages).toBeDefined();
+    });
+
+    it('should handle model initialization', () => {
+      const message = Message.build({
+        content: 'Test message',
+        conversation_id: 1,
+        user_id: 1
+      });
+      expect(message).toBeInstanceOf(Message);
+      expect(message.get('content')).toBe('Test message');
+
+      const conversation = Conversation.build({
+        title: 'Test conversation',
+        user_id: 1
+      });
+      expect(conversation).toBeInstanceOf(Conversation);
+      expect(conversation.get('title')).toBe('Test conversation');
+
+      const user = User.build({
+        username: 'testuser',
+        email: 'test@example.com',
+        hashed_password: 'hashedpassword'
+      });
+      expect(user).toBeInstanceOf(User);
+      expect(user.get('username')).toBe('testuser');
+    });
+  });
+
   it('should sign in and return a token', async () => {
     const response = await request(app)
       .post('/api/signin')
