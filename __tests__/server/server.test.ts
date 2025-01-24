@@ -250,27 +250,6 @@ describe('Server Tests', () => {
         await sequelize.sequelize.sync();
         expect(sequelize.sequelize.getDialect()).toBe('sqlite');
 
-        // Test model loading
-        const db = require('../../server/database').default;
-        expect(db.Message).toBeDefined();
-        expect(db.Conversation).toBeDefined();
-        expect(db.User).toBeDefined();
-
-        // Test model associations
-        expect(db.Message.associations.conversation).toBeDefined();
-        expect(db.Message.associations.parent).toBeDefined();
-        expect(db.Message.associations.children).toBeDefined();
-        expect(db.Message.associations.user).toBeDefined();
-
-        // Test model association functions
-        expect(typeof db.Message.associate).toBe('function');
-        expect(typeof db.Conversation.associate).toBe('function');
-        expect(typeof db.User.associate).toBe('function');
-
-        // Test Sequelize instance
-        expect(db.sequelize).toBeDefined();
-        expect(db.Sequelize).toBeDefined();
-        expect(db.sequelize instanceof db.Sequelize).toBe(true);
       } finally {
         // Restore environment
         process.env.NODE_ENV = originalEnv;
@@ -278,6 +257,31 @@ describe('Server Tests', () => {
         delete process.env.use_env_variable;
         await sequelize.sequelize.sync();
       }
+    });
+
+    it('should handle database models and associations', () => {
+      const db = require('../../server/database').default;
+
+      // Test model loading
+      expect(db.Message).toBeDefined();
+      expect(db.Conversation).toBeDefined();
+      expect(db.User).toBeDefined();
+
+      // Test model associations
+      expect(db.Message.associations.conversation).toBeDefined();
+      expect(db.Message.associations.parent).toBeDefined();
+      expect(db.Message.associations.children).toBeDefined();
+      expect(db.Message.associations.user).toBeDefined();
+
+      // Test model association functions
+      expect(typeof db.Message.associate).toBe('function');
+      expect(typeof db.Conversation.associate).toBe('function');
+      expect(typeof db.User.associate).toBe('function');
+
+      // Test Sequelize instance
+      expect(db.sequelize).toBeDefined();
+      expect(db.Sequelize).toBeDefined();
+      expect(db.sequelize instanceof db.Sequelize).toBe(true);
     });
 
     it('should handle model initialization', async () => {
