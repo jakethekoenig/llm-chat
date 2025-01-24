@@ -13,7 +13,7 @@
     "build:frontend": "vite build",
     "start:server": "node dist-server/server/index.js",
     "start:client": "vite",
-    "dev:server": "nodemon --exec ts-node -P tsconfig.server.json server/index.ts",
+    "dev:server": "NODE_ENV=development nodemon -r ts-node/register server/index.ts",
     "dev:frontend": "vite",
     "seed:test": "sequelize db:seed:all --env test",
     "test:selenium": "jest --config=jest.selenium.config.js",
