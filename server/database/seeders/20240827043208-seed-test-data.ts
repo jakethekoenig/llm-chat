@@ -15,57 +15,62 @@ export let testData: {
 };
 
 export async function up(queryInterface: QueryInterface, sequelize: Sequelize) {
-  const now = new Date().toISOString();
-  const hashedPassword1 = await bcrypt.hash('password1', 10);
-  const hashedPassword2 = await bcrypt.hash('password2', 10);
+  const now = new Date();
+
+  // Reset sequences
+  await sequelize.query('DELETE FROM sqlite_sequence');
 
   // Create Users
-  await sequelize.query(`
-    INSERT INTO Users (username, email, hashed_password, createdAt, updatedAt)
-    VALUES 
-      ('user1', 'test1@example.com', '${hashedPassword1}', '${now}', '${now}'),
-      ('user2', 'test2@example.com', '${hashedPassword2}', '${now}', '${now}')
-  `);
+  await queryInterface.bulkInsert('Users', [
+    { username: 'user1', email: 'test1@example.com', hashed_password: await bcrypt.hash('password1', 10), createdAt: now, updatedAt: now },
+    { username: 'user2', email: 'test2@example.com', hashed_password: await bcrypt.hash('password2', 10), createdAt: now, updatedAt: now }
+  ]);
 
-  // Create first conversation
-  await sequelize.query(`
-    INSERT INTO Conversations (title, user_id, createdAt, updatedAt)
-    VALUES ('Sample Conversation 1', 1, '${now}', '${now}')
-  `);
-  const [conv1Result] = await sequelize.query('SELECT last_insert_rowid() as id');
-  const conv1Id = (conv1Result as any[])[0].id;
+  // Create Conversations
+  await queryInterface.bulkInsert('Conversations', [
+    { title: 'Sample Conversation 1', user_id: 1, createdAt: now, updatedAt: now },
+    { title: 'Sample Conversation 2', user_id: 2, createdAt: now, updatedAt: now }
+  ]);
 
-  // Create second conversation
-  await sequelize.query(`
-    INSERT INTO Conversations (title, user_id, createdAt, updatedAt)
-    VALUES ('Sample Conversation 2', 2, '${now}', '${now}')
-  `);
-  const [conv2Result] = await sequelize.query('SELECT last_insert_rowid() as id');
-  const conv2Id = (conv2Result as any[])[0].id;
+  // Set conversation IDs (SQLite auto-increments from 1)
+  testData.conversationIds = [1, 2];
 
-  testData.conversationIds = [conv1Id, conv2Id];
+  // Create Messages sequentially
+  await queryInterface.bulkInsert('Messages', [
+    {
+      content: 'Sample Message 1',
+      conversation_id: 1,
+      user_id: 1,
+      createdAt: now,
+      updatedAt: now
+    }
+  ]);
+  testData.firstMessageId = 1;
 
-  // Create Messages
-  await sequelize.query(`
-    INSERT INTO Messages (content, conversation_id, user_id, createdAt, updatedAt)
-    VALUES ('Sample Message 1', ${testData.conversationIds[0]}, 1, '${now}', '${now}')
-  `);
-  const [firstMessageResult] = await sequelize.query('SELECT last_insert_rowid() as id');
-  testData.firstMessageId = (firstMessageResult as any[])[0].id;
+  await queryInterface.bulkInsert('Messages', [
+    {
+      content: 'Assistant Response 1',
+      conversation_id: 1,
+      user_id: 1,
+      parent_id: 1,
+      model: 'test-model',
+      temperature: 0.5,
+      createdAt: now,
+      updatedAt: now
+    }
+  ]);
+  testData.assistantResponseId = 2;
 
-  await sequelize.query(`
-    INSERT INTO Messages (content, conversation_id, user_id, parent_id, model, temperature, createdAt, updatedAt)
-    VALUES ('Assistant Response 1', ${testData.conversationIds[0]}, 1, ${testData.firstMessageId}, 'test-model', 0.5, '${now}', '${now}')
-  `);
-  const [assistantResponseResult] = await sequelize.query('SELECT last_insert_rowid() as id');
-  testData.assistantResponseId = (assistantResponseResult as any[])[0].id;
-
-  await sequelize.query(`
-    INSERT INTO Messages (content, conversation_id, user_id, createdAt, updatedAt)
-    VALUES ('Sample Message 2', ${testData.conversationIds[1]}, 2, '${now}', '${now}')
-  `);
-  const [secondMessageResult] = await sequelize.query('SELECT last_insert_rowid() as id');
-  testData.secondMessageId = (secondMessageResult as any[])[0].id;
+  await queryInterface.bulkInsert('Messages', [
+    {
+      content: 'Sample Message 2',
+      conversation_id: 2,
+      user_id: 2,
+      createdAt: now,
+      updatedAt: now
+    }
+  ]);
+  testData.secondMessageId = 3;
 }
 
 export async function down(queryInterface: QueryInterface, sequelize: Sequelize) {
