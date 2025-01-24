@@ -86,9 +86,25 @@ body {
   background-color: #0056b3;
 }
 
-.form-container p {
+.form-container p.error-message,
+.error-message {
   text-align: center;
-  color: red;
+  color: #dc3545;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  padding: 10px;
+  margin: 10px 0;
+}
+
+.loading-message {
+  text-align: center;
+  color: #004085;
+  background-color: #cce5ff;
+  border: 1px solid #b8daff;
+  border-radius: 4px;
+  padding: 10px;
+  margin: 10px 0;
 }
 
 @media (max-width: 768px) {

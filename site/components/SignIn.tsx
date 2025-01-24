@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
-import '../App.css'; // Ensure the CSS file is imported
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from './AuthContext';
+import '../App.css';
 
 const SignIn: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,9 +24,9 @@ const SignIn: React.FC = () => {
       if (!response.ok) {
         throw new Error(data.message || 'Invalid credentials');
       }
-      localStorage.setItem('token', data.token);
+      login(data.token);
       setError('');
-      window.location.href = '/';
+      navigate('/');
     } catch (err) {
       setError('Invalid credentials');
     }
