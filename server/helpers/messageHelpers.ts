@@ -3,10 +3,17 @@ import { Message } from '../database/models/Message';
 import 'openai/shims/node';
 import '@anthropic-ai/sdk/shims/node';
 import { OpenAI } from 'openai';
-import Anthropic, { MessageStreamEvent, ContentBlockDeltaEvent } from '@anthropic-ai/sdk';
+import Anthropic from '@anthropic-ai/sdk';
 import { createLogger, transports, format } from 'winston';
 import * as messageHelpers from './messageHelpers';
 import { EventEmitter } from 'events';
+
+interface MessageContent {
+  type: 'content_block_delta';
+  delta: {
+    text?: string;
+  };
+}
 
 export interface StreamingResponse extends EventEmitter {
   on(event: 'data', listener: (data: { chunk: string; messageId: number }) => void): this;
@@ -91,13 +98,13 @@ const generateAnthropicCompletion = async (content: string, model: string, tempe
       });
 
       for await (const chunk of stream) {
+        const messageContent = chunk as MessageContent;
         if (
-          chunk.type === 'content_block_delta' &&
-          (chunk as ContentBlockDeltaEvent).delta &&
-          'text' in (chunk as ContentBlockDeltaEvent).delta &&
-          (chunk as ContentBlockDeltaEvent).delta.text
+          messageContent.type === 'content_block_delta' &&
+          messageContent.delta &&
+          messageContent.delta.text
         ) {
-          emitter.emit('data', { chunk: (chunk as ContentBlockDeltaEvent).delta.text, messageId: -1 });
+          emitter.emit('data', { chunk: messageContent.delta.text, messageId: -1 });
         }
       }
       emitter.emit('end', { messageId: -1 });
@@ -154,7 +161,6 @@ const generateOpenAICompletion = async (content: string, model: string, temperat
 };
 
 export const generateCompletion = async (messageId: number, model: string, temperature: number, stream = false): Promise<Message | StreamingResponse> => {
-  let completionMessage: Message | null = null;
   const parentMessage: Message | null = await Message.findByPk(messageId);
   if (!parentMessage) {
     throw new Error(`Parent message with ID ${messageId} not found`);
@@ -173,7 +179,7 @@ export const generateCompletion = async (messageId: number, model: string, tempe
 
       if (isStreamingResponse(streamingResponse)) {
         // Create an empty message that will be updated as the stream progresses
-        completionMessage = await Message.create({
+        const completionMessage = await Message.create({
           content: '',
           parent_id: messageId,
           conversation_id: parentMessage.get('conversation_id') as number,
@@ -187,16 +193,12 @@ export const generateCompletion = async (messageId: number, model: string, tempe
 
         streamingResponse.on('data', (data: { chunk: string; messageId: number }) => {
           fullContent += data.chunk;
-          const messageId = completionMessage?.get('id') as number;
-          enhancedEmitter.emit('data', { chunk: data.chunk, messageId });
+          enhancedEmitter.emit('data', { chunk: data.chunk, messageId: completionMessage.get('id') as number });
         });
 
         streamingResponse.on('end', async () => {
-          if (completionMessage) {
-            await completionMessage.update({ content: fullContent });
-            const messageId = completionMessage.get('id') as number;
-            enhancedEmitter.emit('end', { messageId });
-          }
+          await completionMessage.update({ content: fullContent });
+          enhancedEmitter.emit('end', { messageId: completionMessage.get('id') as number });
         });
 
         streamingResponse.on('error', (error: Error) => {
