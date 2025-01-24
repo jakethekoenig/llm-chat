@@ -21,8 +21,30 @@ export async function up(queryInterface: QueryInterface, sequelize: Sequelize) {
 
   // Create Messages
   const messages = await Message.bulkCreate([
-    { content: 'Sample Message 1', conversation_id: conversations[0].get('id'), user_id: 1, createdAt: new Date(), updatedAt: new Date() },
-    { content: 'Sample Message 2', conversation_id: conversations[1].get('id'), user_id: 2, createdAt: new Date(), updatedAt: new Date() },
+    { 
+      content: 'Sample Message 1', 
+      conversation_id: conversations[0].get('id'), 
+      user_id: 1, 
+      createdAt: new Date(), 
+      updatedAt: new Date() 
+    },
+    { 
+      content: 'Assistant Response 1', 
+      conversation_id: conversations[0].get('id'), 
+      user_id: 1, 
+      parent_id: 1,
+      model: 'test-model',
+      temperature: 0.5,
+      createdAt: new Date(Date.now() + 1000), 
+      updatedAt: new Date(Date.now() + 1000) 
+    },
+    { 
+      content: 'Sample Message 2', 
+      conversation_id: conversations[1].get('id'), 
+      user_id: 2, 
+      createdAt: new Date(), 
+      updatedAt: new Date() 
+    },
   ]);
 }
 
