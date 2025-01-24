@@ -234,26 +234,16 @@ test('handles sending message without completion and dropdown interactions', asy
     fireEvent.change(temperatureSelect, { target: { value: '0.5' } });
   });
 
-  // Send message with new settings
+  // Test sending with custom settings
+  fireEvent.change(newMessageInput, { target: { value: 'Test with custom settings' } });
   fireEvent.click(screen.getByText('Send without completion'));
   await waitFor(() => {
-    expect(mockOnSubmit).toHaveBeenCalledWith('Test without completion', {
+    expect(mockOnSubmit).toHaveBeenCalledWith('Test with custom settings', {
       model: 'gpt-3.5-turbo',
       temperature: 0.5,
       getCompletion: false
     });
   });
-
-  // Test sending without completion
-  fireEvent.contextMenu(sendButtonElement);
-  fireEvent.change(newMessageInput, { target: { value: 'Test without completion' } });
-  fireEvent.click(sendWithoutCompletionButton);
-
-  await waitFor(() => expect(mockOnSubmit).toHaveBeenCalledWith('Test without completion', {
-    model: 'gpt-4',
-    temperature: 0.7,
-    getCompletion: false
-  }));
 
   // Verify input is cleared after sending
   expect(newMessageInput).toHaveValue('');
