@@ -259,29 +259,38 @@ describe('Server Tests', () => {
       }
     });
 
-    it('should handle database models and associations', () => {
-      const db = require('../../server/database').default;
+    it('should handle database models and associations', async () => {
+      // Test Sequelize instance
+      expect(sequelize.sequelize).toBeDefined();
+      expect(sequelize.Sequelize).toBeDefined();
+      expect(sequelize.sequelize instanceof sequelize.Sequelize).toBe(true);
 
       // Test model loading
-      expect(db.Message).toBeDefined();
-      expect(db.Conversation).toBeDefined();
-      expect(db.User).toBeDefined();
+      expect(Message).toBeDefined();
+      expect(Conversation).toBeDefined();
+      expect(User).toBeDefined();
 
       // Test model associations
-      expect(db.Message.associations.conversation).toBeDefined();
-      expect(db.Message.associations.parent).toBeDefined();
-      expect(db.Message.associations.children).toBeDefined();
-      expect(db.Message.associations.user).toBeDefined();
+      expect(Message.associations.conversation).toBeDefined();
+      expect(Message.associations.parent).toBeDefined();
+      expect(Message.associations.children).toBeDefined();
+      expect(Message.associations.user).toBeDefined();
 
       // Test model association functions
-      expect(typeof db.Message.associate).toBe('function');
-      expect(typeof db.Conversation.associate).toBe('function');
-      expect(typeof db.User.associate).toBe('function');
+      expect(typeof Message.associate).toBe('function');
+      expect(typeof Conversation.associate).toBe('function');
+      expect(typeof User.associate).toBe('function');
 
-      // Test Sequelize instance
-      expect(db.sequelize).toBeDefined();
-      expect(db.Sequelize).toBeDefined();
-      expect(db.sequelize instanceof db.Sequelize).toBe(true);
+      // Test model initialization
+      await sequelize.sequelize.sync();
+      const message = await Message.create({
+        content: 'Test message',
+        conversation_id: 1,
+        user_id: 1
+      });
+      expect(message).toBeDefined();
+      expect(message.get('content')).toBe('Test message');
+      await message.destroy();
     });
 
     it('should handle model initialization', async () => {
