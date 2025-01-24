@@ -12,14 +12,24 @@ const obtainAuthToken = async () => {
   return response.body.token;
 };
 
-beforeAll(() => {
+beforeEach(() => {
   process.env.OPENAI_API_KEY = 'test-openai-key';
   process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
 });
 
-afterAll(() => {
+afterEach(() => {
   delete process.env.OPENAI_API_KEY;
   delete process.env.ANTHROPIC_API_KEY;
+});
+
+beforeAll(async () => {
+  await sequelize.sequelize.sync({ force: true });
+  await up(sequelize.sequelize.getQueryInterface(), sequelize.sequelize);
+});
+
+afterAll(async () => {
+  await down(sequelize.sequelize.getQueryInterface(), sequelize.sequelize);
+  await sequelize.sequelize.close();
 });
 import { Message } from '../../server/database/models/Message';
 import { OpenAI } from 'openai';
@@ -486,20 +496,65 @@ describe('Server Tests', () => {
         expect(invalidMessageResponse.body.error).toBe('Parent message with ID 9999 not found');
       });
 
-      // New test for invalid temperature parameter
-      it('should return 400 for invalid temperature parameter', async () => {
-        const token = await obtainAuthToken();
+      // Test cases for error handling and edge cases
+      describe('Error handling and edge cases', () => {
+        it('should return 400 for invalid temperature parameter', async () => {
+          const token = await obtainAuthToken();
 
-        let response = await request(app)
-          .post('/api/get_completion_for_message')
-          .set('Authorization', `Bearer ${token}`)
-          .send({ messageId: 1, model: 'test-model', temperature: 'invalid' });
+          let response = await request(app)
+            .post('/api/get_completion_for_message')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ messageId: 1, model: 'test-model', temperature: 'invalid' });
 
-        expect(response.status).toBe(400);
-        expect(response.body.errors).toBeDefined();
-        expect(response.body.errors[0].msg).toBe('Temperature must be a float');
+          expect(response.status).toBe(400);
+          expect(response.body.errors).toBeDefined();
+          expect(response.body.errors[0].msg).toBe('Temperature must be a float');
+        });
 
-        // Removed duplicate test case
+        it('should handle empty message content', async () => {
+          const token = await obtainAuthToken();
+          const emptyMessage = await Message.create({
+            content: '',
+            conversation_id: testData.conversationIds[0],
+            user_id: 1
+          });
+
+          const response = await request(app)
+            .post('/api/get_completion_for_message')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ messageId: emptyMessage.get('id'), model: 'test-model', temperature: 0.5 });
+
+          expect(response.status).toBe(500);
+          expect(response.body.error).toBe('Message has no content');
+        });
+
+        it('should handle missing conversation_id', async () => {
+          const token = await obtainAuthToken();
+          const messageWithoutConversation = await Message.create({
+            content: 'Test message',
+            user_id: 1
+          });
+
+          const response = await request(app)
+            .post('/api/get_completion_for_message')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ messageId: messageWithoutConversation.get('id'), model: 'test-model', temperature: 0.5 });
+
+          expect(response.status).toBe(500);
+          expect(response.body.error).toBe('Parent message has no conversation_id');
+        });
+
+        it('should handle unknown model type', async () => {
+          const token = await obtainAuthToken();
+
+          const response = await request(app)
+            .post('/api/get_completion_for_message')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ messageId: testData.firstMessageId, model: 'unknown-model', temperature: 0.5 });
+
+          expect(response.status).toBe(500);
+          expect(response.body.error).toBeDefined();
+        });
       });
 
       // Restore original mocks after tests
