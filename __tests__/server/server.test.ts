@@ -26,13 +26,13 @@ beforeAll(async () => {
   process.env.OPENAI_API_KEY = 'test-openai-key';
   process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
   await sequelize.sync({ force: true });
-  await up(sequelize.getQueryInterface(), sequelize);
+  await up(sequelize.getQueryInterface(), sequelize.sequelize);
 });
 
 afterAll(async () => {
   delete process.env.OPENAI_API_KEY;
   delete process.env.ANTHROPIC_API_KEY;
-  await down(sequelize.getQueryInterface(), sequelize);
+  await down(sequelize.getQueryInterface(), sequelize.sequelize);
   await sequelize.close();
 });
 
