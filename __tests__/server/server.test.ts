@@ -20,12 +20,30 @@ const obtainAuthToken = async () => {
   return response.body.token;
 };
 
+// Define mock response types
+interface OpenAIResponse {
+  choices: Array<{
+    message: {
+      role: string;
+      content: string;
+    };
+  }>;
+}
+
+interface AnthropicResponse {
+  content: Array<{
+    type: string;
+    text: string;
+  }>;
+}
+
 // Mock OpenAI
-const mockOpenAICreate = jest.fn().mockImplementation(() => Promise.resolve({
-  choices: [{
-    message: { role: "assistant", content: 'Mocked OpenAI response' }
-  }]
-}));
+const mockOpenAICreate = jest.fn<Promise<OpenAIResponse>, [any]>()
+  .mockImplementation(() => Promise.resolve({
+    choices: [{
+      message: { role: "assistant", content: 'Mocked OpenAI response' }
+    }]
+  }));
 
 jest.mock('openai', () => ({
   OpenAI: jest.fn(() => ({
@@ -38,9 +56,10 @@ jest.mock('openai', () => ({
 }));
 
 // Mock Anthropic
-const mockAnthropicCreate = jest.fn().mockImplementation(() => Promise.resolve({
-  content: [{ type: 'text', text: 'Mocked Anthropic response' }]
-}));
+const mockAnthropicCreate = jest.fn<Promise<AnthropicResponse>, [any]>()
+  .mockImplementation(() => Promise.resolve({
+    content: [{ type: 'text', text: 'Mocked Anthropic response' }]
+  }));
 
 jest.mock('@anthropic-ai/sdk', () => ({
   __esModule: true,
@@ -240,15 +259,16 @@ describe('Server Tests', () => {
 
 
     it('should handle Anthropic API errors and missing API key', async () => {
-      // Test with missing API key
-      const originalKey = process.env.ANTHROPIC_API_KEY;
-      delete process.env.ANTHROPIC_API_KEY;
-
       const message = await Message.create({
         content: 'Test message',
         conversation_id: 1,
         user_id: 1
       });
+
+      const originalKey = process.env.ANTHROPIC_API_KEY;
+      delete process.env.ANTHROPIC_API_KEY;
+
+      mockAnthropicCreate.mockImplementationOnce(() => Promise.reject(new Error('Anthropic API key is not set')));
 
       const response = await request(app)
         .post('/api/get_completion_for_message')
@@ -258,8 +278,8 @@ describe('Server Tests', () => {
       expect(response.status).toBe(500);
       expect(response.body.error).toBe('Anthropic API key is not set');
 
-      // Restore API key
       process.env.ANTHROPIC_API_KEY = originalKey;
+      await message.destroy();
     });
 
     it('should handle streaming API errors', async () => {
@@ -269,7 +289,7 @@ describe('Server Tests', () => {
         user_id: 1
       });
 
-      mockOpenAICreate.mockRejectedValueOnce(new Error('Stream error'));
+      mockOpenAICreate.mockImplementationOnce(() => Promise.reject(new Error('Stream error')));
 
       const response = await request(app)
         .post('/api/get_completion')
@@ -333,7 +353,7 @@ describe('Server Tests', () => {
         user_id: 1
       });
 
-      mockOpenAICreate.mockRejectedValueOnce(new Error('Completion service unavailable'));
+      mockOpenAICreate.mockImplementationOnce(() => Promise.reject(new Error('Completion service unavailable')));
 
       const response = await request(app)
         .post('/api/get_completion_for_message')
@@ -444,21 +464,41 @@ describe('Server Tests', () => {
           user_id: 1
         });
 
-        // Temporarily unset the API key
         const originalApiKey = process.env.OPENAI_API_KEY;
         delete process.env.OPENAI_API_KEY;
+
+        mockOpenAICreate.mockImplementationOnce(() => Promise.reject(new Error('OpenAI API key is not set')));
 
         const response = await request(app)
           .post('/api/get_completion_for_message')
           .set('Authorization', `Bearer ${token}`)
-          .send({ messageId: message.get('id'), model: 'test-model', temperature: 0.5 });
+          .send({ messageId: message.get('id'), model: 'gpt-4', temperature: 0.5 });
 
         expect(response.status).toBe(500);
         expect(response.body.error).toBe('OpenAI API key is not set');
 
-        // Cleanup
-        await message.destroy();
         process.env.OPENAI_API_KEY = originalApiKey;
+        await message.destroy();
+      });
+
+      it('should handle OpenAI API errors gracefully', async () => {
+        const message = await Message.create({
+          content: 'Test message',
+          conversation_id: 1,
+          user_id: 1
+        });
+
+        mockOpenAICreate.mockImplementationOnce(() => Promise.reject(new Error('OpenAI API rate limit exceeded')));
+
+        const response = await request(app)
+          .post('/api/get_completion_for_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ messageId: message.get('id'), model: 'gpt-4', temperature: 0.5 });
+
+        expect(response.status).toBe(500);
+        expect(response.body.error).toBe('OpenAI API rate limit exceeded');
+
+        await message.destroy();
       });
 
       // New test for invalid model parameter
