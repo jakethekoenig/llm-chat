@@ -58,6 +58,7 @@ const NewMessage: React.FC<NewMessageProps> = ({
         <select
           value={model}
           onChange={(e) => setModel(e.target.value)}
+          aria-label="model"
           style={{
             padding: '8px',
             borderRadius: '4px',
@@ -71,6 +72,7 @@ const NewMessage: React.FC<NewMessageProps> = ({
         <select
           value={temperature}
           onChange={(e) => setTemperature(parseFloat(e.target.value))}
+          aria-label="temperature"
           style={{
             padding: '8px',
             borderRadius: '4px',

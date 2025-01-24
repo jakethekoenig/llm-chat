@@ -171,11 +171,44 @@ test('passes isAuthor prop correctly to Message components', () => {
   expect(user2Message).toHaveStyle('background-color: #fff');
 });
 
-test('renders NewMessage component within Conversation', () => {
+test('renders NewMessage component within Conversation with model and temperature controls', () => {
+  render(<Conversation messages={messages} author="User" onSubmit={mockOnSubmit} />);
+  const newMessageInput = screen.getByPlaceholderText('Type your message...');
+  const sendButton = screen.getByText('Send');
+  const modelSelect = screen.getByRole('combobox', { name: /model/i });
+  const temperatureSelect = screen.getByRole('combobox', { name: /temperature/i });
+
+  expect(newMessageInput).toBeInTheDocument();
+  expect(sendButton).toBeInTheDocument();
+  expect(modelSelect).toBeInTheDocument();
+  expect(temperatureSelect).toBeInTheDocument();
+
+  // Test model selection
+  fireEvent.change(modelSelect, { target: { value: 'gpt-3.5-turbo' } });
+  expect(modelSelect).toHaveValue('gpt-3.5-turbo');
+
+  // Test temperature selection
+  fireEvent.change(temperatureSelect, { target: { value: '0.5' } });
+  expect(temperatureSelect).toHaveValue('0.5');
+});
+
+test('handles sending message without completion', async () => {
   render(<Conversation messages={messages} author="User" onSubmit={mockOnSubmit} />);
   const newMessageInput = screen.getByPlaceholderText('Type your message...');
   const sendButton = screen.getByText('Send');
 
-  expect(newMessageInput).toBeInTheDocument();
-  expect(sendButton).toBeInTheDocument();
+  // Open send options dropdown
+  fireEvent.contextMenu(sendButton);
+  const sendWithoutCompletionButton = screen.getByText('Send without completion');
+  expect(sendWithoutCompletionButton).toBeInTheDocument();
+
+  // Send message without completion
+  fireEvent.change(newMessageInput, { target: { value: 'Test without completion' } });
+  fireEvent.click(sendWithoutCompletionButton);
+
+  await waitFor(() => expect(mockOnSubmit).toHaveBeenCalledWith('Test without completion', {
+    model: 'gpt-4',
+    temperature: 0.7,
+    getCompletion: false
+  }));
 });
