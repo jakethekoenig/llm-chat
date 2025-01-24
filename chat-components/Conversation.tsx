@@ -5,7 +5,7 @@ import NewMessage from './NewMessage'; // Ensure this path is correct
 
 interface ConversationProps {
   messages: MessageType[];
-  onSubmit: (message: string) => AsyncIterable<string>;
+  onSubmit: (message: string, options: { model: string; temperature: number; getCompletion: boolean }) => AsyncIterable<string>;
   author: string;
 }
 
@@ -110,7 +110,11 @@ const Conversation: React.FC<ConversationProps> = ({ messages, onSubmit, author 
     <div>
       {renderMessages(messages, parentMessages[0]?.id || '', null)}
       <div style={{ marginTop: '16px' }}>
-        <NewMessage onSubmit={onSubmit} />
+        <NewMessage 
+          onSubmit={onSubmit}
+          initialModel="gpt-4"
+          initialTemperature={0.7}
+        />
       </div>
     </div>
   );
