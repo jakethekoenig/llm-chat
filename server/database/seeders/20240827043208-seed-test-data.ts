@@ -15,52 +15,51 @@ export let testData: {
 };
 
 export async function up(queryInterface: QueryInterface, sequelize: Sequelize) {
-  // Create Users
+  const now = new Date().toISOString();
   const hashedPassword1 = await bcrypt.hash('password1', 10);
   const hashedPassword2 = await bcrypt.hash('password2', 10);
-  const users = await User.bulkCreate([
-    { username: 'user1', email: 'test1@example.com', hashed_password: hashedPassword1 },
-    { username: 'user2', email: 'test2@example.com', hashed_password: hashedPassword2 }
-  ]);
+
+  // Create Users
+  await sequelize.query(`
+    INSERT INTO Users (username, email, hashed_password, createdAt, updatedAt)
+    VALUES 
+      ('user1', 'test1@example.com', '${hashedPassword1}', '${now}', '${now}'),
+      ('user2', 'test2@example.com', '${hashedPassword2}', '${now}', '${now}')
+  `);
 
   // Create Conversations
-  const conversations = await Conversation.bulkCreate([
-    { title: 'Sample Conversation 1', user_id: 1, createdAt: new Date(), updatedAt: new Date() },
-    { title: 'Sample Conversation 2', user_id: 2, createdAt: new Date(), updatedAt: new Date() },
-  ]);
+  await sequelize.query(`
+    INSERT INTO Conversations (title, user_id, createdAt, updatedAt)
+    VALUES 
+      ('Sample Conversation 1', 1, '${now}', '${now}'),
+      ('Sample Conversation 2', 2, '${now}', '${now}')
+  `);
 
-  testData.conversationIds = conversations.map(conv => conv.get('id') as number);
+  // Get conversation IDs
+  const [conversations] = await sequelize.query('SELECT id FROM Conversations');
+  testData.conversationIds = (conversations as any[]).map(conv => conv.id);
 
-  // Create Messages sequentially to get proper IDs
-  const firstMessage = await Message.create({ 
-    content: 'Sample Message 1', 
-    conversation_id: conversations[0].get('id'), 
-    user_id: 1, 
-    createdAt: new Date(), 
-    updatedAt: new Date() 
-  });
-  testData.firstMessageId = firstMessage.get('id') as number;
+  // Create Messages
+  const [firstMessage] = await sequelize.query(`
+    INSERT INTO Messages (content, conversation_id, user_id, createdAt, updatedAt)
+    VALUES ('Sample Message 1', ${testData.conversationIds[0]}, 1, '${now}', '${now}')
+    RETURNING id
+  `);
+  testData.firstMessageId = (firstMessage as any[])[0].id;
 
-  const assistantResponse = await Message.create({ 
-    content: 'Assistant Response 1', 
-    conversation_id: conversations[0].get('id'), 
-    user_id: 1, 
-    parent_id: firstMessage.get('id'),
-    model: 'test-model',
-    temperature: 0.5,
-    createdAt: new Date(Date.now() + 1000), 
-    updatedAt: new Date(Date.now() + 1000) 
-  });
-  testData.assistantResponseId = assistantResponse.get('id') as number;
+  const [assistantResponse] = await sequelize.query(`
+    INSERT INTO Messages (content, conversation_id, user_id, parent_id, model, temperature, createdAt, updatedAt)
+    VALUES ('Assistant Response 1', ${testData.conversationIds[0]}, 1, ${testData.firstMessageId}, 'test-model', 0.5, '${now}', '${now}')
+    RETURNING id
+  `);
+  testData.assistantResponseId = (assistantResponse as any[])[0].id;
 
-  const secondMessage = await Message.create({ 
-    content: 'Sample Message 2', 
-    conversation_id: conversations[1].get('id'), 
-    user_id: 2, 
-    createdAt: new Date(), 
-    updatedAt: new Date() 
-  });
-  testData.secondMessageId = secondMessage.get('id') as number;
+  const [secondMessage] = await sequelize.query(`
+    INSERT INTO Messages (content, conversation_id, user_id, createdAt, updatedAt)
+    VALUES ('Sample Message 2', ${testData.conversationIds[1]}, 2, '${now}', '${now}')
+    RETURNING id
+  `);
+  testData.secondMessageId = (secondMessage as any[])[0].id;
 }
 
 export async function down(queryInterface: QueryInterface, sequelize: Sequelize) {
