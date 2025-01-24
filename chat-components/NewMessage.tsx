@@ -21,22 +21,38 @@ const NewMessage: React.FC<NewMessageProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!showSendOptions) return;
+
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowSendOptions(false);
       }
     };
 
-    // Add the event listener with a slight delay to avoid immediate trigger
+    // Add event listener on next tick to avoid immediate trigger
     const timeoutId = setTimeout(() => {
-      document.addEventListener('click', handleClickOutside);
+      document.addEventListener('mousedown', handleClickOutside);
     }, 0);
 
     return () => {
-      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside);
       clearTimeout(timeoutId);
     };
-  }, [showSendOptions]); // Re-add listener when dropdown state changes
+  }, [showSendOptions]);
+
+  // Close dropdown when ESC is pressed
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowSendOptions(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, []);
 
   const models = ['gpt-4', 'gpt-3.5-turbo'];
   const temperatures = Array.from({ length: 11 }, (_, i) => i / 10);

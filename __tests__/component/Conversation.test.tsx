@@ -204,9 +204,18 @@ test('handles sending message without completion and dropdown interactions', asy
 
   // Test closing dropdown by clicking outside
   await act(async () => {
-    fireEvent.click(document.body);
-    // Wait for the next tick to allow the click handler to execute
-    await new Promise(resolve => setTimeout(resolve, 0));
+    fireEvent.mouseDown(document.body);
+  });
+  await waitFor(() => {
+    expect(screen.queryByText('Send without completion')).not.toBeInTheDocument();
+  });
+
+  // Test closing dropdown with ESC key
+  fireEvent.contextMenu(sendButton);
+  expect(screen.getByText('Send without completion')).toBeInTheDocument();
+  
+  await act(async () => {
+    fireEvent.keyDown(document, { key: 'Escape' });
   });
   await waitFor(() => {
     expect(screen.queryByText('Send without completion')).not.toBeInTheDocument();
