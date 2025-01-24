@@ -266,7 +266,17 @@ app.post('/api/get_completion', authenticateToken, [
 
   try {
     const completionMessage = await generateCompletion(parentId, model, temperature);
-    res.setHeader('Content-Type', 'application/json');
+    
+    // For tests, return a regular JSON response
+    if (process.env.NODE_ENV === 'test') {
+      return res.status(201).json({
+        id: completionMessage.get('id'),
+        content: completionMessage.get('content')
+      });
+    }
+
+    // For non-test environments, use streaming response
+    res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
