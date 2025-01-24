@@ -36,6 +36,7 @@
   },
   "homepage": "https://github.com/jakethekoenig/llm-chat#readme",
   "dependencies": {
+    "@anthropic-ai/sdk": "0.36.2",
     "@emotion/react": "^11.13.0",
     "@emotion/styled": "^11.13.0",
     "@fontsource/roboto": "^5.0.14",

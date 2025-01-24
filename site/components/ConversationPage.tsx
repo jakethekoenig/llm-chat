@@ -55,9 +55,8 @@ const ConversationPage: React.FC = () => {
     fetchMessages();
   }, [conversationId]);
 
-  const handleNewMessageSubmit = async (message: string, options: { model: string; temperature: number; getCompletion: boolean }) => {
+  const handleNewMessageSubmit = async function* (message: string, options: { model: string; temperature: number; getCompletion: boolean }) {
     const mostRecentMessageId = messages.length > 0 ? messages[messages.length - 1].id : null;
-    
     try {
       setError(null);
       const response = await fetchWithAuth('/api/add_message', {
@@ -80,23 +79,26 @@ const ConversationPage: React.FC = () => {
       }
 
       const data = await response.json();
+      const newMessage = { 
+        id: data.id, 
+        content: message, 
+        author: 'User', 
+        timestamp: new Date().toISOString(), 
+        parentId: mostRecentMessageId 
+      };
 
       if (conversationId === 'new') {
         // If this is a new conversation, redirect to the newly created conversation
         navigate(`/conversations/${data.conversationId}`);
-        return new ReadableStream();
+        yield message;
+        return;
       }
 
-      setMessages(prevMessages => [...prevMessages, {
-        id: data.id,
-        content: message,
-        author: 'User',
-        timestamp: new Date().toISOString(),
-        parentId: mostRecentMessageId
-      }]);
+      setMessages(prevMessages => [...prevMessages, newMessage]);
+      yield message;
 
       if (options.getCompletion) {
-        // Return a stream for the completion
+        // Get completion and stream it
         const completionResponse = await fetchWithAuth('/api/get_completion_for_message', {
           method: 'POST',
           headers: {
@@ -113,14 +115,19 @@ const ConversationPage: React.FC = () => {
           throw new Error('Failed to get completion');
         }
 
-        return completionResponse.body;
+        const reader = completionResponse.body?.getReader();
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            yield new TextDecoder().decode(value);
+          }
+        }
       }
-
-      return new ReadableStream();
     } catch (error) {
       console.error('Error submitting message:', error);
       setError('Failed to send message. Please try again.');
-      throw error;
+      yield 'Error: Failed to send message';
     }
   };
 
