@@ -243,9 +243,29 @@ describe('Server Tests', () => {
         await sequelize.sequelize.sync();
         expect(sequelize.sequelize.getDialect()).toBe('sqlite');
         expect(prodConfig.storage).toBe('./database_production.sqlite');
+
+        // Test environment variable configuration
+        process.env.DATABASE_URL = 'sqlite::memory:';
+        process.env.use_env_variable = 'DATABASE_URL';
+        await sequelize.sequelize.sync();
+        expect(sequelize.sequelize.getDialect()).toBe('sqlite');
+
+        // Test model loading
+        const models = await sequelize.sequelize.models;
+        expect(models.Message).toBeDefined();
+        expect(models.Conversation).toBeDefined();
+        expect(models.User).toBeDefined();
+
+        // Test model associations after sync
+        expect(models.Message.associations.conversation).toBeDefined();
+        expect(models.Message.associations.parent).toBeDefined();
+        expect(models.Message.associations.children).toBeDefined();
+        expect(models.Message.associations.user).toBeDefined();
       } finally {
         // Restore environment
         process.env.NODE_ENV = originalEnv;
+        delete process.env.DATABASE_URL;
+        delete process.env.use_env_variable;
         await sequelize.sequelize.sync();
       }
     });
