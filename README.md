@@ -4,6 +4,20 @@
 
 Note to LLM agents working on this with me: You likely cannot run commands yourself such as `npm i`. If you need more dependencies list them in your PR description and I will add them.
 
+## Development
+
+To run the application in development mode:
+
+1. Install dependencies: `npm install`
+2. Start the development server: `npm run dev:server`
+   - This runs the backend server on port 3000
+   - Uses nodemon to automatically restart when server files change
+3. In a separate terminal, start the frontend: `npm run dev:frontend`
+   - This runs the Vite dev server with hot module replacement
+   - Will automatically proxy API requests to the backend
+
+The frontend will be available at the URL shown in the Vite output, and the backend will be running on `http://localhost:3000`.
+
 ## Integration
 
 The `NewMessage` component is integrated within the `Conversation` component to allow users to submit new messages seamlessly. Ensure that any usage of the `Conversation` component includes the necessary `onSubmit` and `author` props.
@@ -34,70 +48,26 @@ export default App;
 
 ## Testing
 
-We utilize Jest for testing, along with `jest-styled-components` to enable testing of styled-components. Ensure all dependencies are installed correctly.
+We utilize Jest for testing, along with `jest-styled-components` to enable testing of styled-components. To run tests locally, use:
 
-### Configuration
+```bash
+npm test
+```
 
-- **jest-styled-components**: This package is used to test styled-components in our React application. It is included in `devDependencies` and configured in `jest.setup.ts`.
+This will generate a coverage report in the `coverage` directory.
 
-## Dependency Management
+## Production
 
-We use a `.npmrc` file to lock dependency versions and ensure consistency across different environments. This helps in preventing unexpected issues during CI/CD processes.
-A library of components for building chat interfaces. This is just the beginning.
+For production deployment:
+
+1. Build the application: `npm run build`
+2. Start the production server: `npm run start:server`
+3. Serve the frontend build using your preferred static file server
 
 ## TypeScript
 
 This project uses TypeScript for type safety and better developer experience. Ensure all new files use the `.ts` or `.tsx` extension as appropriate.
 
-## Running Tests
+## Dependency Management
 
-To run tests locally, use the following command:
-
-```bash
-npm test
-```
-
-This will also generate a coverage report in the `coverage` directory.
-
-## Running the Server
-
-To run the server, follow these steps:
-
-1. Install dependencies: `npm install`
-2. Start the server: `npm run start`
-
-The server will be running on `http://localhost:3000`.
-
-## Running the Test Website
-
-To run the test website, follow these steps:
-
-1. Install dependencies: `npm install`
-2. Start the dev server: `npm run dev`
-3. Open the provided localhost URL in your browser
-
-This test website serves as a living documentation of our components, making it easier to visualize and interact with them as we develop.
-```bash
-npm test
-```
-
-This will also generate a coverage report in the `coverage` directory.
-
-## Running the Server
-
-To run the server, follow these steps:
-
-1. Install dependencies: `npm install`
-2. Start the server: `npm run start`
-
-The server will be running on `http://localhost:3000`.
-
-## Running the Test Website
-
-To run the test website, follow these steps:
-
-1. Install dependencies: `npm install`
-2. Start the dev server: `npm run dev`
-3. Open the provided localhost URL in your browser
-
-This test website serves as a living documentation of our components, making it easier to visualize and interact with them as we develop.
+We use a `.npmrc` file to lock dependency versions and ensure consistency across different environments. This helps in preventing unexpected issues during CI/CD processes.
