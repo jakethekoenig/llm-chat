@@ -34,9 +34,9 @@ jest.mock('openai', () => ({
   OpenAI: jest.fn(() => ({
     chat: {
       completions: {
-        create: jest.fn().mockImplementation(({ messages }) => {
+        create: jest.fn().mockImplementation((params: { messages: Array<{ role: string; content: string }> }) => {
           // Validate that messages is an array and has at least one message
-          if (!Array.isArray(messages) || messages.length === 0) {
+          if (!Array.isArray(params.messages) || params.messages.length === 0) {
             throw new Error('Invalid messages format');
           }
           return Promise.resolve({
