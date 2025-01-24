@@ -283,11 +283,11 @@ describe('Server Tests', () => {
         user_id: 1
       });
 
-      const conversation = await message.getConversation();
+      const conversation = await (message as any).getConversation();
       expect(conversation).toBeDefined();
       expect(conversation?.get('id')).toBe(1);
 
-      const user = await message.getUser();
+      const user = await (message as any).getUser();
       expect(user).toBeDefined();
       expect(user?.get('id')).toBe(1);
 
