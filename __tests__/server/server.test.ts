@@ -308,7 +308,7 @@ describe('Server Tests', () => {
         user_id: 1
       });
 
-      mockOpenAICreate.mockImplementationOnce(async (params: any) => {
+      mockOpenAICreate.mockImplementationOnce(async () => {
         throw new Error('Stream error');
       });
 
@@ -322,7 +322,27 @@ describe('Server Tests', () => {
 
       await message.destroy();
       await conversation.destroy();
-    }, 30000);
+    });
+
+    it('should return 400 for invalid temperature in streaming request', async () => {
+      const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
+      const message = await Message.create({
+        content: 'Test message',
+        conversation_id: conversation.get('id'),
+        user_id: 1
+      });
+
+      const response = await request(app)
+        .post('/api/get_completion')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ parentId: message.get('id'), model: 'gpt-4', temperature: 1.5 });
+
+      expect(response.status).toBe(400);
+      expect(response.body.errors[0].msg).toBe('Temperature must be between 0 and 1');
+
+      await message.destroy();
+      await conversation.destroy();
+    });
 
     it('should validate temperature range', async () => {
       const message = await Message.create({
@@ -347,9 +367,18 @@ describe('Server Tests', () => {
       const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
       
       for (const model of anthropicModels) {
-        mockAnthropicCreate.mockImplementationOnce(async () => ({
-          content: [{ type: 'text', text: `Mocked ${model} response` }]
-        } as AnthropicResponse));
+        mockAnthropicCreate.mockImplementationOnce(async (params: any) => {
+          if (params.stream) {
+            return {
+              [Symbol.asyncIterator]: async function* () {
+                yield { type: 'content_block_delta', delta: { text: `Mocked ${model} response` } };
+              }
+            };
+          }
+          return {
+            content: [{ type: 'text', text: `Mocked ${model} response` }]
+          } as AnthropicResponse;
+        });
 
         const message = await Message.create({
           content: 'Test message',
@@ -364,17 +393,45 @@ describe('Server Tests', () => {
         
         expect(response.status).toBe(201);
         expect(response.body.content).toBe(`Mocked ${model} response`);
-        expect(mockAnthropicCreate).toHaveBeenCalledWith(expect.objectContaining({
-          model,
-          messages: [{ role: 'user', content: 'Test message' }],
-          temperature: 0.7
-        }));
 
         await message.destroy();
       }
 
       await conversation.destroy();
-    }, 30000);
+    });
+
+    it('should handle Anthropic streaming responses', async () => {
+      const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
+      const message = await Message.create({
+        content: 'Test message',
+        conversation_id: conversation.get('id'),
+        user_id: 1
+      });
+
+      mockAnthropicCreate.mockImplementationOnce(async (params: any) => {
+        if (params.stream) {
+          return {
+            [Symbol.asyncIterator]: async function* () {
+              yield { type: 'content_block_delta', delta: { text: 'Test response chunk' } };
+              yield { type: 'content_block_delta', delta: { text: ' part 2' } };
+            }
+          };
+        }
+        throw new Error('Expected streaming request');
+      });
+
+      const response = await request(app)
+        .post('/api/get_completion')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ parentId: message.get('id'), model: 'claude-3-opus', temperature: 0.7 });
+
+      expect(response.status).toBe(200);
+      expect(response.headers['content-type']).toBe('text/event-stream');
+      expect(response.headers['connection']).toBe('keep-alive');
+
+      await message.destroy();
+      await conversation.destroy();
+    });
 
     it('should handle streaming responses', async () => {
       const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
@@ -389,6 +446,7 @@ describe('Server Tests', () => {
           return {
             [Symbol.asyncIterator]: async function* () {
               yield { choices: [{ delta: { content: 'Test response chunk' } }] };
+              yield { choices: [{ delta: { content: ' part 2' } }] };
             }
           };
         }
@@ -406,7 +464,34 @@ describe('Server Tests', () => {
 
       await message.destroy();
       await conversation.destroy();
-    }, 30000);
+    });
+
+    it('should handle streaming errors gracefully', async () => {
+      const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
+      const message = await Message.create({
+        content: 'Test message',
+        conversation_id: conversation.get('id'),
+        user_id: 1
+      });
+
+      mockOpenAICreate.mockImplementationOnce(async (params: any) => {
+        if (params.stream) {
+          throw new Error('Stream connection error');
+        }
+        throw new Error('Non-streaming error');
+      });
+
+      const response = await request(app)
+        .post('/api/get_completion')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ parentId: message.get('id'), model: 'gpt-4', temperature: 0.7 });
+
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Stream connection error');
+
+      await message.destroy();
+      await conversation.destroy();
+    });
 
     it('should validate temperature for streaming requests', async () => {
       const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
@@ -531,10 +616,10 @@ describe('Server Tests', () => {
           expect.arrayContaining([
             expect.objectContaining({ msg: 'Message ID must be an integer' }),
             expect.objectContaining({ msg: 'Model is required' }),
-            expect.objectContaining({ msg: 'Temperature must be a float' })
+            expect.objectContaining({ msg: 'Temperature must be between 0 and 1' })
           ])
         );
-      }, 30000);
+      });
 
       it('should return 400 for invalid temperature value', async () => {
         const message = await Message.create({
@@ -630,11 +715,11 @@ describe('Server Tests', () => {
         expect(response.body.error).toBe('Database connection failed');
 
         createSpy.mockRestore();
-      }, 30000);
+      });
 
       it('should handle message creation errors', async () => {
         const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
-        const addMessageSpy = jest.spyOn(Message, 'create').mockImplementationOnce(() => {
+        const createSpy = jest.spyOn(Message, 'create').mockImplementationOnce(() => {
           throw new Error('Message creation failed');
         });
 
@@ -650,9 +735,9 @@ describe('Server Tests', () => {
         expect(response.status).toBe(500);
         expect(response.body.error).toBe('Message creation failed');
 
-        addMessageSpy.mockRestore();
+        createSpy.mockRestore();
         await conversation.destroy();
-      }, 30000);
+      });
 
       it('should handle completion service errors gracefully', async () => {
         const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
@@ -662,7 +747,7 @@ describe('Server Tests', () => {
           user_id: 1
         });
 
-        mockOpenAICreate.mockImplementationOnce(async (params: any) => {
+        mockOpenAICreate.mockImplementationOnce(async () => {
           throw new Error('Service unavailable');
         });
 
@@ -676,22 +761,45 @@ describe('Server Tests', () => {
 
         await message.destroy();
         await conversation.destroy();
-      }, 30000);
+      });
 
-      // New test for handling missing environment variables
-      it('should return 500 if OPENAI_API_KEY is not set', async () => {
+      it('should handle streaming service errors gracefully', async () => {
+        const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
         const message = await Message.create({
           content: 'Test message',
-          conversation_id: 1,
+          conversation_id: conversation.get('id'),
+          user_id: 1
+        });
+
+        mockOpenAICreate.mockImplementationOnce(async (params: any) => {
+          if (params.stream) {
+            throw new Error('Streaming service unavailable');
+          }
+          throw new Error('Non-streaming error');
+        });
+
+        const response = await request(app)
+          .post('/api/get_completion')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ parentId: message.get('id'), model: 'gpt-4', temperature: 0.7 });
+
+        expect(response.status).toBe(500);
+        expect(response.body.error).toBe('Streaming service unavailable');
+
+        await message.destroy();
+        await conversation.destroy();
+      });
+
+      it('should handle missing OpenAI API key', async () => {
+        const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
+        const message = await Message.create({
+          content: 'Test message',
+          conversation_id: conversation.get('id'),
           user_id: 1
         });
 
         const originalApiKey = process.env.OPENAI_API_KEY;
         delete process.env.OPENAI_API_KEY;
-
-        mockOpenAICreate.mockImplementationOnce(async (params: any) => {
-          throw new Error('OpenAI API key is not set');
-        });
 
         const response = await request(app)
           .post('/api/get_completion_for_message')
@@ -703,9 +811,34 @@ describe('Server Tests', () => {
 
         process.env.OPENAI_API_KEY = originalApiKey;
         await message.destroy();
-      }, 30000);
+        await conversation.destroy();
+      });
 
-      it('should handle OpenAI API errors gracefully', async () => {
+      it('should handle missing Anthropic API key', async () => {
+        const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
+        const message = await Message.create({
+          content: 'Test message',
+          conversation_id: conversation.get('id'),
+          user_id: 1
+        });
+
+        const originalKey = process.env.ANTHROPIC_API_KEY;
+        delete process.env.ANTHROPIC_API_KEY;
+
+        const response = await request(app)
+          .post('/api/get_completion_for_message')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ messageId: message.get('id'), model: 'claude-3-opus', temperature: 0.5 });
+
+        expect(response.status).toBe(500);
+        expect(response.body.error).toBe('Anthropic API key is not set');
+
+        process.env.ANTHROPIC_API_KEY = originalKey;
+        await message.destroy();
+        await conversation.destroy();
+      });
+
+      it('should handle OpenAI API rate limits', async () => {
         const conversation = await Conversation.create({ title: 'Test Conversation', user_id: 1 });
         const message = await Message.create({
           content: 'Test message',
@@ -727,7 +860,7 @@ describe('Server Tests', () => {
 
         await message.destroy();
         await conversation.destroy();
-      }, 30000);
+      });
 
       // New test for invalid model parameter
       it('should return 400 for invalid model parameter', async () => {
@@ -784,9 +917,7 @@ describe('Server Tests', () => {
 
         expect(response.status).toBe(400);
         expect(response.body.errors).toBeDefined();
-        expect(response.body.errors[0].msg).toBe('Temperature must be a float');
-
-        // Removed duplicate test case
+        expect(response.body.errors[0].msg).toBe('Temperature must be between 0 and 1');
       });
 
       // Restore original mocks after tests

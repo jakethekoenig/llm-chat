@@ -179,7 +179,8 @@ app.post('/api/get_completion', authenticateToken, [
     });
   } catch (error) {
     if (!res.headersSent) {
-      res.status(500).json({ error: 'Internal server error' });
+      const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+      res.status(500).json({ error: errorMessage });
     } else {
       const errorMessage = error instanceof Error ? error.message : 'Internal server error';
       res.write(`data: ${JSON.stringify({ error: errorMessage })}\n\n`);
@@ -249,7 +250,8 @@ app.post('/api/create_conversation', authenticateToken, [
       throw new Error('Unexpected streaming response in non-streaming endpoint');
     }
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    res.status(500).json({ error: errorMessage });
   }
 });
 
