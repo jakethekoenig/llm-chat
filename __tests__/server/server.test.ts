@@ -38,12 +38,11 @@ interface AnthropicResponse {
 }
 
 // Mock OpenAI
-const mockOpenAICreate = jest.fn<Promise<OpenAIResponse>, [any]>()
-  .mockImplementation(() => Promise.resolve({
-    choices: [{
-      message: { role: "assistant", content: 'Mocked OpenAI response' }
-    }]
-  }));
+const mockOpenAICreate = jest.fn(() => Promise.resolve({
+  choices: [{
+    message: { role: "assistant", content: 'Mocked OpenAI response' }
+  }]
+} as OpenAIResponse));
 
 jest.mock('openai', () => ({
   OpenAI: jest.fn(() => ({
@@ -56,10 +55,9 @@ jest.mock('openai', () => ({
 }));
 
 // Mock Anthropic
-const mockAnthropicCreate = jest.fn<Promise<AnthropicResponse>, [any]>()
-  .mockImplementation(() => Promise.resolve({
-    content: [{ type: 'text', text: 'Mocked Anthropic response' }]
-  }));
+const mockAnthropicCreate = jest.fn(() => Promise.resolve({
+  content: [{ type: 'text', text: 'Mocked Anthropic response' }]
+} as AnthropicResponse));
 
 jest.mock('@anthropic-ai/sdk', () => ({
   __esModule: true,
@@ -268,7 +266,7 @@ describe('Server Tests', () => {
       const originalKey = process.env.ANTHROPIC_API_KEY;
       delete process.env.ANTHROPIC_API_KEY;
 
-      mockAnthropicCreate.mockImplementationOnce(() => Promise.reject(new Error('Anthropic API key is not set')));
+      mockAnthropicCreate.mockImplementationOnce(() => Promise.reject(new Error('Anthropic API key is not set')) as Promise<AnthropicResponse>);
 
       const response = await request(app)
         .post('/api/get_completion_for_message')
@@ -289,7 +287,7 @@ describe('Server Tests', () => {
         user_id: 1
       });
 
-      mockOpenAICreate.mockImplementationOnce(() => Promise.reject(new Error('Stream error')));
+      mockOpenAICreate.mockImplementationOnce(() => Promise.reject(new Error('Stream error')) as Promise<OpenAIResponse>);
 
       const response = await request(app)
         .post('/api/get_completion')
@@ -306,7 +304,7 @@ describe('Server Tests', () => {
       for (const model of anthropicModels) {
         mockAnthropicCreate.mockImplementationOnce(() => Promise.resolve({
           content: [{ type: 'text', text: `Mocked ${model} response` }]
-        }));
+        } as AnthropicResponse));
 
         const message = await Message.create({
           content: 'Test message',
@@ -467,7 +465,7 @@ describe('Server Tests', () => {
         const originalApiKey = process.env.OPENAI_API_KEY;
         delete process.env.OPENAI_API_KEY;
 
-        mockOpenAICreate.mockImplementationOnce(() => Promise.reject(new Error('OpenAI API key is not set')));
+        mockOpenAICreate.mockImplementationOnce(() => Promise.reject(new Error('OpenAI API key is not set')) as Promise<OpenAIResponse>);
 
         const response = await request(app)
           .post('/api/get_completion_for_message')
@@ -488,7 +486,7 @@ describe('Server Tests', () => {
           user_id: 1
         });
 
-        mockOpenAICreate.mockImplementationOnce(() => Promise.reject(new Error('OpenAI API rate limit exceeded')));
+        mockOpenAICreate.mockImplementationOnce(() => Promise.reject(new Error('OpenAI API rate limit exceeded')) as Promise<OpenAIResponse>);
 
         const response = await request(app)
           .post('/api/get_completion_for_message')
