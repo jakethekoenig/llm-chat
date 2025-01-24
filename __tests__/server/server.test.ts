@@ -327,12 +327,13 @@ describe('Server Tests', () => {
           .send({
             content: 'Test message',
             conversationId: 1,
-            model: '',  // Invalid model
-            temperature: 2.0,  // Invalid temperature
+            model: undefined,  // Missing model
+            temperature: 'invalid',  // Invalid temperature type
             getCompletion: true
           });
         expect(response.status).toBe(400);
         expect(response.body.errors).toBeDefined();
+        expect(response.body.errors.some((error: any) => error.msg === 'Temperature must be a float')).toBe(true);
       });
 
       it('should return 400 for invalid add_message request', async () => {

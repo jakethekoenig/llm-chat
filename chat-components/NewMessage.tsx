@@ -1,5 +1,5 @@
 // chat-components/NewMessage.tsx
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 interface NewMessageProps {
   onSubmit: (message: string, options: { model: string; temperature: number; getCompletion: boolean }) => AsyncIterable<string>;
@@ -18,6 +18,20 @@ const NewMessage: React.FC<NewMessageProps> = ({
   const [model, setModel] = useState(initialModel);
   const [temperature, setTemperature] = useState(initialTemperature);
   const [showSendOptions, setShowSendOptions] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowSendOptions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const models = ['gpt-4', 'gpt-3.5-turbo'];
   const temperatures = Array.from({ length: 11 }, (_, i) => i / 10);
@@ -104,7 +118,7 @@ const NewMessage: React.FC<NewMessageProps> = ({
           }}
           disabled={loading}
         />
-        <div style={{ position: 'relative' }}>
+        <div ref={dropdownRef} style={{ position: 'relative' }}>
           <button 
             onClick={() => handleSubmit(true)} 
             disabled={loading}
@@ -125,16 +139,19 @@ const NewMessage: React.FC<NewMessageProps> = ({
             {loading ? 'Sending...' : 'Send'}
           </button>
           {showSendOptions && (
-            <div style={{
-              position: 'absolute',
-              top: '100%',
-              right: 0,
-              backgroundColor: 'white',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-              zIndex: 1000
-            }}>
+            <div 
+              ref={dropdownRef}
+              style={{
+                position: 'absolute',
+                top: '100%',
+                right: 0,
+                backgroundColor: 'white',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                zIndex: 1000
+              }}
+            >
               <button
                 onClick={() => handleSubmit(false)}
                 style={{
