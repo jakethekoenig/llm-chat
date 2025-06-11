@@ -118,7 +118,10 @@ describe('Server Tests', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ content: 'Test message', conversationId: 1, parentId: 'invalid' });
     expect(envResponse.status).toBe(400);
-    expect(envResponse.body.errors[0].msg).toBe('Parent ID must be an integer');
+    expect(envResponse.body.error).toBe('Validation failed');
+    expect(envResponse.body.code).toBe('VALIDATION_ERROR');
+    expect(envResponse.body.details).toBeDefined();
+    expect(envResponse.body.details[0].msg).toBe('Parent ID must be an integer');
   });
 
   it('should return 401 for unauthenticated users', async () => {
@@ -146,7 +149,10 @@ describe('Server Tests', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ content: '', conversationId: 1 });
     expect(response.status).toBe(400);
-    expect(response.body.errors[0].msg).toBe('Content is required');
+    expect(response.body.error).toBe('Validation failed');
+    expect(response.body.code).toBe('VALIDATION_ERROR');
+    expect(response.body.details).toBeDefined();
+    expect(response.body.details[0].msg).toBe('Content is required');
   });
 
   it('should generate a completion for a valid message', async () => {
@@ -329,8 +335,10 @@ describe('Server Tests', () => {
           .set('Authorization', `Bearer ${token}`)
           .send({ model: 'gpt-4o', temperature: 0.0 });
         expect(response.status).toBe(400);
-        expect(response.body.errors).toBeDefined();
-        expect(response.body.errors[0].msg).toBe('Initial message is required');
+        expect(response.body.error).toBe('Validation failed');
+        expect(response.body.code).toBe('VALIDATION_ERROR');
+        expect(response.body.details).toBeDefined();
+        expect(response.body.details[0].msg).toBe('Initial message is required');
       });
 
       it('should return 400 for missing model', async () => {
@@ -339,8 +347,10 @@ describe('Server Tests', () => {
           .set('Authorization', `Bearer ${token}`)
           .send({ initialMessage: 'Hello, world!', temperature: 0.0 });
         expect(response.status).toBe(400);
-        expect(response.body.errors).toBeDefined();
-        expect(response.body.errors[0].msg).toBe('Model is required');
+        expect(response.body.error).toBe('Validation failed');
+        expect(response.body.code).toBe('VALIDATION_ERROR');
+        expect(response.body.details).toBeDefined();
+        expect(response.body.details[0].msg).toBe('Model is required');
       });
 
       it('should return 400 for invalid temperature', async () => {
@@ -349,8 +359,10 @@ describe('Server Tests', () => {
           .set('Authorization', `Bearer ${token}`)
           .send({ initialMessage: 'Hello, world!', model: 'gpt-4o', temperature: 'invalid' });
         expect(response.status).toBe(400);
-        expect(response.body.errors).toBeDefined();
-        expect(response.body.errors[0].msg).toBe('Temperature must be a float');
+        expect(response.body.error).toBe('Validation failed');
+        expect(response.body.code).toBe('VALIDATION_ERROR');
+        expect(response.body.details).toBeDefined();
+        expect(response.body.details[0].msg).toBe('Temperature must be a float');
       });
 
       it('should handle server errors gracefully', async () => {
@@ -398,8 +410,10 @@ describe('Server Tests', () => {
           .send({ messageId: 1, model: '', temperature: 0.5 });
 
         expect(response.status).toBe(400);
-        expect(response.body.errors).toBeDefined();
-        expect(response.body.errors[0].msg).toBe('Model is required');
+        expect(response.body.error).toBe('Validation failed');
+        expect(response.body.code).toBe('VALIDATION_ERROR');
+        expect(response.body.details).toBeDefined();
+        expect(response.body.details[0].msg).toBe('Model is required');
       });
 
       // New test for generating completion with non-existent messageId
@@ -435,8 +449,10 @@ describe('Server Tests', () => {
           .send({ messageId: 1, model: 'test-model', temperature: 'invalid' });
 
         expect(response.status).toBe(400);
-        expect(response.body.errors).toBeDefined();
-        expect(response.body.errors[0].msg).toBe('Temperature must be a float');
+        expect(response.body.error).toBe('Validation failed');
+        expect(response.body.code).toBe('VALIDATION_ERROR');
+        expect(response.body.details).toBeDefined();
+        expect(response.body.details[0].msg).toBe('Temperature must be a float');
 
         // Removed duplicate test case
       });
