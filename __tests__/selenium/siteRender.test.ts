@@ -268,7 +268,7 @@ describe('Comprehensive Site Tests', () => {
   });
 
   describe('Message Demo Component', () => {
-    test('should display showcase page content', async () => {
+    test('should display showcase page content and debug what loads', async () => {
       await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
       await driver.wait(until.elementLocated(By.css('.page-content')), 10000);
       
@@ -276,12 +276,43 @@ describe('Comprehensive Site Tests', () => {
       const heading = await pageContent.findElement(By.css('h1'));
       expect(await heading.getText()).toContain('LLM Chat Component Showcase');
       
-      // Log page content for debugging
-      try {
-        const bodyText = await driver.findElement(By.css('body')).getText();
-        console.log('Page content preview:', bodyText.substring(0, 500));
-      } catch (error) {
-        console.log('Could not get page content for debugging');
+      // Check for JavaScript errors
+      const logs = await driver.manage().logs().get('browser');
+      const errorLogs = logs.filter((log: any) => log.level === 'SEVERE');
+      console.log('JavaScript errors found:', errorLogs.length);
+      errorLogs.forEach((log: any) => {
+        console.log('JS Error:', log.message);
+      });
+      
+      // Log full page content for debugging
+      const bodyText = await driver.findElement(By.css('body')).getText();
+      console.log('Full page content:');
+      console.log(bodyText);
+      
+      // Log page HTML structure
+      const pageHTML = await driver.findElement(By.css('.page-content')).getAttribute('innerHTML');
+      console.log('Page HTML structure:');
+      console.log(pageHTML.substring(0, 1000));
+      
+      // Wait longer and check if MessageDemo loads
+      await driver.sleep(3000);
+      
+      // Check what elements are actually present
+      const allElements = await driver.findElements(By.css('*'));
+      console.log('Total elements on page:', allElements.length);
+      
+      const h2Elements = await driver.findElements(By.css('h2'));
+      console.log('H2 elements found:', h2Elements.length);
+      for (const h2 of h2Elements) {
+        const text = await h2.getText();
+        console.log('H2 text:', text);
+      }
+      
+      const buttonElements = await driver.findElements(By.css('button'));
+      console.log('Button elements found:', buttonElements.length);
+      for (const button of buttonElements) {
+        const text = await button.getText();
+        console.log('Button text:', text);
       }
     }, testTimeout);
 
