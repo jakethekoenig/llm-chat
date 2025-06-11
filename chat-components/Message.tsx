@@ -61,7 +61,7 @@ const ButtonContainer = styled.div`
 `;
 
 const Message: React.FC<MessageProps> = ({ renderers = [], currentIndex = 0, totalSiblings = 0, ...props }) => {
-  const { $isAuthor, content, author, timestamp, buttons, onCopy, onShare, onDelete, onEdit, onClick, onPrev, onNext, hasSiblings, ...filteredProps } = props;
+  const { $isAuthor, content, author, timestamp, buttons, onCopy, onShare, onDelete, onEdit, onClick, onPrev, onNext, hasSiblings, conversationId, userId, parentId, model, temperature, ...filteredProps } = props;
   const globalConfig = useMessageConfig();
   const [displayedContent, setDisplayedContent] = useState<string>('');
   const isMountedRef = useRef(true);
