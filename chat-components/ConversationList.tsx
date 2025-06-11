@@ -1,9 +1,9 @@
 // chat-components/ConversationList.tsx
 import React from 'react';
-import { Message as MessageType } from './types/Message';
+import { Conversation as ConversationType } from './types/Conversation';
 
 interface ConversationListProps {
-  conversations: MessageType[];
+  conversations: ConversationType[];
   onConversationClick: (id: string) => void;
 }
 
@@ -16,8 +16,13 @@ const ConversationList: React.FC<ConversationListProps> = ({ conversations, onCo
           {conversations.map(conversation => (
             <li key={conversation.id} onClick={() => onConversationClick(conversation.id)}>
               <div className="conversation-item">
-                <span className="conversation-title">{conversation.content}</span>
-                <span className="conversation-author">{conversation.author}</span>
+                <span className="conversation-title">{conversation.title}</span>
+                <span className="conversation-meta">
+                  {conversation.messages && conversation.messages.length > 0 
+                    ? `${conversation.messages.length} messages`
+                    : 'No messages'
+                  }
+                </span>
               </div>
             </li>
           ))}

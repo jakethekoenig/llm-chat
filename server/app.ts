@@ -9,6 +9,12 @@ import { Conversation } from './database/models/Conversation';
 import { Message } from './database/models/Message';
 import { addMessage, generateCompletion } from './helpers/messageHelpers';
 import { body, validationResult } from 'express-validator';
+import { 
+  convertMessageToApiFormat, 
+  convertConversationToApiFormat, 
+  convertUserToApiFormat,
+  convertIdToNumber 
+} from './helpers/typeConverters';
 
 const app = express();
 const SECRET_KEY = process.env.SECRET_KEY || 'fallback-secret-key';
@@ -63,7 +69,7 @@ app.post('/api/register', async (req: express.Request, res: express.Response) =>
     }
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await User.create({ username, email, hashed_password: hashedPassword });
-    res.status(201).json({ id: (newUser as any).get('id'), username: (newUser as any).username, email: (newUser as any).email });
+    res.status(201).json(convertUserToApiFormat(newUser));
   } catch (error) {
     res.status(400).json({ error: 'Error creating user' });
   }
@@ -72,8 +78,8 @@ app.post('/api/register', async (req: express.Request, res: express.Response) =>
 // Add message submission endpoint
 app.post('/api/add_message', authenticateToken, [
   body('content').notEmpty().withMessage('Content is required'),
-  body('conversationId').isInt().withMessage('Conversation ID must be an integer'),
-  body('parentId').optional().isInt().withMessage('Parent ID must be an integer')
+  body('conversationId').notEmpty().withMessage('Conversation ID is required'),
+  body('parentId').optional()
 ], async (req: express.Request, res: express.Response) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -84,8 +90,11 @@ app.post('/api/add_message', authenticateToken, [
   const userId = (req as any).user.id;
 
   try {
-    const message = await addMessage(content, conversationId, parentId, userId);
-    res.status(201).json({ id: message.get('id') });
+    const dbConversationId = convertIdToNumber(conversationId);
+    const dbParentId = parentId ? convertIdToNumber(parentId) : null;
+    const message = await addMessage(content, dbConversationId, dbParentId, userId);
+    const formattedMessage = convertMessageToApiFormat(message);
+    res.status(201).json(formattedMessage);
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -93,7 +102,7 @@ app.post('/api/add_message', authenticateToken, [
 
 // Get completion for message endpoint with validation
 app.post('/api/get_completion_for_message', authenticateToken, [
-  body('messageId').isInt().withMessage('Message ID must be an integer'),
+  body('messageId').notEmpty().withMessage('Message ID is required'),
   body('model').notEmpty().withMessage('Model is required'),
   body('temperature').isFloat().withMessage('Temperature must be a float')
 ], async (req: express.Request, res: express.Response) => {
@@ -105,8 +114,9 @@ app.post('/api/get_completion_for_message', authenticateToken, [
   const { messageId, model, temperature } = req.body;
 
   try {
-    const completionMessage = await generateCompletion(messageId, model, temperature);
-    res.status(201).json({ id: completionMessage.get('id'), content: completionMessage.get('content')});
+    const dbMessageId = convertIdToNumber(messageId);
+    const completionMessage = await generateCompletion(dbMessageId, model, temperature);
+    res.status(201).json({ id: (completionMessage.get('id') as number).toString(), content: completionMessage.get('content') as string});
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -115,7 +125,7 @@ app.post('/api/get_completion_for_message', authenticateToken, [
 // Streaming endpoint with validation
 app.post('/api/get_completion', authenticateToken, [
   body('model').notEmpty().withMessage('Model is required'),
-  body('parentId').isInt().withMessage('Parent ID must be an integer'),
+  body('parentId').notEmpty().withMessage('Parent ID is required'),
   body('temperature').isFloat().withMessage('Temperature must be a float')
 ], async (req: express.Request, res: express.Response) => {
   const errors = validationResult(req);
@@ -126,12 +136,13 @@ app.post('/api/get_completion', authenticateToken, [
   const { model, parentId, temperature } = req.body;
 
   try {
-    const completionMessage = await generateCompletion(parentId, model, temperature);
+    const dbParentId = convertIdToNumber(parentId);
+    const completionMessage = await generateCompletion(dbParentId, model, temperature);
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    const streamData = JSON.stringify({ id: completionMessage.get('id'), content: completionMessage.get('content')});
+    const streamData = JSON.stringify({ id: (completionMessage.get('id') as number).toString(), content: completionMessage.get('content') as string});
     res.write(`data: ${streamData}\n\n`);
 
     // Placeholder for actual streaming logic
@@ -168,7 +179,9 @@ app.get('/api/conversations', authenticateToken, async (req: express.Request, re
         required: false
       }]
     });
-    res.json(conversations);
+    
+    const formattedConversations = conversations.map(convertConversationToApiFormat);
+    res.json(formattedConversations);
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -178,10 +191,13 @@ app.get('/api/conversations', authenticateToken, async (req: express.Request, re
 app.get('/api/conversations/:conversationId/messages', authenticateToken, async (req: express.Request, res: express.Response) => {
   try {
     const { conversationId } = req.params;
+    const dbConversationId = convertIdToNumber(conversationId);
     const messages = await Message.findAll({
-      where: { conversation_id: conversationId }
+      where: { conversation_id: dbConversationId }
     });
-    res.json(messages);
+    
+    const formattedMessages = messages.map(convertMessageToApiFormat);
+    res.json(formattedMessages);
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -206,7 +222,11 @@ app.post('/api/create_conversation', authenticateToken, [
     const conversation = await Conversation.create({ title: defaultTitle, user_id: userId });
     const message = await addMessage(initialMessage, conversation.get('id') as number, null, userId);
     const completionMessage = await generateCompletion(message.get('id') as number, model, temperature);
-    res.status(201).json({ conversationId: conversation.get('id'), initialMessageId: message.get('id'), completionMessageId: completionMessage.get('id') });
+    res.status(201).json({ 
+      conversationId: (conversation.get('id') as number).toString(), 
+      initialMessageId: (message.get('id') as number).toString(), 
+      completionMessageId: (completionMessage.get('id') as number).toString() 
+    });
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }
