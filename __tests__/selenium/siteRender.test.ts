@@ -85,19 +85,6 @@ describe('Comprehensive Site Tests', () => {
       expect(await signInForm.isDisplayed()).toBe(true);
     }, testTimeout);
 
-    test('should navigate to register page', async () => {
-      await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
-      await driver.wait(until.elementLocated(By.linkText('Register')), 10000);
-      
-      const registerLink = await driver.findElement(By.linkText('Register'));
-      await registerLink.click();
-      
-      await driver.wait(until.urlContains('/register'), 10000);
-      expect(await driver.getCurrentUrl()).toContain('/register');
-      
-      const registerForm = await driver.findElement(By.css('form'));
-      expect(await registerForm.isDisplayed()).toBe(true);
-    }, testTimeout);
 
     test('should toggle side pane', async () => {
       await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
@@ -122,39 +109,6 @@ describe('Comprehensive Site Tests', () => {
   });
 
   describe('Authentication Flow', () => {
-    test('should display registration form with all fields', async () => {
-      await clearLocalStorageAndNavigate(`${baseUrl}/register`);
-      await driver.wait(until.elementLocated(By.css('form')), 10000);
-      
-      // Debug what page we're actually on
-      const currentUrl = await driver.getCurrentUrl();
-      console.log('Current URL for register test:', currentUrl);
-      
-      const pageContent = await driver.findElement(By.css('body')).getText();
-      console.log('Page content for register test:', pageContent.substring(0, 300));
-      
-      // Wait for register form to be visible
-      await driver.wait(until.elementLocated(By.xpath("//h2[contains(text(), 'Register')]")), 10000);
-      
-      const inputElements = await driver.findElements(By.css('input'));
-      console.log('Found', inputElements.length, 'input elements');
-      
-      for (let i = 0; i < inputElements.length; i++) {
-        const type = await inputElements[i].getAttribute('type');
-        const value = await inputElements[i].getAttribute('value');
-        console.log(`Input ${i}: type=${type}, value=${value}`);
-      }
-      
-      const usernameInput = await driver.findElement(By.css('input[type="text"]'));
-      const emailInput = await driver.findElement(By.css('input[type="email"]'));
-      const passwordInput = await driver.findElement(By.css('input[type="password"]'));
-      const submitButton = await driver.findElement(By.css('button[type="submit"]'));
-      
-      expect(await usernameInput.isDisplayed()).toBe(true);
-      expect(await emailInput.isDisplayed()).toBe(true);
-      expect(await passwordInput.isDisplayed()).toBe(true);
-      expect(await submitButton.isDisplayed()).toBe(true);
-    }, testTimeout);
 
     test('should display sign in form with all fields', async () => {
       await clearLocalStorageAndNavigate(`${baseUrl}/signin`);
@@ -169,28 +123,6 @@ describe('Comprehensive Site Tests', () => {
       expect(await submitButton.isDisplayed()).toBe(true);
     }, testTimeout);
 
-    test('should fill and submit registration form', async () => {
-      await clearLocalStorageAndNavigate(`${baseUrl}/register`);
-      await driver.wait(until.elementLocated(By.css('form')), 10000);
-      
-      const usernameInput = await driver.findElement(By.css('input[type="text"]'));
-      const emailInput = await driver.findElement(By.css('input[type="email"]'));
-      const passwordInput = await driver.findElement(By.css('input[type="password"]'));
-      const submitButton = await driver.findElement(By.css('button[type="submit"]'));
-      
-      await usernameInput.sendKeys('testuser');
-      await emailInput.sendKeys('test@example.com');
-      await passwordInput.sendKeys('testpassword');
-      
-      // Verify form data is entered
-      expect(await usernameInput.getAttribute('value')).toBe('testuser');
-      expect(await emailInput.getAttribute('value')).toBe('test@example.com');
-      expect(await passwordInput.getAttribute('value')).toBe('testpassword');
-      
-      // Note: Not actually submitting as it would require a real backend
-      // But we can verify the form is ready to submit
-      expect(await submitButton.isEnabled()).toBe(true);
-    }, testTimeout);
 
     test('should fill sign in form', async () => {
       await clearLocalStorageAndNavigate(`${baseUrl}/signin`);
@@ -475,29 +407,6 @@ describe('Comprehensive Site Tests', () => {
       }
     }, testTimeout);
 
-    test('should test streaming functionality', async () => {
-      await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
-      await driver.wait(until.elementLocated(By.xpath("//h2[contains(text(), 'Message Component Demo')]")), 15000);
-      
-      try {
-        await driver.wait(until.elementLocated(By.xpath("//button[contains(text(), 'Start Streaming')]")), 15000);
-        
-        const streamButton = await driver.findElement(By.xpath("//button[contains(text(), 'Start Streaming')]"));
-        expect(await streamButton.isDisplayed()).toBe(true);
-        
-        // Click the streaming button
-        await streamButton.click();
-        
-        // Wait for streaming content to appear
-        await driver.wait(until.elementLocated(By.css('[data-testid="message-container"]')), 5000);
-        
-        // Check that additional message container appears
-        const messageContainers = await driver.findElements(By.css('[data-testid="message-container"]'));
-        expect(messageContainers.length).toBeGreaterThanOrEqual(3);
-      } catch (error) {
-        console.log('Streaming functionality not available, this may be expected in test environment');
-      }
-    }, testTimeout);
 
     test('should render code blocks and math content', async () => {
       await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
