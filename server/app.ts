@@ -3,9 +3,8 @@ import jwt from 'jsonwebtoken';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import bcrypt from 'bcrypt';
-// TODO: Install these packages: npm install helmet express-rate-limit
-// import helmet from 'helmet';
-// import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { User } from './database/models/User';
 import { Op } from 'sequelize';
 import { Conversation } from './database/models/Conversation';
@@ -21,8 +20,7 @@ if (!SECRET_KEY) {
   throw new Error('SECRET_KEY environment variable is required');
 }
 
-// Security middleware - TODO: Uncomment after installing helmet and express-rate-limit
-/*
+// Security middleware
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -33,28 +31,29 @@ app.use(helmet({
     },
   },
 }));
-*/
 
-// Rate limiting - TODO: Uncomment after installing express-rate-limit
-/*
+// Rate limiting - more permissive in test environment
+const isTestEnv = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: isTestEnv ? 10000 : 100, // Much higher limit for tests
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  skip: isTestEnv ? () => true : undefined, // Skip rate limiting in tests
 });
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit auth attempts to 5 per windowMs
+  max: isTestEnv ? 10000 : 5, // Much higher limit for tests
   message: 'Too many authentication attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  skip: isTestEnv ? () => true : undefined, // Skip rate limiting in tests
 });
 
 app.use(limiter);
-*/
 app.use(bodyParser.json({ limit: '10mb' })); // Add size limit
 app.use(cors());
 
@@ -73,8 +72,8 @@ export const authenticateToken = (req: express.Request, res: express.Response, n
   });
 };
 
-// Sign-in route - TODO: Add authLimiter after installing express-rate-limit
-app.post('/api/signin', async (req: express.Request, res: express.Response) => {
+// Sign-in route
+app.post('/api/signin', authLimiter, async (req: express.Request, res: express.Response) => {
   const { username, password } = req.body;
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password are required' });
@@ -92,8 +91,8 @@ app.post('/api/signin', async (req: express.Request, res: express.Response) => {
   }
 });
 
-// Register route - TODO: Add authLimiter after installing express-rate-limit
-app.post('/api/register', async (req: express.Request, res: express.Response) => {
+// Register route
+app.post('/api/register', authLimiter, async (req: express.Request, res: express.Response) => {
   const { username, email, password } = req.body;
   if (!username || !email || !password) {
     return res.status(400).json({ error: 'Username, email, and password are required' });
