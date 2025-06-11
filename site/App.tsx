@@ -7,6 +7,8 @@ import Header from './components/Header';
 import ConversationPage from './components/ConversationPage';
 import ConversationListPage from './components/ConversationListPage';
 import { AuthProvider, useAuth } from './components/AuthContext';
+import { ToastProvider } from './components/ToastProvider';
+import ErrorBoundary from './components/ErrorBoundary';
 import './App.css';
 import { MathJaxContext } from 'better-react-mathjax';
 
@@ -89,9 +91,13 @@ const AppContent = () => {
 
 const App = () => {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <ToastProvider>
+          <AppContent />
+        </ToastProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 };
 export default App;
