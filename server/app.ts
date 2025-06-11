@@ -3,8 +3,9 @@ import jwt from 'jsonwebtoken';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import bcrypt from 'bcrypt';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
+// TODO: Install these packages: npm install helmet express-rate-limit
+// import helmet from 'helmet';
+// import rateLimit from 'express-rate-limit';
 import { User } from './database/models/User';
 import { Op } from 'sequelize';
 import { Conversation } from './database/models/Conversation';
@@ -20,7 +21,8 @@ if (!SECRET_KEY) {
   throw new Error('SECRET_KEY environment variable is required');
 }
 
-// Security middleware
+// Security middleware - TODO: Uncomment after installing helmet and express-rate-limit
+/*
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -31,8 +33,10 @@ app.use(helmet({
     },
   },
 }));
+*/
 
-// Rate limiting
+// Rate limiting - TODO: Uncomment after installing express-rate-limit
+/*
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per windowMs
@@ -50,6 +54,7 @@ const authLimiter = rateLimit({
 });
 
 app.use(limiter);
+*/
 app.use(bodyParser.json({ limit: '10mb' })); // Add size limit
 app.use(cors());
 
@@ -68,8 +73,8 @@ export const authenticateToken = (req: express.Request, res: express.Response, n
   });
 };
 
-// Sign-in route
-app.post('/api/signin', authLimiter, async (req: express.Request, res: express.Response) => {
+// Sign-in route - TODO: Add authLimiter after installing express-rate-limit
+app.post('/api/signin', async (req: express.Request, res: express.Response) => {
   const { username, password } = req.body;
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password are required' });
@@ -87,8 +92,8 @@ app.post('/api/signin', authLimiter, async (req: express.Request, res: express.R
   }
 });
 
-// Register route
-app.post('/api/register', authLimiter, async (req: express.Request, res: express.Response) => {
+// Register route - TODO: Add authLimiter after installing express-rate-limit
+app.post('/api/register', async (req: express.Request, res: express.Response) => {
   const { username, email, password } = req.body;
   if (!username || !email || !password) {
     return res.status(400).json({ error: 'Username, email, and password are required' });
