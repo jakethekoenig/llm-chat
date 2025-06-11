@@ -109,17 +109,46 @@ test('renders conversation with recursive navigation and selection', () => {
 test('renders conversation list', () => {
   const conversations = [
     { id: '1', title: 'Conversation 1', userId: '1', messages: [createTestMessage('1', 'Hello', 'User1')] },
-    { id: '2', title: 'Conversation 2', userId: '2', messages: [createTestMessage('2', 'Hi', 'User2')] },
+    { id: '2', title: 'Conversation 2', userId: '2', messages: [createTestMessage('2', 'Hi', 'User2'), createTestMessage('3', 'How are you?', 'User2')] },
   ];
   render(<ConversationList conversations={conversations} onConversationClick={() => {}} />);
   const conversation1 = screen.getByText('Conversation 1');
-  const messageCount1 = screen.getByText('1 messages');
   const conversation2 = screen.getByText('Conversation 2');
-  const messageCount2 = screen.getByText('1 messages');
+  const messageCount1 = screen.getByText('1 messages');
+  const messageCount2 = screen.getByText('2 messages');
   expect(conversation1).toBeInTheDocument();
-  expect(messageCount1).toBeInTheDocument();
   expect(conversation2).toBeInTheDocument();
+  expect(messageCount1).toBeInTheDocument();
   expect(messageCount2).toBeInTheDocument();
+});
+
+test('renders empty conversation list', () => {
+  render(<ConversationList conversations={[]} onConversationClick={() => {}} />);
+  expect(screen.getByText('No conversations available.')).toBeInTheDocument();
+});
+
+test('renders conversation list with no messages', () => {
+  const conversations = [
+    { id: '1', title: 'Empty Conversation', userId: '1', messages: [] },
+    { id: '2', title: 'No Messages', userId: '2', messages: [] },
+  ];
+  render(<ConversationList conversations={conversations} onConversationClick={() => {}} />);
+  expect(screen.getByText('Empty Conversation')).toBeInTheDocument();
+  expect(screen.getByText('No Messages')).toBeInTheDocument();
+  expect(screen.getAllByText('No messages')).toHaveLength(2);
+});
+
+test('calls onConversationClick when conversation is clicked', () => {
+  const mockClick = jest.fn();
+  const conversations = [
+    { id: '1', title: 'Clickable Conversation', userId: '1', messages: [createTestMessage('1', 'Hello', 'User1')] },
+  ];
+  render(<ConversationList conversations={conversations} onConversationClick={mockClick} />);
+  
+  const conversationElement = screen.getByText('Clickable Conversation').closest('li');
+  fireEvent.click(conversationElement!);
+  
+  expect(mockClick).toHaveBeenCalledWith('1');
 });
 
 test('handles new message input and submission', async () => {
