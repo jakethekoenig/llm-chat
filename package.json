@@ -48,7 +48,7 @@
     "bcrypt": "^5.1.1",
     "better-react-mathjax": "^1.0.0",
     "body-parser": "^1.20.1",
-    "chromedriver": "^132.0.1",
+    "chromedriver": "^137.0.1",
     "cors": "^2.8.5",
     "dompurify": "^3.1.6",
     "dotenv": "^10.0.0",
