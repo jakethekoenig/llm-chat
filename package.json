@@ -18,7 +18,8 @@
     "seed:test": "sequelize db:seed:all --env test",
     "test:selenium": "jest --config=jest.selenium.config.js",
     "start:all": "npm-run-all --parallel start:server start:client",
-    "test:ci": "npm-run-all --parallel --race start:all test"
+    "test:ci": "npm-run-all --parallel --race start:all test:no-selenium",
+    "test:no-selenium": "jest --testPathIgnorePatterns=__tests__/selenium"
   },
   "repository": {
     "type": "git",
