@@ -90,6 +90,9 @@ const Conversation: React.FC<ConversationProps> = ({ messages, onSubmit, author 
               author={currentMessage.author}
               timestamp={currentMessage.timestamp}
               id={currentMessage.id}
+              conversationId={currentMessage.conversationId}
+              userId={currentMessage.userId}
+              parentId={currentMessage.parentId}
               onPrev={() => decrementSelectedChildIndex(currentMessage.parentId)}
               onNext={() => incrementSelectedChildIndex(currentMessage.parentId)}
               hasSiblings={totalSiblings > 1}

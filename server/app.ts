@@ -78,8 +78,15 @@ app.post('/api/register', async (req: express.Request, res: express.Response) =>
 // Add message submission endpoint
 app.post('/api/add_message', authenticateToken, [
   body('content').notEmpty().withMessage('Content is required'),
-  body('conversationId').notEmpty().withMessage('Conversation ID is required'),
-  body('parentId').optional()
+  body('conversationId').custom((value) => {
+    if (!value) throw new Error('Conversation ID is required');
+    if (isNaN(parseInt(value))) throw new Error('Conversation ID must be a valid number');
+    return true;
+  }),
+  body('parentId').optional().custom((value) => {
+    if (value && isNaN(parseInt(value))) throw new Error('Parent ID must be an integer');
+    return true;
+  })
 ], async (req: express.Request, res: express.Response) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -102,7 +109,11 @@ app.post('/api/add_message', authenticateToken, [
 
 // Get completion for message endpoint with validation
 app.post('/api/get_completion_for_message', authenticateToken, [
-  body('messageId').notEmpty().withMessage('Message ID is required'),
+  body('messageId').custom((value) => {
+    if (!value) throw new Error('Message ID is required');
+    if (isNaN(parseInt(value))) throw new Error('Message ID must be a valid number');
+    return true;
+  }),
   body('model').notEmpty().withMessage('Model is required'),
   body('temperature').isFloat().withMessage('Temperature must be a float')
 ], async (req: express.Request, res: express.Response) => {
@@ -125,7 +136,11 @@ app.post('/api/get_completion_for_message', authenticateToken, [
 // Streaming endpoint with validation
 app.post('/api/get_completion', authenticateToken, [
   body('model').notEmpty().withMessage('Model is required'),
-  body('parentId').notEmpty().withMessage('Parent ID is required'),
+  body('parentId').custom((value) => {
+    if (!value) throw new Error('Parent ID is required');
+    if (isNaN(parseInt(value))) throw new Error('Parent ID must be a valid number');
+    return true;
+  }),
   body('temperature').isFloat().withMessage('Temperature must be a float')
 ], async (req: express.Request, res: express.Response) => {
   const errors = validationResult(req);
