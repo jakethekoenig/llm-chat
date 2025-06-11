@@ -39,14 +39,18 @@ describe('Comprehensive Site Tests', () => {
     }
   }, 20000);
 
-  beforeEach(async () => {
-    // Clear localStorage before each test
-    await driver.executeScript('localStorage.clear();');
-  });
+  const clearLocalStorageAndNavigate = async (url: string) => {
+    await driver.get(url);
+    try {
+      await driver.executeScript('localStorage.clear();');
+    } catch (error) {
+      // localStorage might not be available, ignore
+    }
+  };
 
   describe('Basic Site Loading', () => {
     test('should load the site without console errors', async () => {
-      await driver.get(`${baseUrl}/showcase`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
       await driver.wait(until.elementLocated(By.css('header')), 10000);
       
       const logs = await driver.manage().logs().get('browser');
@@ -55,7 +59,7 @@ describe('Comprehensive Site Tests', () => {
     }, testTimeout);
 
     test('should display header and main components', async () => {
-      await driver.get(`${baseUrl}/showcase`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
       await driver.wait(until.elementLocated(By.css('header')), 10000);
       
       const header = await driver.findElement(By.css('header'));
@@ -68,7 +72,7 @@ describe('Comprehensive Site Tests', () => {
 
   describe('Navigation', () => {
     test('should navigate to sign in page', async () => {
-      await driver.get(`${baseUrl}/showcase`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
       await driver.wait(until.elementLocated(By.linkText('Sign In')), 10000);
       
       const signInLink = await driver.findElement(By.linkText('Sign In'));
@@ -82,7 +86,7 @@ describe('Comprehensive Site Tests', () => {
     }, testTimeout);
 
     test('should navigate to register page', async () => {
-      await driver.get(`${baseUrl}/showcase`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
       await driver.wait(until.elementLocated(By.linkText('Register')), 10000);
       
       const registerLink = await driver.findElement(By.linkText('Register'));
@@ -96,7 +100,7 @@ describe('Comprehensive Site Tests', () => {
     }, testTimeout);
 
     test('should toggle side pane', async () => {
-      await driver.get(`${baseUrl}/showcase`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
       await driver.wait(until.elementLocated(By.css('.toggle-button')), 10000);
       
       const toggleButton = await driver.findElement(By.css('.toggle-button'));
@@ -119,7 +123,7 @@ describe('Comprehensive Site Tests', () => {
 
   describe('Authentication Flow', () => {
     test('should display registration form with all fields', async () => {
-      await driver.get(`${baseUrl}/register`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/register`);
       await driver.wait(until.elementLocated(By.css('form')), 10000);
       
       const usernameInput = await driver.findElement(By.css('input[type="text"]'));
@@ -134,7 +138,7 @@ describe('Comprehensive Site Tests', () => {
     }, testTimeout);
 
     test('should display sign in form with all fields', async () => {
-      await driver.get(`${baseUrl}/signin`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/signin`);
       await driver.wait(until.elementLocated(By.css('form')), 10000);
       
       const usernameInput = await driver.findElement(By.css('input[type="text"]'));
@@ -147,7 +151,7 @@ describe('Comprehensive Site Tests', () => {
     }, testTimeout);
 
     test('should fill and submit registration form', async () => {
-      await driver.get(`${baseUrl}/register`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/register`);
       await driver.wait(until.elementLocated(By.css('form')), 10000);
       
       const usernameInput = await driver.findElement(By.css('input[type="text"]'));
@@ -170,7 +174,7 @@ describe('Comprehensive Site Tests', () => {
     }, testTimeout);
 
     test('should fill sign in form', async () => {
-      await driver.get(`${baseUrl}/signin`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/signin`);
       await driver.wait(until.elementLocated(By.css('form')), 10000);
       
       const usernameInput = await driver.findElement(By.css('input[type="text"]'));
@@ -186,7 +190,7 @@ describe('Comprehensive Site Tests', () => {
     }, testTimeout);
 
     test('should redirect unauthenticated users from protected routes', async () => {
-      await driver.get(`${baseUrl}/conversations/123`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/conversations/123`);
       await driver.wait(until.urlContains('/signin'), 10000);
       expect(await driver.getCurrentUrl()).toContain('/signin');
     }, testTimeout);
@@ -195,7 +199,7 @@ describe('Comprehensive Site Tests', () => {
   describe('Protected Route Behavior', () => {
     test('should show conversation list only when authenticated', async () => {
       // First, check that side pane shows when not authenticated but doesn't have conversation list
-      await driver.get(`${baseUrl}/showcase`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
       await driver.wait(until.elementLocated(By.css('.side-pane')), 10000);
       
       // Should be redirected or show sign in for protected content
@@ -204,7 +208,7 @@ describe('Comprehensive Site Tests', () => {
     }, testTimeout);
 
     test('should show not found page for invalid routes', async () => {
-      await driver.get(`${baseUrl}/invalid-route`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/invalid-route`);
       await driver.wait(until.elementLocated(By.css('.page-content')), 10000);
       
       const pageContent = await driver.findElement(By.css('.page-content'));
@@ -217,7 +221,7 @@ describe('Comprehensive Site Tests', () => {
     test('should display conversation creation form elements', async () => {
       // Mock authentication to access protected content
       await driver.executeScript('localStorage.setItem("token", "mock-token");');
-      await driver.get(`${baseUrl}/showcase`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
       await driver.wait(until.elementLocated(By.css('.side-pane')), 10000);
       
       // Look for conversation creation form elements
@@ -240,7 +244,7 @@ describe('Comprehensive Site Tests', () => {
 
     test('should fill conversation creation form', async () => {
       await driver.executeScript('localStorage.setItem("token", "mock-token");');
-      await driver.get(`${baseUrl}/showcase`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
       await driver.wait(until.elementLocated(By.css('.side-pane')), 10000);
       
       try {
@@ -265,7 +269,7 @@ describe('Comprehensive Site Tests', () => {
 
   describe('Message Demo Component', () => {
     test('should display message demo on showcase page', async () => {
-      await driver.get(`${baseUrl}/showcase`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
       await driver.wait(until.elementLocated(By.css('.page-content')), 10000);
       
       const pageContent = await driver.findElement(By.css('.page-content'));
@@ -274,7 +278,7 @@ describe('Comprehensive Site Tests', () => {
     }, testTimeout);
 
     test('should display message demo component and tabs', async () => {
-      await driver.get(`${baseUrl}/showcase`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
       await driver.wait(until.elementLocated(By.css('h2')), 10000);
       
       const demoHeading = await driver.findElement(By.xpath("//h2[contains(text(), 'Message Component Demo')]"));
@@ -291,7 +295,7 @@ describe('Comprehensive Site Tests', () => {
     }, testTimeout);
 
     test('should switch between demo tabs', async () => {
-      await driver.get(`${baseUrl}/showcase`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
       await driver.wait(until.elementLocated(By.xpath("//button[contains(text(), 'Messages')]")), 10000);
       
       // Test conversation tab
@@ -324,7 +328,7 @@ describe('Comprehensive Site Tests', () => {
     }, testTimeout);
 
     test('should display message components with different configurations', async () => {
-      await driver.get(`${baseUrl}/showcase`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
       await driver.wait(until.elementLocated(By.css('[data-testid="message-container"]')), 10000);
       
       const messageContainers = await driver.findElements(By.css('[data-testid="message-container"]'));
@@ -337,7 +341,7 @@ describe('Comprehensive Site Tests', () => {
     }, testTimeout);
 
     test('should display and interact with message buttons', async () => {
-      await driver.get(`${baseUrl}/showcase`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
       await driver.wait(until.elementLocated(By.css('[data-testid="message-container"]')), 10000);
       
       // Look for copy button in first message
@@ -363,7 +367,7 @@ describe('Comprehensive Site Tests', () => {
     }, testTimeout);
 
     test('should test streaming functionality', async () => {
-      await driver.get(`${baseUrl}/showcase`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
       await driver.wait(until.elementLocated(By.xpath("//button[contains(text(), 'Start Streaming')]")), 10000);
       
       const streamButton = await driver.findElement(By.xpath("//button[contains(text(), 'Start Streaming')]"));
@@ -381,7 +385,7 @@ describe('Comprehensive Site Tests', () => {
     }, testTimeout);
 
     test('should render code blocks and math content', async () => {
-      await driver.get(`${baseUrl}/showcase`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
       await driver.wait(until.elementLocated(By.css('[data-testid="message-container"]')), 10000);
       
       // Look for code blocks
@@ -409,7 +413,7 @@ describe('Comprehensive Site Tests', () => {
     }, testTimeout);
 
     test('should test conversation message navigation', async () => {
-      await driver.get(`${baseUrl}/showcase`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
       await driver.wait(until.elementLocated(By.xpath("//button[contains(text(), 'Conversation')]")), 10000);
       
       // Switch to conversation tab
@@ -443,7 +447,7 @@ describe('Comprehensive Site Tests', () => {
     }, testTimeout);
 
     test('should test new message input in conversation', async () => {
-      await driver.get(`${baseUrl}/showcase`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
       await driver.wait(until.elementLocated(By.xpath("//button[contains(text(), 'Conversation')]")), 10000);
       
       // Switch to conversation tab
@@ -470,7 +474,7 @@ describe('Comprehensive Site Tests', () => {
     }, testTimeout);
 
     test('should test conversation list functionality', async () => {
-      await driver.get(`${baseUrl}/showcase`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
       await driver.wait(until.elementLocated(By.xpath("//button[contains(text(), 'Conversation List')]")), 10000);
       
       // Switch to conversation list tab
@@ -499,7 +503,7 @@ describe('Comprehensive Site Tests', () => {
   describe('Responsive Design', () => {
     test('should handle mobile viewport', async () => {
       await driver.manage().window().setRect({ width: 375, height: 667 });
-      await driver.get(`${baseUrl}/showcase`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
       await driver.wait(until.elementLocated(By.css('header')), 10000);
       
       const header = await driver.findElement(By.css('header'));
@@ -511,7 +515,7 @@ describe('Comprehensive Site Tests', () => {
 
     test('should handle desktop viewport', async () => {
       await driver.manage().window().setRect({ width: 1200, height: 800 });
-      await driver.get(`${baseUrl}/showcase`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
       await driver.wait(until.elementLocated(By.css('header')), 10000);
       
       const header = await driver.findElement(By.css('header'));
@@ -524,7 +528,7 @@ describe('Comprehensive Site Tests', () => {
 
   describe('Error Handling', () => {
     test('should handle network errors gracefully', async () => {
-      await driver.get(`${baseUrl}/signin`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/signin`);
       await driver.wait(until.elementLocated(By.css('form')), 10000);
       
       // Fill form with invalid credentials
@@ -541,7 +545,7 @@ describe('Comprehensive Site Tests', () => {
     }, testTimeout);
 
     test('should validate required form fields', async () => {
-      await driver.get(`${baseUrl}/register`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/register`);
       await driver.wait(until.elementLocated(By.css('form')), 10000);
       
       const submitButton = await driver.findElement(By.css('button[type="submit"]'));
@@ -558,7 +562,7 @@ describe('Comprehensive Site Tests', () => {
 
   describe('Keyboard Navigation', () => {
     test('should support tab navigation', async () => {
-      await driver.get(`${baseUrl}/signin`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/signin`);
       await driver.wait(until.elementLocated(By.css('form')), 10000);
       
       const body = await driver.findElement(By.css('body'));
@@ -574,7 +578,7 @@ describe('Comprehensive Site Tests', () => {
     }, testTimeout);
 
     test('should support enter key for form submission', async () => {
-      await driver.get(`${baseUrl}/signin`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/signin`);
       await driver.wait(until.elementLocated(By.css('form')), 10000);
       
       const usernameInput = await driver.findElement(By.css('input[type="text"]'));
@@ -588,7 +592,7 @@ describe('Comprehensive Site Tests', () => {
 
   describe('Content Rendering', () => {
     test('should render page title correctly', async () => {
-      await driver.get(`${baseUrl}/showcase`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
       await driver.wait(until.titleContains(''), 2000); // Wait for title, but don't require specific content
       
       const title = await driver.getTitle();
@@ -597,7 +601,7 @@ describe('Comprehensive Site Tests', () => {
     }, testTimeout);
 
     test('should load and display CSS styles', async () => {
-      await driver.get(`${baseUrl}/showcase`);
+      await clearLocalStorageAndNavigate(`${baseUrl}/showcase`);
       await driver.wait(until.elementLocated(By.css('header')), 10000);
       
       const header = await driver.findElement(By.css('header'));
