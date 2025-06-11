@@ -59,38 +59,54 @@ npm test
 
 This will also generate a coverage report in the `coverage` directory.
 
-## Running the Server
+## Environment Setup
 
-To run the server, follow these steps:
+Before running the server, you need to set up your environment variables:
 
-1. Install dependencies: `npm install`
-2. Start the server: `npm run start`
+1. Copy the example environment file: `cp .env.example .env`
+2. Edit `.env` and set the required values:
+   - `SECRET_KEY`: A strong random secret (minimum 32 characters) for JWT tokens
+   - `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`: At least one LLM API key is required
+   - `PORT`: Optional, defaults to 3000
 
-The server will be running on `http://localhost:3000`.
+### Required Environment Variables
 
-## Running the Test Website
+- **SECRET_KEY**: Used for JWT token signing. Generate a strong random string (32+ characters)
+- **API Keys**: Set at least one of these for LLM completions:
+  - `OPENAI_API_KEY`: For GPT models
+  - `ANTHROPIC_API_KEY`: For Claude models
 
-To run the test website, follow these steps:
+### Example
 
-1. Install dependencies: `npm install`
-2. Start the dev server: `npm run dev`
-3. Open the provided localhost URL in your browser
-
-This test website serves as a living documentation of our components, making it easier to visualize and interact with them as we develop.
 ```bash
-npm test
+# Generate a secure SECRET_KEY (32+ characters)
+SECRET_KEY=your-super-secure-random-string-here-32-chars-minimum
+
+# Add your API keys (at least one required)
+OPENAI_API_KEY=sk-your-openai-key-here
+ANTHROPIC_API_KEY=sk-ant-your-anthropic-key-here
+
+# Optional: Custom port
+PORT=3000
 ```
 
-This will also generate a coverage report in the `coverage` directory.
-
 ## Running the Server
 
 To run the server, follow these steps:
 
 1. Install dependencies: `npm install`
-2. Start the server: `npm run start`
+2. Set up environment variables (see Environment Setup above)
+3. Start the server: `npm run start`
 
 The server will be running on `http://localhost:3000`.
+
+### Security Features
+
+The server includes several security features:
+- Rate limiting (100 requests per 15 minutes, 5 auth attempts per 15 minutes)
+- Security headers via Helmet.js
+- Environment variable validation on startup
+- No fallback secrets in production
 
 ## Running the Test Website
 
