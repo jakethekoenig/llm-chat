@@ -66,6 +66,35 @@ const generateAnthropicCompletion = async (content: string, model: string, tempe
   }
 };
 
+const generateAnthropicStreamingCompletion = async function* (
+  content: string, 
+  model: string, 
+  temperature: number
+): AsyncIterable<string> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new Error('Anthropic API key is not set');
+  }
+
+  const client = new Anthropic({
+    apiKey: apiKey,
+  });
+
+  const stream = await client.messages.create({
+    model,
+    max_tokens: 1024,
+    temperature,
+    messages: [{ role: 'user', content }],
+    stream: true,
+  });
+
+  for await (const chunk of stream) {
+    if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+      yield chunk.delta.text;
+    }
+  }
+};
+
 const generateOpenAICompletion = async (content: string, model: string, temperature: number) => {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -80,6 +109,32 @@ const generateOpenAICompletion = async (content: string, model: string, temperat
   });
 
   return response.choices[0].message?.content || '';
+};
+
+const generateOpenAIStreamingCompletion = async function* (
+  content: string, 
+  model: string, 
+  temperature: number
+): AsyncIterable<string> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OpenAI API key is not set');
+  }
+
+  const openai = new OpenAI({ apiKey });
+  const stream = await openai.chat.completions.create({
+    model,
+    messages: [{ role: "user", content }],
+    temperature,
+    stream: true,
+  });
+
+  for await (const chunk of stream) {
+    const content = chunk.choices[0]?.delta?.content || '';
+    if (content) {
+      yield content;
+    }
+  }
 };
 
 export const generateCompletion = async (messageId: number, model: string, temperature: number) => {
@@ -115,5 +170,55 @@ export const generateCompletion = async (messageId: number, model: string, tempe
       logger.error('Error generating completion:', { error });
     }
     throw new Error('Failed to generate completion');
+  }
+};
+
+export const generateStreamingCompletion = async function* (
+  messageId: number, 
+  model: string, 
+  temperature: number
+): AsyncIterable<{ messageId: number; chunk: string; isComplete: boolean }> {
+  const parentMessage: Message | null = await Message.findByPk(messageId);
+  if (!parentMessage) {
+    throw new Error(`Parent message with ID ${messageId} not found`);
+  }
+
+  const content = parentMessage.get('content') as string;
+  if (!content) {
+    throw new Error('Parent message has no content');
+  }
+
+  const completionMessage: Message = await Message.create({
+    content: '',
+    parent_id: messageId,
+    conversation_id: parentMessage.get('conversation_id') as number,
+    user_id: parentMessage.get('user_id') as number,
+    model,
+    temperature,
+  });
+
+  const completionMessageId = completionMessage.get('id') as number;
+  let fullContent = '';
+
+  try {
+    const streamGenerator = isAnthropicModel(model)
+      ? generateAnthropicStreamingCompletion(content, model, temperature)
+      : generateOpenAIStreamingCompletion(content, model, temperature);
+
+    for await (const chunk of streamGenerator) {
+      fullContent += chunk;
+      await completionMessage.update({ content: fullContent });
+      yield { messageId: completionMessageId, chunk, isComplete: false };
+    }
+
+    yield { messageId: completionMessageId, chunk: '', isComplete: true };
+  } catch (error) {
+    if (error instanceof Error) {
+      logger.error('Error generating streaming completion:', { message: error.message });
+    } else {
+      logger.error('Error generating streaming completion:', { error });
+    }
+    await completionMessage.destroy();
+    throw new Error('Failed to generate streaming completion');
   }
 };

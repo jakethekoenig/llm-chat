@@ -1,9 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
+import { Alert, Box } from '@mui/material';
 import Conversation from '../../chat-components/Conversation';
 import { Message as MessageType } from '../../chat-components/types/Message';
 import { Conversation as ConversationType } from '../../chat-components/types/Conversation';
-import { fetchWithAuth } from '../utils/api';
+import { apiGet, apiPost, apiPut, apiDelete, ApiError } from '../utils/api';
+import { useToast } from './ToastProvider';
+import ErrorBoundary from './ErrorBoundary';
+import { ConversationSkeleton, LoadingOverlay } from './SkeletonLoaders';
 import '../App.css';
 const ConversationPage: React.FC = () => {
   const { conversationId } = useParams<{ conversationId: string }>();
@@ -15,6 +19,8 @@ const ConversationPage: React.FC = () => {
   const [editingTitle, setEditingTitle] = useState('');
   const [isUpdatingTitle, setIsUpdatingTitle] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { showError, showSuccess } = useToast();
 
   useEffect(() => {
     const fetchConversationData = async () => {
@@ -23,18 +29,9 @@ const ConversationPage: React.FC = () => {
         setError(null);
         
         // Fetch conversation metadata and messages in parallel
-        const [conversationsResponse, messagesResponse] = await Promise.all([
-          fetchWithAuth('/api/conversations'),
-          fetchWithAuth(`/api/conversations/${conversationId}/messages`)
-        ]);
-        
-        if (!conversationsResponse.ok || !messagesResponse.ok) {
-          throw new Error('Failed to fetch conversation data');
-        }
-        
         const [conversations, messages] = await Promise.all([
-          conversationsResponse.json(),
-          messagesResponse.json()
+          apiGet('/api/conversations'),
+          apiGet(`/api/conversations/${conversationId}/messages`)
         ]);
         
         // Find the current conversation
@@ -47,13 +44,27 @@ const ConversationPage: React.FC = () => {
         setMessages(messages);
       } catch (error) {
         console.error('Error fetching conversation data:', error);
-        setError('Failed to load conversation. Please try again later.');
+        const apiError = error as ApiError;
+        
+        if (apiError.status === 404) {
+          setError('Conversation not found or you do not have access to it.');
+          showError('Conversation not found');
+        } else if (apiError.code === 'NETWORK_ERROR') {
+          setError('Network error. Please check your connection and try again.');
+          showError('Network error - please check your connection');
+        } else {
+          setError('Failed to load conversation. Please try again later.');
+          showError('Failed to load conversation');
+        }
       } finally {
         setIsLoading(false);
       }
     };
-    fetchConversationData();
-  }, [conversationId]);
+    
+    if (conversationId) {
+      fetchConversationData();
+    }
+  }, [conversationId, showError]);
 
   useEffect(() => {
     if (isEditingTitle && titleInputRef.current) {
@@ -117,37 +128,123 @@ const ConversationPage: React.FC = () => {
   };
 
   const handleNewMessageSubmit = async function* (message: string) {
+    setIsSubmitting(true);
+    setError(null);
+    
     try {
-      setError(null);
       const mostRecentMessageId = messages.length > 0 ? messages[messages.length - 1].id : null;
-      const response = await fetchWithAuth(`/api/add_message`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content: message, conversationId: conversationId, parentId: mostRecentMessageId })
-      });
       
-      if (!response.ok) {
-        throw new Error('Failed to send message');
-      }
+      const data = await apiPost('/api/add_message', {
+        content: message,
+        conversationId: conversationId,
+        parentId: mostRecentMessageId
+      });
 
-      const newMessage = await response.json();
-      // Add UI-specific fields
+      // Add UI-specific fields to the returned message
       const messageWithUiFields = {
-        ...newMessage,
+        ...data,
         author: 'User'
       };
       
       setMessages(prevMessages => [...prevMessages, messageWithUiFields]);
+      showSuccess('Message sent successfully');
+      yield `You: ${message}\n\n`;
       
-      // Yield the message content to support streaming interface
-      yield message;
+      // Now stream the AI response
+      const streamResponse = await fetchWithAuth(`/api/get_completion`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          parentId: data.id, 
+          model: 'gpt-4o',
+          temperature: 0.7 
+        })
+      });
+
+      if (!streamResponse.ok) {
+        throw new Error('Failed to get AI response');
+      }
+
+      const reader = streamResponse.body?.getReader();
+      const decoder = new TextDecoder();
+      let aiMessageId: string | null = null;
+      let fullAiContent = '';
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                
+                if (data.error) {
+                  throw new Error(data.error);
+                }
+                
+                if (data.messageId && !aiMessageId) {
+                  aiMessageId = data.messageId;
+                  // Add empty AI message to messages list
+                  const aiMessage = {
+                    id: data.messageId,
+                    content: '',
+                    author: 'AI',
+                    timestamp: new Date().toISOString(),
+                    parentId: data.id
+                  };
+                  setMessages(prevMessages => [...prevMessages, aiMessage]);
+                }
+                
+                if (data.chunk && aiMessageId) {
+                  fullAiContent += data.chunk;
+                  // Update the AI message content
+                  setMessages(prevMessages => 
+                    prevMessages.map(msg => 
+                      msg.id === aiMessageId 
+                        ? { ...msg, content: fullAiContent }
+                        : msg
+                    )
+                  );
+                  yield data.chunk;
+                }
+                
+                if (data.isComplete) {
+                  break;
+                }
+              } catch (parseError) {
+                console.error('Error parsing stream data:', parseError);
+              }
+            }
+          }
+        }
+      }
       
     } catch (error) {
       console.error('Error sending message:', error);
-      setError('Failed to send message. Please try again.');
-      yield 'Error: Failed to send message';
+      const apiError = error as ApiError;
+      
+      let errorMessage = 'Failed to send message. Please try again.';
+      
+      if (apiError.code === 'NETWORK_ERROR') {
+        errorMessage = 'Network error. Please check your connection.';
+      } else if (apiError.code === 'VALIDATION_ERROR') {
+        errorMessage = 'Message validation failed. Please check your input.';
+      } else if (apiError.status === 401 || apiError.status === 403) {
+        errorMessage = 'Authentication failed. Please sign in again.';
+      }
+      
+      setError(errorMessage);
+      showError(errorMessage);
+      yield `Error: ${errorMessage}`;
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -155,7 +252,9 @@ const ConversationPage: React.FC = () => {
     // Store original message for rollback
     const originalMessage = messages.find(msg => msg.id === messageId);
     if (!originalMessage) {
-      throw new Error('Message not found');
+      const errorMsg = 'Message not found';
+      showError(errorMsg);
+      throw new Error(errorMsg);
     }
 
     // Optimistic update
@@ -168,19 +267,10 @@ const ConversationPage: React.FC = () => {
     );
 
     try {
-      const response = await fetchWithAuth(`/api/messages/${messageId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content: newContent })
+      const updatedMessage = await apiPut(`/api/messages/${messageId}`, { 
+        content: newContent 
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to edit message');
-      }
-
-      const updatedMessage = await response.json();
       // Update with server response
       setMessages(prevMessages => 
         prevMessages.map(msg => 
@@ -190,15 +280,30 @@ const ConversationPage: React.FC = () => {
         )
       );
       
+      showSuccess('Message updated successfully');
+      
     } catch (error) {
       console.error('Error editing message:', error);
+      const apiError = error as ApiError;
+      
       // Rollback optimistic update
       setMessages(prevMessages => 
         prevMessages.map(msg => 
           msg.id === messageId ? originalMessage : msg
         )
       );
-      setError('Failed to edit message. Please try again.');
+      
+      let errorMessage = 'Failed to edit message. Please try again.';
+      if (apiError.code === 'NETWORK_ERROR') {
+        errorMessage = 'Network error. Please check your connection.';
+      } else if (apiError.status === 401 || apiError.status === 403) {
+        errorMessage = 'Authentication failed. Please sign in again.';
+      } else if (apiError.status === 404) {
+        errorMessage = 'Message not found.';
+      }
+      
+      setError(errorMessage);
+      showError(errorMessage);
       throw error;
     }
   };
@@ -211,66 +316,87 @@ const ConversationPage: React.FC = () => {
     setMessages(prevMessages => prevMessages.filter(msg => msg.id !== messageId));
 
     try {
-      const response = await fetchWithAuth(`/api/messages/${messageId}`, {
-        method: 'DELETE'
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to delete message');
-      }
-
-      // Message successfully deleted, no need to update state again
+      await apiDelete(`/api/messages/${messageId}`);
+      showSuccess('Message deleted successfully');
       
     } catch (error) {
       console.error('Error deleting message:', error);
+      const apiError = error as ApiError;
+      
       // Rollback optimistic update
       setMessages(originalMessages);
-      setError('Failed to delete message. Please try again.');
+      
+      let errorMessage = 'Failed to delete message. Please try again.';
+      if (apiError.code === 'NETWORK_ERROR') {
+        errorMessage = 'Network error. Please check your connection.';
+      } else if (apiError.status === 401 || apiError.status === 403) {
+        errorMessage = 'Authentication failed. Please sign in again.';
+      } else if (apiError.status === 404) {
+        errorMessage = 'Message not found.';
+      }
+      
+      setError(errorMessage);
+      showError(errorMessage);
       throw error;
     }
   };
 
   return (
-    <div>
-      <div className="conversation-header">
-        {isEditingTitle ? (
-          <div className="title-edit-section">
-            <input
-              ref={titleInputRef}
-              type="text"
-              value={editingTitle}
-              onChange={(e) => setEditingTitle(e.target.value)}
-              onKeyDown={handleTitleKeyDown}
-              onBlur={handleTitleSave}
-              disabled={isUpdatingTitle}
-              maxLength={200}
-              className="conversation-title-input"
-            />
-            {isUpdatingTitle && <span className="updating-indicator">Saving...</span>}
-          </div>
-        ) : (
-          <h2 
-            className="conversation-title-header" 
-            onClick={handleTitleEdit}
-            title="Click to edit title"
-          >
-            {conversationData?.title || 'Loading...'}
-          </h2>
+    <ErrorBoundary>
+      <Box sx={{ p: 2 }}>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
         )}
-      </div>
-      {error && <div className="error-message">{error}</div>}
-      {isLoading ? (
-        <div className="loading-message">Loading conversation...</div>
-      ) : (
-        <Conversation 
-          messages={messages} 
-          onSubmit={handleNewMessageSubmit} 
-          author="User"
-          onEdit={handleEditMessage}
-          onDelete={handleDeleteMessage}
-        />
-      )}
-    </div>
+        
+        <div className="conversation-header">
+          {isEditingTitle ? (
+            <div className="title-edit-section">
+              <input
+                ref={titleInputRef}
+                type="text"
+                value={editingTitle}
+                onChange={(e) => setEditingTitle(e.target.value)}
+                onKeyDown={handleTitleKeyDown}
+                onBlur={handleTitleSave}
+                disabled={isUpdatingTitle}
+                maxLength={200}
+                className="conversation-title-input"
+              />
+              {isUpdatingTitle && <span className="updating-indicator">Saving...</span>}
+            </div>
+          ) : (
+            <h2 
+              className="conversation-title-header" 
+              onClick={handleTitleEdit}
+              title="Click to edit title"
+            >
+              {conversationData?.title || 'Loading...'}
+            </h2>
+          )}
+        </div>
+        
+        <LoadingOverlay 
+          isLoading={isLoading} 
+          skeleton={<ConversationSkeleton />}
+        >
+          <Conversation 
+            messages={messages} 
+            onSubmit={handleNewMessageSubmit} 
+            author="User"
+            onEdit={handleEditMessage}
+            onDelete={handleDeleteMessage}
+          />
+        </LoadingOverlay>
+        
+        {isSubmitting && (
+          <Alert severity="info" sx={{ mt: 2 }}>
+            Sending message...
+          </Alert>
+        )}
+      </Box>
+    </ErrorBoundary>
   );
 }
 
