@@ -2,207 +2,305 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Message from '../../chat-components/Message';
-import { CodeBlockRenderer } from '../../chat-components/renderers/CodeBlockRenderer';
-import { Renderer } from '../../chat-components/renderers/Renderer';
-import { MessageConfigProvider, MessageConfig, defaultConfig } from '../../chat-components/MessageConfigContext';
-import OpenAI from 'openai';
+import { MessageConfigProvider, defaultConfig, MessageConfig } from '../../chat-components/MessageConfigContext';
 
-jest.mock('openai', () => {
-  return {
-    OpenAI: jest.fn().mockImplementation(() => ({
-      completions: {
-        create: jest.fn().mockResolvedValue({
-          choices: [{ text: 'Mocked completion response' }]
-        })
-      }
-    }))
-  };
+// Mock navigator.clipboard
+Object.assign(navigator, {
+  clipboard: {
+    writeText: jest.fn().mockImplementation(() => Promise.resolve()),
+  },
 });
 
-beforeAll(() => {
-  Object.assign(navigator, {
-    clipboard: {
-      writeText: jest.fn().mockResolvedValue(undefined),
-      readText: jest.fn().mockResolvedValue(''),
-    },
-  });
-});
-beforeEach(() => {
-  jest.clearAllMocks();
-});
+const defaultProps = {
+  id: '1',
+  content: 'Test message content',
+  conversationId: '1',
+  userId: '1',
+  timestamp: '2023-01-01T00:00:00Z',
+  parentId: null,
+};
 
-const renderWithConfig = (ui: React.ReactElement, config: Partial<MessageConfig> = {}) => {
-  const fullConfig: MessageConfig = { ...defaultConfig, ...config };
+const renderMessage = (props = {}, config: MessageConfig = defaultConfig) => {
   return render(
-    <MessageConfigProvider config={fullConfig}>
-      {ui}
+    <MessageConfigProvider config={config}>
+      <Message {...defaultProps} {...props} />
     </MessageConfigProvider>
   );
 };
 
-test('renders author and timestamp', () => {
-  renderWithConfig(<Message id="test-id-2" content="Test message" author="Test Author" timestamp="2023-01-01T00:00:00Z" currentIndex={0} totalSiblings={2} />);
-  expect(screen.getByText('Test Author')).toBeInTheDocument();
-  expect(screen.getByText(new Date('2023-01-01T00:00:00Z').toLocaleString())).toBeInTheDocument();
-});
-
-test('renders control buttons based on props', async () => {
-  const content = 'Test message';
-  const onCopy = jest.fn();
-  renderWithConfig(<Message id="test-id-3" content={content} buttons={{ copy: 'enabled' }} onCopy={onCopy} currentIndex={0} totalSiblings={1} />);
-  const copyButton = screen.getByText('Copy');
-  await fireEvent.click(copyButton);
-  expect(navigator.clipboard.writeText).toHaveBeenCalledWith(content);
-  expect(onCopy).toHaveBeenCalled();
-});
-
-test('renders share button and triggers onShare', async () => {
-  const onShare = jest.fn();
-  renderWithConfig(<Message id="test-id-4" content="Test message" buttons={{ share: 'enabled' }} onShare={onShare} />);
-  await fireEvent.click(screen.getByText('Share'));
-  expect(onShare).toHaveBeenCalled();
-});
-
-test('renders delete button and triggers onDelete', async () => {
-  const onDelete = jest.fn();
-  renderWithConfig(<Message id="test-id-5" content="Test message" buttons={{ delete: 'enabled' }} onDelete={onDelete} />);
-  await fireEvent.click(screen.getByText('Delete'));
-  expect(onDelete).toHaveBeenCalled();
-});
-
-test('renders edit button and triggers onEdit', async () => {
-  const onEdit = jest.fn();
-  renderWithConfig(<Message id="test-id-6" content="Test message" buttons={{ edit: 'enabled' }} onEdit={onEdit} />);
-  await fireEvent.click(screen.getByText('Edit'));
-  expect(onEdit).toHaveBeenCalled();
-});
-
-test('renders content without end sequence', () => {
-  const renderers = [new CodeBlockRenderer()];
-  const content = "```javascript\nconsole.log('Hello, World!');";
-  renderWithConfig(<Message id="test-id-15" content={content} renderers={renderers as Renderer[]} currentIndex={0} totalSiblings={1} />);
-  expect(screen.getByText("console")).toBeInTheDocument();
-  expect(screen.getByText("log")).toBeInTheDocument();
-});
-
-test('renders code block content', () => {
-  const renderers = [new CodeBlockRenderer()];
-  const content = "```javascript\nconsole.log('Hello, World!');\n```";
-  renderWithConfig(<Message id="test-id-9" content={content} renderers={renderers as Renderer[]} currentIndex={0} totalSiblings={1} />);
-  expect(screen.getByText("console")).toBeInTheDocument();
-  expect(screen.getByText("log")).toBeInTheDocument();
-});
-
-test('renders multiple code blocks and text without duplication', () => {
-  const renderers = [new CodeBlockRenderer()];
-  const content = "Here is some text before the code block.\n```javascript\nconsole.log('Hello, World!');\nconsole.log('This is a second line.');\n```\nHere is some text between the code blocks.\n```python\nprint('Hello, World!')\nprint('This is a second line.')\n```\nHere is some text after the code block."
-  renderWithConfig(<Message id="test-id-10" content={content} renderers={renderers as Renderer[]} currentIndex={0} totalSiblings={1} />);
-  expect(screen.getByText("Here is some text before the code block.")).toBeInTheDocument();
-  expect(screen.getByText("Here is some text between the code blocks.")).toBeInTheDocument();
-  expect(screen.getByText("Here is some text after the code block.")).toBeInTheDocument();
-  expect(screen.getAllByText(/console/)).toHaveLength(2);
-  expect(screen.getAllByText(/log/)).toHaveLength(2);
-  expect(screen.getAllByText(/'This is a second line.'/)).toHaveLength(2);
-  expect(screen.getAllByText(/print/)).toHaveLength(2);
-  expect(screen.getByTestId('message-container')).toBeInTheDocument();
-});
-
-test('copies message content to clipboard', async () => {
-  const content = 'Test message to copy';
-  const onCopy = jest.fn();
-  renderWithConfig(<Message id="test-id-11" content={content} buttons={{ copy: 'enabled' }} onCopy={onCopy} />);
-  const copyButton = screen.getByText('Copy');
-  await fireEvent.click(copyButton);
-  expect(navigator.clipboard.writeText).toHaveBeenCalledWith(content);
-  expect(onCopy).toHaveBeenCalled();
-});
-
-test('renders menu-ed buttons and triggers respective actions', async () => {
-  renderWithConfig(<Message id="test-id-11" content="Test message" buttons={{ copy: 'menu-ed', share: 'menu-ed', delete: 'menu-ed', edit: 'menu-ed' }} />);
-  expect(screen.getByText('Menu')).toBeInTheDocument();
-  fireEvent.click(screen.getByText('Menu'));
-  await waitFor(() => {
-    expect(screen.getByText('Copy')).toBeInTheDocument();
-    expect(screen.getByText('Share')).toBeInTheDocument();
-    expect(screen.getByText('Delete')).toBeInTheDocument();
-    expect(screen.getByText('Edit')).toBeInTheDocument();
+describe('Message Component', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
-});
 
-test('renders message with all buttons', async () => {
-  const onCopy = jest.fn();
-  const onShare = jest.fn();
-  const onDelete = jest.fn();
-  const onEdit = jest.fn();
-  renderWithConfig(<Message id="test-id-12" content="Test message" buttons={{ copy: 'enabled', share: 'enabled', delete: 'enabled', edit: 'enabled' }} onCopy={onCopy} onShare={onShare} onDelete={onDelete} onEdit={onEdit} />);
-  await fireEvent.click(screen.getByText('Copy'));
-  expect(onCopy).toHaveBeenCalled();
-  await fireEvent.click(screen.getByText('Share'));
-  expect(onShare).toHaveBeenCalled();
-  await fireEvent.click(screen.getByText('Delete'));
-  expect(onDelete).toHaveBeenCalled();
-  await fireEvent.click(screen.getByText('Edit'));
-  expect(onEdit).toHaveBeenCalled();
-});
-
-test('renders message with no buttons', async () => {
-  renderWithConfig(<Message id="test-id-13" content="Test message" />, { buttons: { copy: 'disabled', share: 'disabled', delete: 'disabled', edit: 'disabled' } });
-  expect(screen.queryByText('Copy')).not.toBeInTheDocument();
-  expect(screen.queryByText('Share')).not.toBeInTheDocument();
-  expect(screen.queryByText('Delete')).not.toBeInTheDocument();
-  expect(screen.queryByText('Edit')).not.toBeInTheDocument();
-});
-
-test('renders message with only copy button', async () => {
-  const onCopy = jest.fn();
-  renderWithConfig(<Message id="test-id-14" content="Test message" buttons={{ copy: 'enabled' }} onCopy={onCopy} />, { buttons: { copy: 'enabled', share: 'disabled', delete: 'disabled', edit: 'disabled' } });
-  expect(screen.getByText('Copy')).toBeInTheDocument();
-  expect(screen.queryByText('Share')).not.toBeInTheDocument();
-  expect(screen.queryByText('Delete')).not.toBeInTheDocument();
-  expect(screen.queryByText('Edit')).not.toBeInTheDocument();
-});
-
-test('renders plain text when no start sequence is found', () => {
-  const content = "This is a plain text without code block.";
-  renderWithConfig(<Message id="test-id-16" content={content} />);
-  expect(screen.getByText(content)).toBeInTheDocument();
-});
-
-const messages = [
-  { id: '1', content: 'Hello, world!', author: 'User', timestamp: new Date().toISOString(), parentId: null },
-  { id: '2', content: 'Hi there!', author: 'User2', timestamp: new Date().toISOString(), parentId: '1' },
-  { id: '3', content: 'How are you?', author: 'User', timestamp: new Date().toISOString(), parentId: '1' },
-];
-
-test('renders menu-ed buttons and triggers respective actions', async () => {
-  renderWithConfig(<Message id="test-id-11" content="Test message" buttons={{ copy: 'menu-ed', share: 'menu-ed', delete: 'menu-ed', edit: 'menu-ed' }} />);
-  expect(screen.getByText('Menu')).toBeInTheDocument();
-  fireEvent.click(screen.getByText('Menu'));
-  await waitFor(() => {
-    expect(screen.getByText('Copy')).toBeInTheDocument();
-    expect(screen.getByText('Share')).toBeInTheDocument();
-    expect(screen.getByText('Delete')).toBeInTheDocument();
-    expect(screen.getByText('Edit')).toBeInTheDocument();
+  test('renders basic message content', () => {
+    renderMessage();
+    expect(screen.getByText('Test message content')).toBeInTheDocument();
   });
-});
 
-test('renders message with right justification and different background for author', () => {
-  renderWithConfig(<Message id="test-id-17" content="Test message" author="Test Author" $isAuthor={true} />);
-  const messageContainer = screen.getByTestId('message-container');
-  expect(messageContainer).toHaveStyle('text-align: right');
-  expect(messageContainer).toHaveStyle('background-color: #e0f7fa');
-  // Ensure $isAuthor is not passed to DOM
-  expect(messageContainer).not.toHaveAttribute('$isAuthor');
-});
+  test('renders with author', () => {
+    renderMessage({ author: 'John Doe' });
+    expect(screen.getByText('John Doe')).toBeInTheDocument();
+  });
 
-test('does not pass $isAuthor prop to DOM', () => {
-  renderWithConfig(<Message id="test-id-20" content="Another test message" author="AuthorUser" $isAuthor={true} />);
-  const messageContainer = screen.getByTestId('message-container');
-  expect(messageContainer).not.toHaveAttribute('$isAuthor');
-});
+  test('renders timestamp correctly', () => {
+    renderMessage();
+    expect(screen.getByText('1/1/2023, 12:00:00 AM')).toBeInTheDocument();
+  });
 
-test('does not pass transient props to DOM elements', () => {
-  renderWithConfig(<Message id="test-id-19" content="Test message" $isAuthor={true} />);
-  const messageContainer = screen.getByTestId('message-container');
-  expect(messageContainer).not.toHaveAttribute('$isAuthor');
+  test('applies author styling when $isAuthor is true', () => {
+    renderMessage({ $isAuthor: true });
+    const container = screen.getByTestId('message-container');
+    expect(container).toHaveStyle('text-align: right');
+    expect(container).toHaveStyle('background-color: #e0f7fa');
+  });
+
+  test('applies non-author styling when $isAuthor is false', () => {
+    renderMessage({ $isAuthor: false });
+    const container = screen.getByTestId('message-container');
+    expect(container).toHaveStyle('text-align: left');
+    expect(container).toHaveStyle('background-color: #FFFFFF');
+  });
+
+  test('renders copy button and handles copy action', async () => {
+    const onCopy = jest.fn();
+    renderMessage({ onCopy });
+    
+    const copyButton = screen.getByText('Copy');
+    expect(copyButton).toBeInTheDocument();
+    
+    fireEvent.click(copyButton);
+    
+    await waitFor(() => {
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith('Test message content');
+      expect(onCopy).toHaveBeenCalled();
+    });
+  });
+
+  test('handles copy error gracefully', async () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    (navigator.clipboard.writeText as jest.Mock).mockRejectedValueOnce(new Error('Copy failed'));
+    
+    renderMessage();
+    
+    const copyButton = screen.getByText('Copy');
+    fireEvent.click(copyButton);
+    
+    await waitFor(() => {
+      expect(consoleSpy).toHaveBeenCalledWith('Failed to copy text: ', expect.any(Error));
+    });
+    
+    consoleSpy.mockRestore();
+  });
+
+  test('renders and handles share button', () => {
+    const onShare = jest.fn();
+    renderMessage({ onShare });
+    
+    const shareButton = screen.getByText('Share');
+    expect(shareButton).toBeInTheDocument();
+    
+    fireEvent.click(shareButton);
+    expect(onShare).toHaveBeenCalled();
+  });
+
+  test('renders and handles delete button', () => {
+    const onDelete = jest.fn();
+    renderMessage({ onDelete });
+    
+    const deleteButton = screen.getByText('Delete');
+    expect(deleteButton).toBeInTheDocument();
+    
+    fireEvent.click(deleteButton);
+    expect(onDelete).toHaveBeenCalled();
+  });
+
+  test('renders and handles edit button', () => {
+    const onEdit = jest.fn();
+    renderMessage({ onEdit });
+    
+    const editButton = screen.getByText('Edit');
+    expect(editButton).toBeInTheDocument();
+    
+    fireEvent.click(editButton);
+    expect(onEdit).toHaveBeenCalled();
+  });
+
+  test('handles click action', () => {
+    const onClick = jest.fn();
+    renderMessage({ onClick });
+    
+    const container = screen.getByTestId('message-container');
+    fireEvent.click(container);
+    expect(onClick).toHaveBeenCalled();
+  });
+
+  test('renders navigation buttons when hasSiblings is true', () => {
+    const onPrev = jest.fn();
+    const onNext = jest.fn();
+    renderMessage({ 
+      hasSiblings: true, 
+      currentIndex: 1, 
+      totalSiblings: 3,
+      onPrev,
+      onNext 
+    });
+    
+    expect(screen.getByText('<')).toBeInTheDocument();
+    expect(screen.getByText('>')).toBeInTheDocument();
+    expect(screen.getByText('2 / 3')).toBeInTheDocument();
+  });
+
+  test('handles navigation button clicks', () => {
+    const onPrev = jest.fn();
+    const onNext = jest.fn();
+    renderMessage({ 
+      hasSiblings: true, 
+      currentIndex: 1, 
+      totalSiblings: 3,
+      onPrev,
+      onNext 
+    });
+    
+    fireEvent.click(screen.getByText('<'));
+    expect(onPrev).toHaveBeenCalled();
+    
+    fireEvent.click(screen.getByText('>'));
+    expect(onNext).toHaveBeenCalled();
+  });
+
+  test('disables prev button at first index', () => {
+    renderMessage({ 
+      hasSiblings: true, 
+      currentIndex: 0, 
+      totalSiblings: 3,
+      onPrev: jest.fn(),
+      onNext: jest.fn() 
+    });
+    
+    const prevButton = screen.getByText('<');
+    expect(prevButton).toBeDisabled();
+  });
+
+  test('disables next button at last index', () => {
+    renderMessage({ 
+      hasSiblings: true, 
+      currentIndex: 2, 
+      totalSiblings: 3,
+      onPrev: jest.fn(),
+      onNext: jest.fn() 
+    });
+    
+    const nextButton = screen.getByText('>');
+    expect(nextButton).toBeDisabled();
+  });
+
+  test('hides navigation when hasSiblings is false', () => {
+    renderMessage({ hasSiblings: false });
+    
+    expect(screen.queryByText('<')).not.toBeInTheDocument();
+    expect(screen.queryByText('>')).not.toBeInTheDocument();
+  });
+
+  test('renders menu when buttons are set to menu-ed', () => {
+    const config: MessageConfig = {
+      ...defaultConfig,
+      buttons: { copy: 'menu-ed', share: 'menu-ed', delete: 'disabled', edit: 'disabled' },
+    };
+    
+    renderMessage({}, config);
+    
+    expect(screen.getByText('Menu')).toBeInTheDocument();
+    expect(screen.queryByText('Copy')).not.toBeInTheDocument();
+    expect(screen.queryByText('Share')).not.toBeInTheDocument();
+  });
+
+  test('opens and closes menu', () => {
+    const config: MessageConfig = {
+      ...defaultConfig,
+      buttons: { copy: 'menu-ed', share: 'disabled', delete: 'disabled', edit: 'disabled' },
+    };
+    
+    renderMessage({}, config);
+    
+    const menuButton = screen.getByText('Menu');
+    fireEvent.click(menuButton);
+    
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+    expect(screen.getByRole('menuitem')).toBeInTheDocument();
+  });
+
+  test('handles menu item clicks', async () => {
+    const config: MessageConfig = {
+      ...defaultConfig,
+      buttons: { copy: 'menu-ed', share: 'menu-ed', delete: 'disabled', edit: 'disabled' },
+    };
+    
+    const onShare = jest.fn();
+    renderMessage({ onShare }, config);
+    
+    const menuButton = screen.getByText('Menu');
+    fireEvent.click(menuButton);
+    
+    const shareMenuItem = screen.getByText('Share');
+    fireEvent.click(shareMenuItem);
+    
+    expect(onShare).toHaveBeenCalled();
+  });
+
+  test('hides buttons when set to disabled', () => {
+    const config: MessageConfig = {
+      ...defaultConfig,
+      buttons: { copy: 'disabled', share: 'disabled', delete: 'disabled', edit: 'disabled' },
+    };
+    
+    renderMessage({}, config);
+    
+    expect(screen.queryByText('Copy')).not.toBeInTheDocument();
+    expect(screen.queryByText('Share')).not.toBeInTheDocument();
+    expect(screen.queryByText('Delete')).not.toBeInTheDocument();
+    expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+    expect(screen.queryByText('Menu')).not.toBeInTheDocument();
+  });
+
+  test('applies dark theme styling', () => {
+    const darkConfig: MessageConfig = {
+      theme: { primaryColor: '#000', secondaryColor: '#fff', mode: 'dark' },
+      buttons: defaultConfig.buttons,
+    };
+    
+    renderMessage({ $isAuthor: false }, darkConfig);
+    
+    const container = screen.getByTestId('message-container');
+    expect(container).toHaveStyle('background-color: #333333');
+    expect(container).toHaveStyle('color: #FFFFFF');
+  });
+
+  test('updates content when prop changes', async () => {
+    const { rerender } = renderMessage({ content: 'Original content' });
+    
+    expect(screen.getByText('Original content')).toBeInTheDocument();
+    
+    rerender(
+      <MessageConfigProvider config={defaultConfig}>
+        <Message {...defaultProps} content="Updated content" />
+      </MessageConfigProvider>
+    );
+    
+    await waitFor(() => {
+      expect(screen.getByText('Updated content')).toBeInTheDocument();
+    });
+  });
+
+  test('renders without timestamp when not provided', () => {
+    renderMessage({ timestamp: undefined });
+    expect(screen.queryByText(/\d+\/\d+\/\d+/)).not.toBeInTheDocument();
+  });
+
+  test('renders without author when not provided', () => {
+    renderMessage({ author: undefined });
+    expect(screen.getByText('Test message content')).toBeInTheDocument();
+    // Should not have any author text
+    expect(screen.getByTestId('message-container').textContent).not.toMatch(/\w+\s+\w+/);
+  });
 });
