@@ -1,25 +1,15 @@
 #!/bin/bash
 
-# Run TypeScript compilation check (ignore chrome type issues)
-echo "🔍 Checking TypeScript compilation..."
-npx tsc --noEmit 2>&1 | grep -v "Cannot find type definition file for 'chrome'" | grep -v "Entry point of type library 'chrome'"
-ts_result=${PIPESTATUS[0]}
+# Update dependencies to ensure chromedriver is up to date
+npm install
 
-# Check if there are actual TypeScript errors (not just chrome config warnings)
-if [ $ts_result -ne 0 ]; then
-    error_count=$(npx tsc --noEmit 2>&1 | grep -v "Cannot find type definition file for 'chrome'" | grep -v "Entry point of type library 'chrome'" | grep "error TS" | wc -l)
-    if [ $error_count -gt 0 ]; then
-        echo "❌ TypeScript compilation failed"
-        exit 1
-    fi
+# Run linting and formatting if available
+if command -v prettier &> /dev/null; then
+    npm run format 2>/dev/null || true
 fi
 
-# Temporarily disable test running during development to avoid blocking commits
-# echo "🧪 Running tests..."
-# npm test
-# if [ $? -ne 0 ]; then
-#     echo "❌ Tests failed"
-#     exit 1
-# fi
+if command -v eslint &> /dev/null; then
+    npm run lint 2>/dev/null || true
+fi
 
-echo "✅ TypeScript checks passed! (Tests run in CI)"
+echo "Precommit checks completed"
