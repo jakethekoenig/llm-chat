@@ -1,5 +1,25 @@
 import request from 'supertest';
-import app from '../../server/app';
+
+// Mock database models for faster testing - must be defined before jest.mock calls
+const mockUser = {
+  findOne: jest.fn(),
+  create: jest.fn(),
+};
+
+const mockConversation = {
+  findAll: jest.fn(),
+  create: jest.fn(),
+};
+
+const mockMessage = {
+  findAll: jest.fn(),
+  findByPk: jest.fn(),
+  create: jest.fn(),
+};
+
+jest.mock('../../server/database/models/User', () => ({ User: mockUser }));
+jest.mock('../../server/database/models/Conversation', () => ({ Conversation: mockConversation }));
+jest.mock('../../server/database/models/Message', () => ({ Message: mockMessage }));
 
 // Mock AI providers for performance testing
 jest.mock('openai', () => ({
@@ -25,26 +45,7 @@ jest.mock('@anthropic-ai/sdk', () => ({
   }))
 }));
 
-// Mock database models for faster testing
-const mockUser = {
-  findOne: jest.fn(),
-  create: jest.fn(),
-};
-
-const mockConversation = {
-  findAll: jest.fn(),
-  create: jest.fn(),
-};
-
-const mockMessage = {
-  findAll: jest.fn(),
-  findByPk: jest.fn(),
-  create: jest.fn(),
-};
-
-jest.mock('../../server/database/models/User', () => ({ User: mockUser }));
-jest.mock('../../server/database/models/Conversation', () => ({ Conversation: mockConversation }));
-jest.mock('../../server/database/models/Message', () => ({ Message: mockMessage }));
+import app from '../../server/app';
 
 jest.mock('../../server/helpers/messageHelpers', () => ({
   addMessage: jest.fn().mockResolvedValue({ get: () => 123 }),
