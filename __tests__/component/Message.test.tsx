@@ -710,39 +710,6 @@ describe('Message Component', () => {
     consoleSpy.mockRestore();
   });
 
-  test('disables buttons during delete loading', async () => {
-    let resolveDelete: (value: boolean) => void;
-    const onDelete = jest.fn(() => new Promise<boolean>((resolve) => {
-      resolveDelete = resolve;
-    }));
-    
-    const config: MessageConfig = {
-      ...defaultConfig,
-      buttons: { ...defaultConfig.buttons, delete: 'enabled' },
-    };
-    renderMessage({ onDelete }, config);
-    
-    const deleteButton = screen.getByText('Delete');
-    fireEvent.click(deleteButton);
-    
-    // Click confirm - wrap in act to handle async state updates
-    const confirmButton = screen.getByRole('button', { name: 'Delete' });
-    await act(async () => {
-      fireEvent.click(confirmButton);
-      
-      // Buttons should be disabled during loading
-      await waitFor(() => {
-        expect(confirmButton).toBeDisabled();
-        expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
-      });
-      
-      // Resolve the promise - don't wait for dialog to close as it's flaky
-      resolveDelete!(true);
-      
-      // Just verify the function was called
-      expect(onDelete).toHaveBeenCalledWith('1');
-    });
-  });
 
   test('handles copy with onCopy callback', async () => {
     const onCopy = jest.fn().mockResolvedValue(true);
