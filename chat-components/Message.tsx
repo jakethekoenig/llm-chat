@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import styled from 'styled-components';
-import { Button, Menu, MenuItem } from '@mui/material';
-import { ContentCopy as CopyIcon, Share as ShareIcon, Delete as DeleteIcon, Edit as EditIcon, MoreVert as MoreVertIcon } from '@mui/icons-material';
+import { Button, Menu, MenuItem, TextField, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { ContentCopy as CopyIcon, Share as ShareIcon, Delete as DeleteIcon, Edit as EditIcon, MoreVert as MoreVertIcon, Save as SaveIcon, Cancel as CancelIcon } from '@mui/icons-material';
 import { useMessageConfig } from './MessageConfigContext';
 import { Renderer } from './renderers/Renderer';
 import { Message as MessageType } from './types/Message';
@@ -11,15 +11,6 @@ interface MessageProps extends MessageType {
   currentIndex?: number;
   totalSiblings?: number;
   $isAuthor?: boolean; // Marked as transient prop
-
-  // Event handlers
-  onCopy?: () => void;
-  onShare?: () => void;
-  onDelete?: () => void;
-  onEdit?: () => void;
-  onClick?: () => void;
-  onPrev?: () => void;
-  onNext?: () => void;
 }
 
 const NavigationButtons = ({ onPrev, onNext, hasSiblings, currentIndex, totalSiblings }: { onPrev: () => void, onNext: () => void, hasSiblings: boolean | undefined, currentIndex: number, totalSiblings: number }) => (
@@ -61,11 +52,15 @@ const ButtonContainer = styled.div`
 `;
 
 const Message: React.FC<MessageProps> = ({ renderers = [], currentIndex = 0, totalSiblings = 0, ...props }) => {
-  const { $isAuthor, content, author, timestamp, buttons, onCopy, onShare, onDelete, onEdit, onClick, onPrev, onNext, hasSiblings, conversationId, userId, parentId, model, temperature, ...filteredProps } = props;
+  const { $isAuthor, content, author, timestamp, buttons, onCopy, onShare, onDelete, onEdit, onClick, onPrev, onNext, hasSiblings, conversationId, userId, parentId, model, temperature, id, ...filteredProps } = props;
   const globalConfig = useMessageConfig();
   const [displayedContent, setDisplayedContent] = useState<string>('');
   const isMountedRef = useRef(true);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [editContent, setEditContent] = useState<string>('');
+  const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -96,6 +91,57 @@ const Message: React.FC<MessageProps> = ({ renderers = [], currentIndex = 0, tot
 
   const handleMenuClose = () => {
     setMenuAnchorEl(null);
+  };
+
+  const handleEditStart = () => {
+    setIsEditing(true);
+    setEditContent(content);
+    setMenuAnchorEl(null);
+  };
+
+  const handleEditCancel = () => {
+    setIsEditing(false);
+    setEditContent('');
+  };
+
+  const handleEditSave = async () => {
+    if (!onEdit || !editContent.trim()) return;
+    
+    setIsLoading(true);
+    try {
+      await onEdit(id, editContent.trim());
+      setIsEditing(false);
+      setEditContent('');
+    } catch (error) {
+      console.error('Failed to edit message:', error);
+      // Keep editing mode open on error so user can retry
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteClick = () => {
+    setShowDeleteDialog(true);
+    setMenuAnchorEl(null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!onDelete) return;
+    
+    setIsLoading(true);
+    try {
+      await onDelete(id);
+      setShowDeleteDialog(false);
+    } catch (error) {
+      console.error('Failed to delete message:', error);
+      setShowDeleteDialog(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteDialog(false);
   };
 
   const renderContent = (content: string) => {
@@ -143,33 +189,85 @@ const Message: React.FC<MessageProps> = ({ renderers = [], currentIndex = 0, tot
   };
 
   return (
-    <MessageContainer theme={globalConfig.theme} data-testid="message-container" onClick={onClick} {...filteredProps} $isAuthor={$isAuthor}>
-      <MessageContent>{renderContent(displayedContent)}</MessageContent>
-      {author && <><br></br><MessageAuthor>{author}</MessageAuthor></>}
-      {timestamp && <MessageTimestamp>{new Date(timestamp).toLocaleString()}</MessageTimestamp>}
-      <ButtonContainer>
-        {finalButtons.copy === 'enabled' && <Button onClick={handleCopy} startIcon={<CopyIcon />}>Copy</Button>}
-        {finalButtons.share === 'enabled' && <Button onClick={onShare} startIcon={<ShareIcon />}>Share</Button>}
-        {finalButtons.delete === 'enabled' && <Button onClick={onDelete} startIcon={<DeleteIcon />}>Delete</Button>}
-        {finalButtons.edit === 'enabled' && <Button onClick={onEdit} startIcon={<EditIcon />}>Edit</Button>}
-        {(finalButtons.copy === 'menu-ed' || finalButtons.share === 'menu-ed' || finalButtons.delete === 'menu-ed' || finalButtons.edit === 'menu-ed') && (
+    <>
+      <MessageContainer theme={globalConfig.theme} data-testid="message-container" onClick={onClick} {...filteredProps} $isAuthor={$isAuthor}>
+        {isEditing ? (
+          <div style={{ width: '100%' }}>
+            <TextField
+              multiline
+              fullWidth
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              variant="outlined"
+              rows={4}
+              disabled={isLoading}
+            />
+            <ButtonContainer>
+              <Button 
+                onClick={handleEditSave} 
+                startIcon={<SaveIcon />}
+                disabled={isLoading || !editContent.trim()}
+                variant="contained"
+                color="primary"
+              >
+                Save
+              </Button>
+              <Button 
+                onClick={handleEditCancel} 
+                startIcon={<CancelIcon />}
+                disabled={isLoading}
+              >
+                Cancel
+              </Button>
+            </ButtonContainer>
+          </div>
+        ) : (
           <>
-            <Button startIcon={<MoreVertIcon />} onClick={handleMenuOpen}>
-              Menu
-            </Button>
-            <Menu anchorEl={menuAnchorEl} open={Boolean(menuAnchorEl)} onClose={handleMenuClose}>
-              {finalButtons.copy === 'menu-ed' && <MenuItem onClick={handleCopy}>Copy</MenuItem>}
-              {finalButtons.share === 'menu-ed' && <MenuItem onClick={onShare}>Share</MenuItem>}
-              {finalButtons.delete === 'menu-ed' && <MenuItem onClick={onDelete}>Delete</MenuItem>}
-              {finalButtons.edit === 'menu-ed' && <MenuItem onClick={onEdit}>Edit</MenuItem>}
-            </Menu>
+            <MessageContent>{renderContent(displayedContent)}</MessageContent>
+            {author && <><br></br><MessageAuthor>{author}</MessageAuthor></>}
+            {timestamp && <MessageTimestamp>{new Date(timestamp).toLocaleString()}</MessageTimestamp>}
+            <ButtonContainer>
+              {finalButtons.copy === 'enabled' && <Button onClick={handleCopy} startIcon={<CopyIcon />}>Copy</Button>}
+              {finalButtons.share === 'enabled' && <Button onClick={onShare} startIcon={<ShareIcon />}>Share</Button>}
+              {finalButtons.delete === 'enabled' && <Button onClick={handleDeleteClick} startIcon={<DeleteIcon />} disabled={isLoading}>Delete</Button>}
+              {finalButtons.edit === 'enabled' && <Button onClick={handleEditStart} startIcon={<EditIcon />} disabled={isLoading}>Edit</Button>}
+              {(finalButtons.copy === 'menu-ed' || finalButtons.share === 'menu-ed' || finalButtons.delete === 'menu-ed' || finalButtons.edit === 'menu-ed') && (
+                <>
+                  <Button startIcon={<MoreVertIcon />} onClick={handleMenuOpen} disabled={isLoading}>
+                    Menu
+                  </Button>
+                  <Menu anchorEl={menuAnchorEl} open={Boolean(menuAnchorEl)} onClose={handleMenuClose}>
+                    {finalButtons.copy === 'menu-ed' && <MenuItem onClick={handleCopy}>Copy</MenuItem>}
+                    {finalButtons.share === 'menu-ed' && <MenuItem onClick={onShare}>Share</MenuItem>}
+                    {finalButtons.delete === 'menu-ed' && <MenuItem onClick={handleDeleteClick}>Delete</MenuItem>}
+                    {finalButtons.edit === 'menu-ed' && <MenuItem onClick={handleEditStart}>Edit</MenuItem>}
+                  </Menu>
+                </>
+              )}
+            </ButtonContainer>
+            {onPrev && onNext && (
+              <NavigationButtons onPrev={onPrev} onNext={onNext} hasSiblings={hasSiblings} currentIndex={currentIndex} totalSiblings={totalSiblings} />
+            )}
           </>
         )}
-      </ButtonContainer>
-      {onPrev && onNext && (
-        <NavigationButtons onPrev={onPrev} onNext={onNext} hasSiblings={hasSiblings} currentIndex={currentIndex} totalSiblings={totalSiblings} />
-      )}
-    </MessageContainer>
+      </MessageContainer>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={showDeleteDialog} onClose={handleDeleteCancel}>
+        <DialogTitle>Delete Message</DialogTitle>
+        <DialogContent>
+          Are you sure you want to delete this message? This action cannot be undone.
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained" disabled={isLoading}>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 };
 export default Message;
