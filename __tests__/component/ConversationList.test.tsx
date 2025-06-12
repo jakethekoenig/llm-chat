@@ -1,6 +1,6 @@
 // __tests__/component/ConversationList.test.tsx
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import ConversationList from '../../chat-components/ConversationList';
 import '@testing-library/jest-dom';
 
@@ -46,7 +46,8 @@ const mockConversations = [
 ];
 
 test('renders conversation list correctly', () => {
-  render(<ConversationList conversations={mockConversations} onConversationClick={jest.fn()} />);
+  const mockClick = jest.fn();
+  render(<ConversationList conversations={mockConversations} onConversationClick={mockClick} />);
   expect(screen.getByText('Conversation One')).toBeInTheDocument();
   expect(screen.getByText('Conversation Two')).toBeInTheDocument();
   expect(screen.getByText('1 messages')).toBeInTheDocument();
