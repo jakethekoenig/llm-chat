@@ -1,11 +1,10 @@
-// src/types/Message.ts
+// chat-components/types/Message.ts
 import { Renderer } from '../renderers/Renderer';
+import { Message as BaseMessage } from '../../shared/types';
 
-export interface Message {
-  id: string;
-  content: string; // content is now strictly a string to simplify rendering
-  author?: string;
-  timestamp?: string;
+// Extend the shared Message type with UI-specific properties
+export interface Message extends BaseMessage {
+  author?: string; // UI field - maps to userId from base type
   buttons?: {
     copy?: string | undefined;
     share?: string | undefined;
@@ -18,7 +17,6 @@ export interface Message {
   onEdit?: () => void;
   onClick?: () => void;
   renderers?: Renderer[];
-  parentId?: string | null;
   onPrev?: () => void;
   onNext?: () => void;
 }

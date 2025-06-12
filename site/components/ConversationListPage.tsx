@@ -2,13 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../App.css';
 import ConversationList from '../../chat-components/ConversationList';
-import { Message as MessageType } from '../../chat-components/types/Message';
+import { Conversation as ConversationType } from '../../chat-components/types/Conversation';
 import { fetchWithAuth } from '../utils/api';
 
 // Component to display the list of conversations
 const ConversationListPage: React.FC = () => {
   // State to store the list of conversations
-  const [conversations, setConversations] = useState<MessageType[]>([]);
+  const [conversations, setConversations] = useState<ConversationType[]>([]);
   // State to store any error messages
   const [error, setError] = useState<string | null>(null);
   // State to track loading status
@@ -24,11 +24,7 @@ const ConversationListPage: React.FC = () => {
           throw new Error('Failed to fetch conversations');
         }
         const data = await response.json();
-        setConversations(data.map((conversation: any) => ({
-          id: conversation.id,
-          content: conversation.title || conversation.content || 'Untitled Conversation',
-          author: conversation.author || 'Unknown'
-        })));
+        setConversations(data);
       } catch (error) {
         console.error('Error fetching conversations:', error);
         setError('Failed to load conversations.');
@@ -65,7 +61,14 @@ const ConversationListPage: React.FC = () => {
       });
       const data = await response.json();
       if (response.ok && data.conversationId) {
-        setConversations([...conversations, { id: data.conversationId, content: initialMessage as string }]);
+        // Add the new conversation to the list
+        const newConversation: ConversationType = {
+          id: data.conversationId,
+          title: 'New Conversation',
+          userId: '', // This will be filled by the server when we fetch conversations again
+          messages: []
+        };
+        setConversations([...conversations, newConversation]);
         navigate(`/conversations/${data.conversationId}`);
       } else {
         setError(`Error creating conversation: ${data.error || 'Unknown error'}`);
