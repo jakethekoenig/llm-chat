@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Message from '../../chat-components/Message';
 import { MessageConfigProvider, defaultConfig, MessageConfig } from '../../chat-components/MessageConfigContext';
@@ -621,10 +621,18 @@ describe('Message Component', () => {
     
     // Click confirm
     const confirmButton = screen.getByRole('button', { name: 'Delete' });
-    fireEvent.click(confirmButton);
     
-    await waitFor(() => {
-      expect(onDelete).toHaveBeenCalledWith('1');
+    await act(async () => {
+      fireEvent.click(confirmButton);
+      
+      await waitFor(() => {
+        expect(onDelete).toHaveBeenCalledWith('1');
+      });
+
+      // Wait for dialog to close and loading to complete
+      await waitFor(() => {
+        expect(screen.queryByText('Delete Message')).not.toBeInTheDocument();
+      });
     });
   });
 
@@ -688,15 +696,19 @@ describe('Message Component', () => {
     
     // Click confirm
     const confirmButton = screen.getByRole('button', { name: 'Delete' });
-    fireEvent.click(confirmButton);
     
-    await waitFor(() => {
-      expect(onDelete).toHaveBeenCalledWith('1');
-    });
+    await act(async () => {
+      fireEvent.click(confirmButton);
+      
+      // Wait for the delete operation to be called and all state updates to complete
+      await waitFor(() => {
+        expect(onDelete).toHaveBeenCalledWith('1');
+      });
 
-    // Dialog should be closed on error
-    await waitFor(() => {
-      expect(screen.queryByText('Delete Message')).not.toBeInTheDocument();
+      // Wait for the error handling to complete and dialog to close
+      await waitFor(() => {
+        expect(screen.queryByText('Delete Message')).not.toBeInTheDocument();
+      });
     });
     
     consoleSpy.mockRestore();
@@ -727,8 +739,15 @@ describe('Message Component', () => {
       expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
     });
     
-    // Resolve the promise
-    resolveDelete!(true);
+    // Resolve the promise and wait for all state updates
+    await act(async () => {
+      resolveDelete!(true);
+      
+      // Wait for dialog to close and all state updates to complete
+      await waitFor(() => {
+        expect(screen.queryByText('Delete Message')).not.toBeInTheDocument();
+      });
+    });
   });
 
   test('handles copy with onCopy callback', async () => {
