@@ -115,19 +115,48 @@ describe('Message Component', () => {
     const deleteButton = screen.getByText('Delete');
     expect(deleteButton).toBeInTheDocument();
     
+    // Click delete button to open confirmation dialog
     fireEvent.click(deleteButton);
-    expect(onDelete).toHaveBeenCalled();
+    
+    // Should show confirmation dialog
+    expect(screen.getByText('Delete Message')).toBeInTheDocument();
+    expect(screen.getByText('Are you sure you want to delete this message? This action cannot be undone.')).toBeInTheDocument();
+    
+    // Click confirm in dialog
+    const confirmButton = screen.getByRole('button', { name: 'Delete' });
+    fireEvent.click(confirmButton);
+    
+    expect(onDelete).toHaveBeenCalledWith('1');
   });
 
   test('renders and handles edit button', () => {
     const onEdit = jest.fn();
-    renderMessage({ onEdit });
+    const config: MessageConfig = {
+      ...defaultConfig,
+      buttons: { ...defaultConfig.buttons, edit: 'enabled' },
+    };
+    renderMessage({ onEdit }, config);
     
     const editButton = screen.getByText('Edit');
     expect(editButton).toBeInTheDocument();
     
+    // Click edit button to enter edit mode
     fireEvent.click(editButton);
-    expect(onEdit).toHaveBeenCalled();
+    
+    // Should show edit text field and save/cancel buttons
+    expect(screen.getByDisplayValue('Test message content')).toBeInTheDocument();
+    expect(screen.getByText('Save')).toBeInTheDocument();
+    expect(screen.getByText('Cancel')).toBeInTheDocument();
+    
+    // Change the content
+    const textField = screen.getByDisplayValue('Test message content');
+    fireEvent.change(textField, { target: { value: 'Updated message' } });
+    
+    // Click save
+    const saveButton = screen.getByText('Save');
+    fireEvent.click(saveButton);
+    
+    expect(onEdit).toHaveBeenCalledWith('1', 'Updated message');
   });
 
   test('handles click action', () => {
