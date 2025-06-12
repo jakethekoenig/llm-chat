@@ -57,7 +57,7 @@ describe('Server App - Additional Coverage Tests', () => {
         .set('Authorization', 'Bearer invalid-token');
       
       expect(response.status).toBe(403);
-      expect(response.body.message).toBe('Invalid or expired token');
+      expect(response.body.message).toBe('The provided authentication token is invalid or has expired');
     });
 
     test('should return 403 when malformed token provided', async () => {
@@ -76,7 +76,7 @@ describe('Server App - Additional Coverage Tests', () => {
         .send({ password: 'test123' });
       
       expect(response.status).toBe(400);
-      expect(response.body.error).toBe('Username and password are required');
+      expect(response.body.error).toBe('Missing required fields');
     });
 
     test('should return 400 when password is missing', async () => {
@@ -85,7 +85,7 @@ describe('Server App - Additional Coverage Tests', () => {
         .send({ username: 'testuser' });
       
       expect(response.status).toBe(400);
-      expect(response.body.error).toBe('Username and password are required');
+      expect(response.body.error).toBe('Missing required fields');
     });
 
     test('should return 401 when user not found', async () => {
@@ -96,7 +96,7 @@ describe('Server App - Additional Coverage Tests', () => {
         .send({ username: 'nonexistent', password: 'test123' });
       
       expect(response.status).toBe(401);
-      expect(response.text).toBe('Invalid credentials');
+      expect(response.body.error).toBe('Invalid credentials');
     });
 
     test('should return 500 when database error occurs', async () => {
@@ -118,7 +118,7 @@ describe('Server App - Additional Coverage Tests', () => {
         .send({ email: 'test@example.com', password: 'test123' });
       
       expect(response.status).toBe(400);
-      expect(response.body.error).toBe('Username, email, and password are required');
+      expect(response.body.error).toBe('Missing required fields');
     });
 
     test('should return 400 when email is missing', async () => {
@@ -127,7 +127,7 @@ describe('Server App - Additional Coverage Tests', () => {
         .send({ username: 'testuser', password: 'test123' });
       
       expect(response.status).toBe(400);
-      expect(response.body.error).toBe('Username, email, and password are required');
+      expect(response.body.error).toBe('Missing required fields');
     });
 
     test('should return 400 when password is missing', async () => {
@@ -136,10 +136,10 @@ describe('Server App - Additional Coverage Tests', () => {
         .send({ username: 'testuser', email: 'test@example.com' });
       
       expect(response.status).toBe(400);
-      expect(response.body.error).toBe('Username, email, and password are required');
+      expect(response.body.error).toBe('Missing required fields');
     });
 
-    test('should return 400 when user already exists', async () => {
+    test('should return 409 when user already exists', async () => {
       const existingUser = { id: 1, username: 'testuser' };
       mockUser.findOne.mockResolvedValue(existingUser);
       
@@ -147,11 +147,12 @@ describe('Server App - Additional Coverage Tests', () => {
         .post('/api/register')
         .send({ username: 'testuser', email: 'test@example.com', password: 'test123' });
       
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBe('Username or email already exists');
+      expect(response.status).toBe(409);
+      expect(response.body.error).toBe('User already exists');
+      expect(response.body.code).toBe('USER_EXISTS');
     });
 
-    test('should return 400 when database create fails', async () => {
+    test('should return 500 when database create fails', async () => {
       mockUser.findOne.mockResolvedValue(null);
       mockUser.create.mockRejectedValue(new Error('Database error'));
       
@@ -159,8 +160,8 @@ describe('Server App - Additional Coverage Tests', () => {
         .post('/api/register')
         .send({ username: 'testuser', email: 'test@example.com', password: 'test123' });
       
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBe('Error creating user');
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Internal server error');
     });
   });
 
@@ -174,7 +175,9 @@ describe('Server App - Additional Coverage Tests', () => {
         .send({ conversationId: '1', content: '' });
       
       expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.code).toBe('VALIDATION_ERROR');
+      expect(response.body.details).toBeDefined();
     });
 
     test('should return 400 when conversationId is missing', async () => {
@@ -184,7 +187,9 @@ describe('Server App - Additional Coverage Tests', () => {
         .send({ content: 'Test message' });
       
       expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.code).toBe('VALIDATION_ERROR');
+      expect(response.body.details).toBeDefined();
     });
 
     test('should return 400 when conversationId is invalid format', async () => {
@@ -194,7 +199,9 @@ describe('Server App - Additional Coverage Tests', () => {
         .send({ content: 'Test message', conversationId: 'invalid' });
       
       expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.code).toBe('VALIDATION_ERROR');
+      expect(response.body.details).toBeDefined();
     });
 
     test('should return 400 when parentId is invalid format', async () => {
@@ -204,7 +211,9 @@ describe('Server App - Additional Coverage Tests', () => {
         .send({ content: 'Test message', conversationId: '1', parentId: 'invalid' });
       
       expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.code).toBe('VALIDATION_ERROR');
+      expect(response.body.details).toBeDefined();
     });
   });
 
@@ -218,7 +227,9 @@ describe('Server App - Additional Coverage Tests', () => {
         .send({ model: 'gpt-4', temperature: 0.5 });
       
       expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.code).toBe('VALIDATION_ERROR');
+      expect(response.body.details).toBeDefined();
     });
 
     test('should return 400 when messageId is invalid format', async () => {
@@ -228,7 +239,9 @@ describe('Server App - Additional Coverage Tests', () => {
         .send({ messageId: 'invalid', model: 'gpt-4', temperature: 0.5 });
       
       expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.code).toBe('VALIDATION_ERROR');
+      expect(response.body.details).toBeDefined();
     });
 
     test('should return 400 when model is missing', async () => {
@@ -238,7 +251,9 @@ describe('Server App - Additional Coverage Tests', () => {
         .send({ messageId: '1', temperature: 0.5 });
       
       expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.code).toBe('VALIDATION_ERROR');
+      expect(response.body.details).toBeDefined();
     });
 
     test('should return 400 when temperature is invalid', async () => {
@@ -248,7 +263,9 @@ describe('Server App - Additional Coverage Tests', () => {
         .send({ messageId: '1', model: 'gpt-4', temperature: 'invalid' });
       
       expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.code).toBe('VALIDATION_ERROR');
+      expect(response.body.details).toBeDefined();
     });
   });
 
@@ -262,7 +279,9 @@ describe('Server App - Additional Coverage Tests', () => {
         .send({ parentId: '1', temperature: 0.5 });
       
       expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.code).toBe('VALIDATION_ERROR');
+      expect(response.body.details).toBeDefined();
     });
 
     test('should return 400 when parentId is missing', async () => {
@@ -272,7 +291,9 @@ describe('Server App - Additional Coverage Tests', () => {
         .send({ model: 'gpt-4', temperature: 0.5 });
       
       expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.code).toBe('VALIDATION_ERROR');
+      expect(response.body.details).toBeDefined();
     });
 
     test('should return 400 when parentId is invalid format', async () => {
@@ -282,7 +303,9 @@ describe('Server App - Additional Coverage Tests', () => {
         .send({ model: 'gpt-4', parentId: 'invalid', temperature: 0.5 });
       
       expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.code).toBe('VALIDATION_ERROR');
+      expect(response.body.details).toBeDefined();
     });
 
     test('should return 400 when temperature is invalid', async () => {
@@ -292,7 +315,9 @@ describe('Server App - Additional Coverage Tests', () => {
         .send({ model: 'gpt-4', parentId: '1', temperature: 'invalid' });
       
       expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.code).toBe('VALIDATION_ERROR');
+      expect(response.body.details).toBeDefined();
     });
   });
 
@@ -306,7 +331,9 @@ describe('Server App - Additional Coverage Tests', () => {
         .send({ model: 'gpt-4', temperature: 0.5 });
       
       expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.code).toBe('VALIDATION_ERROR');
+      expect(response.body.details).toBeDefined();
     });
 
     test('should return 400 when model is missing', async () => {
@@ -316,7 +343,9 @@ describe('Server App - Additional Coverage Tests', () => {
         .send({ initialMessage: 'Hello', temperature: 0.5 });
       
       expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.code).toBe('VALIDATION_ERROR');
+      expect(response.body.details).toBeDefined();
     });
 
     test('should return 400 when temperature is invalid', async () => {
@@ -326,7 +355,9 @@ describe('Server App - Additional Coverage Tests', () => {
         .send({ initialMessage: 'Hello', model: 'gpt-4', temperature: 'invalid' });
       
       expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.code).toBe('VALIDATION_ERROR');
+      expect(response.body.details).toBeDefined();
     });
   });
 
