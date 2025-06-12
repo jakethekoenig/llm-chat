@@ -70,6 +70,53 @@ describe('Server App - Additional Coverage Tests', () => {
     });
   });
 
+  describe('Global Error Handler Coverage', () => {
+    const validToken = jwt.sign({ id: 1 }, SECRET_KEY);
+
+    test('should handle ValidationError in global error handler', async () => {
+      // Mock addMessage to throw a ValidationError
+      const { addMessage } = require('../../server/helpers/messageHelpers');
+      const validationError = new Error('Validation failed') as any;
+      validationError.name = 'ValidationError';
+      validationError.errors = ['Field is required'];
+      
+      addMessage.mockRejectedValue(validationError);
+      (convertIdToNumber as jest.Mock).mockReturnValue(1);
+      
+      const response = await request(app)
+        .post('/api/add_message')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({ content: 'Test message', conversationId: '1' });
+      
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.code).toBe('VALIDATION_ERROR');
+    });
+
+    test('should handle JsonWebTokenError in global error handler', async () => {
+      // Mock jwt.verify to throw JsonWebTokenError directly in the middleware
+      const jwt = require('jsonwebtoken');
+      const originalVerify = jwt.verify;
+      
+      jwt.verify = jest.fn().mockImplementation((token, secret, options, callback) => {
+        const error = new Error('jwt malformed');
+        error.name = 'JsonWebTokenError';
+        callback(error);
+      });
+      
+      const response = await request(app)
+        .get('/api/conversations')
+        .set('Authorization', 'Bearer some-token');
+      
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe('Invalid authentication token');
+      expect(response.body.code).toBe('JWT_ERROR');
+      
+      // Restore original function
+      jwt.verify = originalVerify;
+    });
+  });
+
   describe('Error Handler Middleware', () => {
     const validToken = jwt.sign({ id: 1 }, SECRET_KEY);
 
@@ -432,14 +479,28 @@ describe('Server App - Additional Coverage Tests', () => {
     });
 
     test('should successfully generate completion', async () => {
-      // Skip this test for now due to mock interference
+      const { generateCompletion } = require('../../server/helpers/messageHelpers');
+      
+      // Mock successful completion generation
+      const mockCompletion = { 
+        get: jest.fn((key) => {
+          if (key === 'id') return 456;
+          if (key === 'content') return 'Generated response';
+          return null;
+        })
+      };
+      
+      generateCompletion.mockResolvedValue(mockCompletion);
+      (convertIdToNumber as jest.Mock).mockReturnValue(123);
+      
       const response = await request(app)
         .post('/api/get_completion_for_message')
         .set('Authorization', `Bearer ${validToken}`)
-        .send({ messageId: 'invalid', model: 'gpt-4', temperature: 0.5 });
+        .send({ messageId: '123', model: 'gpt-4', temperature: 0.5 });
       
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBe('Validation failed');
+      expect(response.status).toBe(201);
+      expect(response.body.id).toBe('456');
+      expect(response.body.content).toBe('Generated response');
     });
   });
 
@@ -495,14 +556,38 @@ describe('Server App - Additional Coverage Tests', () => {
     });
 
     test('should successfully start streaming completion', async () => {
-      // Skip this test for now due to mock interference
+      const { generateCompletion } = require('../../server/helpers/messageHelpers');
+      
+      // Mock successful completion generation
+      const mockCompletion = { 
+        get: jest.fn((key) => {
+          if (key === 'id') return 789;
+          if (key === 'content') return 'Streaming response';
+          return null;
+        })
+      };
+      
+      generateCompletion.mockResolvedValue(mockCompletion);
+      (convertIdToNumber as jest.Mock).mockReturnValue(456);
+      
       const response = await request(app)
         .post('/api/get_completion')
         .set('Authorization', `Bearer ${validToken}`)
-        .send({ model: 'gpt-4', parentId: 'invalid', temperature: 0.7 });
+        .send({ model: 'gpt-4', parentId: '456', temperature: 0.7 });
       
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBe('Validation failed');
+      expect(response.status).toBe(200);
+      expect(response.headers['content-type']).toBe('application/json');
+      expect(response.headers['cache-control']).toBe('no-cache');
+      expect(response.headers['connection']).toBe('keep-alive');
+      
+      // Wait a bit for streaming to complete
+      await new Promise(resolve => setTimeout(resolve, 3500));
+      
+      expect(response.text).toContain('"id":"789"');
+      expect(response.text).toContain('"content":"Streaming response"');
+      expect(response.text).toContain('Example stream data part 1');
+      expect(response.text).toContain('Example stream data part 2');
+      expect(response.text).toContain('Example stream data part 3');
     });
   });
 
@@ -546,14 +631,26 @@ describe('Server App - Additional Coverage Tests', () => {
     });
 
     test('should successfully create conversation', async () => {
-      // Skip this test for now due to mock interference
+      const { addMessage, generateCompletion } = require('../../server/helpers/messageHelpers');
+      
+      // Mock successful conversation creation
+      const mockConversationInstance = { get: jest.fn(() => 10) };
+      const mockMessage = { get: jest.fn(() => 20) };
+      const mockCompletion = { get: jest.fn(() => 30) };
+      
+      mockConversation.create.mockResolvedValue(mockConversationInstance);
+      addMessage.mockResolvedValue(mockMessage);
+      generateCompletion.mockResolvedValue(mockCompletion);
+      
       const response = await request(app)
         .post('/api/create_conversation')
         .set('Authorization', `Bearer ${validToken}`)
-        .send({ initialMessage: '', model: 'gpt-4', temperature: 0.5 });
+        .send({ initialMessage: 'Hello', model: 'gpt-4', temperature: 0.5 });
       
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBe('Validation failed');
+      expect(response.status).toBe(201);
+      expect(response.body.conversationId).toBe('10');
+      expect(response.body.initialMessageId).toBe('20');
+      expect(response.body.completionMessageId).toBe('30');
     });
   });
 
