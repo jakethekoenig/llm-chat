@@ -106,7 +106,11 @@ describe('Message Component', () => {
 
   test('renders and handles delete button', () => {
     const onDelete = jest.fn();
-    renderMessage({ onDelete });
+    const config: MessageConfig = {
+      ...defaultConfig,
+      buttons: { ...defaultConfig.buttons, delete: 'enabled' },
+    };
+    renderMessage({ onDelete }, config);
     
     const deleteButton = screen.getByText('Delete');
     expect(deleteButton).toBeInTheDocument();
@@ -300,7 +304,9 @@ describe('Message Component', () => {
   test('renders without author when not provided', () => {
     renderMessage({ author: undefined });
     expect(screen.getByText('Test message content')).toBeInTheDocument();
-    // Should not have any author text
-    expect(screen.getByTestId('message-container').textContent).not.toMatch(/\w+\s+\w+/);
+    // Should not have any author name displayed
+    const container = screen.getByTestId('message-container');
+    // Check that there's no separate author element by looking for the <br> that precedes author
+    expect(container.innerHTML).not.toContain('<br>');
   });
 });
