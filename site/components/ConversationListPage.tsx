@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Alert, Box, Button, TextField, Stack, Typography, Card, CardContent } from '@mui/material';
 import '../App.css';
 import ConversationList from '../../chat-components/ConversationList';
 import { Conversation as ConversationType } from '../../chat-components/types/Conversation';
-import { fetchWithAuth } from '../utils/api';
+import { apiGet, apiPost, ApiError } from '../utils/api';
+import { useToast } from './ToastProvider';
+import ErrorBoundary from './ErrorBoundary';
+import { ConversationListSkeleton, LoadingOverlay, FormSkeleton } from './SkeletonLoaders';
 
 // Component to display the list of conversations
 const ConversationListPage: React.FC = () => {
@@ -14,26 +18,35 @@ const ConversationListPage: React.FC = () => {
   // State to track loading status
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const navigate = useNavigate();
+  const { showError, showSuccess } = useToast();
 
   useEffect(() => {
     const fetchConversations = async () => {
       try {
         setIsLoadingConversations(true);
-        const response = await fetchWithAuth('/api/conversations');
-        if (!response.ok) {
-          throw new Error('Failed to fetch conversations');
-        }
-        const data = await response.json();
+        setError(null);
+        const data = await apiGet('/api/conversations');
         setConversations(data);
       } catch (error) {
         console.error('Error fetching conversations:', error);
-        setError('Failed to load conversations.');
+        const apiError = error as ApiError;
+        
+        let errorMessage = 'Failed to load conversations.';
+        
+        if (apiError.code === 'NETWORK_ERROR') {
+          errorMessage = 'Network error. Please check your connection and try again.';
+        } else if (apiError.status === 401 || apiError.status === 403) {
+          errorMessage = 'Authentication failed. Please sign in again.';
+        }
+        
+        setError(errorMessage);
+        showError(errorMessage);
       } finally {
         setIsLoadingConversations(false);
       }
     };
     fetchConversations();
-  }, []);
+  }, [showError]);
 
   // State to store the initial message for a new conversation
   const [initialMessage, setInitialMessage] = useState('');
@@ -50,17 +63,16 @@ const ConversationListPage: React.FC = () => {
   const handleCreateConversation = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError(null); // Clear previous errors
+    setError(null);
+    
     try {
-      const response = await fetchWithAuth('/api/create_conversation', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ initialMessage, model, temperature })
+      const data = await apiPost('/api/create_conversation', {
+        initialMessage,
+        model,
+        temperature
       });
-      const data = await response.json();
-      if (response.ok && data.conversationId) {
+      
+      if (data.conversationId) {
         // Add the new conversation to the list
         const newConversation: ConversationType = {
           id: data.conversationId,
@@ -69,58 +81,117 @@ const ConversationListPage: React.FC = () => {
           messages: []
         };
         setConversations([...conversations, newConversation]);
+        showSuccess('Conversation created successfully');
         navigate(`/conversations/${data.conversationId}`);
-      } else {
-        setError(`Error creating conversation: ${data.error || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error(error);
-      setError('An unexpected error occurred while creating the conversation.');
+      console.error('Error creating conversation:', error);
+      const apiError = error as ApiError;
+      
+      let errorMessage = 'An unexpected error occurred while creating the conversation.';
+      
+      if (apiError.code === 'NETWORK_ERROR') {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (apiError.code === 'VALIDATION_ERROR') {
+        errorMessage = 'Please check your input and try again.';
+      } else if (apiError.status === 401 || apiError.status === 403) {
+        errorMessage = 'Authentication failed. Please sign in again.';
+      } else if (apiError.message) {
+        errorMessage = apiError.message;
+      }
+      
+      setError(errorMessage);
+      showError(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div>
-      <h2>Your Conversations</h2>
-      {error && <div className="error-message">{error}</div>}
-      {isLoadingConversations ? (
-        <div className="loading-message">Loading conversations...</div>
-      ) : (
-        <>
-          <form onSubmit={handleCreateConversation}>
-        {isLoading && <p>Creating conversation...</p>}
-        <input
-          type="text"
-          value={initialMessage}
-          onChange={(e) => setInitialMessage(e.target.value)}
-          placeholder="Initial Message"
-          required
-          className="form-input"
-        />
-        <input
-          type="text"
-          value={model}
-          onChange={(e) => setModel(e.target.value)}
-          placeholder="Model"
-          required
-          className="form-input"
-        />
-        <input
-          type="number"
-          value={temperature}
-          onChange={(e) => setTemperature(parseFloat(e.target.value))}
-          placeholder="Temperature"
-          required
-          className="form-input"
-        />
-            <button type="submit" disabled={isLoading}>Create Conversation</button>
-          </form>
-          <ConversationList conversations={conversations} onConversationClick={handleConversationClick} />
-        </>
-      )}
-    </div>
+    <ErrorBoundary>
+      <Box sx={{ p: 2 }}>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+        
+        <LoadingOverlay 
+          isLoading={isLoadingConversations} 
+          skeleton={<ConversationListSkeleton />}
+        >
+          <>
+            <Typography variant="h4" component="h2" gutterBottom>
+              Your Conversations
+            </Typography>
+            
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Start New Conversation
+                </Typography>
+                
+                <form onSubmit={handleCreateConversation}>
+                  <Stack spacing={2}>
+                    <TextField
+                      fullWidth
+                      label="Initial Message"
+                      value={initialMessage}
+                      onChange={(e) => setInitialMessage(e.target.value)}
+                      placeholder="Type your message here..."
+                      required
+                      multiline
+                      rows={3}
+                      variant="outlined"
+                    />
+                    
+                    <TextField
+                      fullWidth
+                      label="Model"
+                      value={model}
+                      onChange={(e) => setModel(e.target.value)}
+                      placeholder="e.g., gpt-4o"
+                      required
+                      variant="outlined"
+                    />
+                    
+                    <TextField
+                      fullWidth
+                      label="Temperature"
+                      type="number"
+                      value={temperature}
+                      onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                      placeholder="0.0 - 2.0"
+                      required
+                      variant="outlined"
+                      inputProps={{
+                        min: 0,
+                        max: 2,
+                        step: 0.1
+                      }}
+                    />
+                    
+                    <Button 
+                      type="submit" 
+                      variant="contained" 
+                      disabled={isLoading}
+                      sx={{ alignSelf: 'flex-start' }}
+                    >
+                      {isLoading ? 'Creating...' : 'Create Conversation'}
+                    </Button>
+                  </Stack>
+                </form>
+              </CardContent>
+            </Card>
+            
+            <ConversationList 
+              conversations={conversations} 
+              onConversationClick={handleConversationClick} 
+            />
+          </>
+        </LoadingOverlay>
+      </Box>
+    </ErrorBoundary>
   );
 }; // End of ConversationListPage
 
