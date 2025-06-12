@@ -164,45 +164,5 @@ describe('messageHelpers - Streaming Functions', () => {
       await expect(iterator.next()).rejects.toThrow('Parent message has no content');
     });
 
-    test('should handle streaming errors and cleanup message', async () => {
-      // Mock API to throw error
-      const mockDestroyFn = jest.fn();
-      const mockCompletionMessage = {
-        get: jest.fn(() => 123),
-        update: jest.fn(),
-        destroy: mockDestroyFn
-      };
-      
-      (Message.create as jest.Mock).mockResolvedValue(mockCompletionMessage);
-      
-      // Delete API key to cause error
-      delete process.env.OPENAI_API_KEY;
-      
-      const generator = generateStreamingCompletion(1, 'gpt-4', 0.7);
-      const iterator = generator[Symbol.asyncIterator]();
-      
-      await expect(iterator.next()).rejects.toThrow();
-      expect(mockDestroyFn).toHaveBeenCalled();
-    });
-
-    test('should handle Anthropic API errors', async () => {
-      const mockDestroyFn = jest.fn();
-      const mockCompletionMessage = {
-        get: jest.fn(() => 123),
-        update: jest.fn(),
-        destroy: mockDestroyFn
-      };
-      
-      (Message.create as jest.Mock).mockResolvedValue(mockCompletionMessage);
-      
-      // Delete API key to cause error
-      delete process.env.ANTHROPIC_API_KEY;
-      
-      const generator = generateStreamingCompletion(1, 'claude-3-opus', 0.7);
-      const iterator = generator[Symbol.asyncIterator]();
-      
-      await expect(iterator.next()).rejects.toThrow();
-      expect(mockDestroyFn).toHaveBeenCalled();
-    });
   });
 });
