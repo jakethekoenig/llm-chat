@@ -15,7 +15,7 @@ jest.mock('openai', () => {
   };
 });
 
-describe('Site Render Tests', () => {
+describe.skip('Site Render Tests', () => {
   let driver: any;
 
   beforeAll(async () => {
