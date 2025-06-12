@@ -13,8 +13,8 @@ export interface Message extends BaseMessage {
   };
   onCopy?: () => void;
   onShare?: () => void;
-  onDelete?: () => void;
-  onEdit?: () => void;
+  onDelete?: (messageId: string) => Promise<void>;
+  onEdit?: (messageId: string, newContent: string) => Promise<void>;
   onClick?: () => void;
   renderers?: Renderer[];
   onPrev?: () => void;

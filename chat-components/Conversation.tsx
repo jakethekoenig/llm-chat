@@ -7,9 +7,11 @@ interface ConversationProps {
   messages: MessageType[];
   onSubmit: (message: string) => AsyncIterable<string>;
   author: string;
+  onEdit?: (messageId: string, newContent: string) => Promise<void>;
+  onDelete?: (messageId: string) => Promise<void>;
 }
 
-const Conversation: React.FC<ConversationProps> = ({ messages, onSubmit, author }) => {
+const Conversation: React.FC<ConversationProps> = ({ messages, onSubmit, author, onEdit, onDelete }) => {
   // TODO: Refactor messages to be a map
   const getChildren = (_messages: MessageType[], parentId: string | null): MessageType[] => {
     return _messages.filter(message => message.parentId === parentId);
@@ -99,6 +101,8 @@ const Conversation: React.FC<ConversationProps> = ({ messages, onSubmit, author 
               currentIndex={currentIndex}
               totalSiblings={totalSiblings}
               $isAuthor={currentMessage.author === author}
+              onEdit={onEdit}
+              onDelete={onDelete}
             />
             {renderMessages(_messages, selectedChildIndex[currentId], currentId)}
         </>);

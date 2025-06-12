@@ -59,6 +59,21 @@ export interface GetCompletionResponse {
   content: string;
 }
 
+export interface EditMessageRequest {
+  content: string;
+}
+
+export interface EditMessageResponse {
+  id: string;
+  content: string;
+  timestamp: string;
+}
+
+export interface DeleteMessageResponse {
+  success: boolean;
+  deletedMessageId: string;
+}
+
 export interface AuthResponse {
   token: string;
 }

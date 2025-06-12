@@ -66,6 +66,85 @@ const ConversationPage: React.FC = () => {
     }
   };
 
+  const handleEditMessage = async (messageId: string, newContent: string) => {
+    // Store original message for rollback
+    const originalMessage = messages.find(msg => msg.id === messageId);
+    if (!originalMessage) {
+      throw new Error('Message not found');
+    }
+
+    // Optimistic update
+    setMessages(prevMessages => 
+      prevMessages.map(msg => 
+        msg.id === messageId 
+          ? { ...msg, content: newContent, timestamp: new Date().toISOString() }
+          : msg
+      )
+    );
+
+    try {
+      const response = await fetchWithAuth(`/api/messages/${messageId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content: newContent })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to edit message');
+      }
+
+      const updatedMessage = await response.json();
+      // Update with server response
+      setMessages(prevMessages => 
+        prevMessages.map(msg => 
+          msg.id === messageId 
+            ? { ...msg, content: updatedMessage.content, timestamp: updatedMessage.timestamp }
+            : msg
+        )
+      );
+      
+    } catch (error) {
+      console.error('Error editing message:', error);
+      // Rollback optimistic update
+      setMessages(prevMessages => 
+        prevMessages.map(msg => 
+          msg.id === messageId ? originalMessage : msg
+        )
+      );
+      setError('Failed to edit message. Please try again.');
+      throw error;
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    // Store original messages for rollback
+    const originalMessages = [...messages];
+
+    // Optimistic update - remove message
+    setMessages(prevMessages => prevMessages.filter(msg => msg.id !== messageId));
+
+    try {
+      const response = await fetchWithAuth(`/api/messages/${messageId}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete message');
+      }
+
+      // Message successfully deleted, no need to update state again
+      
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      // Rollback optimistic update
+      setMessages(originalMessages);
+      setError('Failed to delete message. Please try again.');
+      throw error;
+    }
+  };
+
   return (
     <div>
       <h2>Conversation</h2>
@@ -73,7 +152,13 @@ const ConversationPage: React.FC = () => {
       {isLoading ? (
         <div className="loading-message">Loading messages...</div>
       ) : (
-        <Conversation messages={messages} onSubmit={handleNewMessageSubmit} author="User" />
+        <Conversation 
+          messages={messages} 
+          onSubmit={handleNewMessageSubmit} 
+          author="User"
+          onEdit={handleEditMessage}
+          onDelete={handleDeleteMessage}
+        />
       )}
     </div>
   );
