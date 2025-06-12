@@ -10,6 +10,8 @@ const mockUser = {
 const mockConversation = {
   findAll: jest.fn(),
   create: jest.fn(),
+  findOne: jest.fn(),
+  update: jest.fn(),
 };
 
 const mockMessage = {
@@ -353,6 +355,102 @@ describe('Server App - Additional Coverage Tests', () => {
       
       expect(response.status).toBe(500);
       expect(response.body.error).toBe('Internal server error');
+    });
+  });
+
+  describe('PUT /api/conversations/:conversationId', () => {
+    const validToken = jwt.sign({ id: 1 }, SECRET_KEY);
+    
+    test('should update conversation title successfully', async () => {
+      const mockConversationRecord = {
+        id: 1,
+        title: 'Updated Title',
+        user_id: 1,
+        get: jest.fn((field: string) => {
+          if (field === 'id') return 1;
+          if (field === 'title') return 'Updated Title';
+          if (field === 'user_id') return 1;
+          return null;
+        }),
+        update: jest.fn().mockResolvedValue(true),
+      };
+      
+      mockConversation.findOne.mockResolvedValue(mockConversationRecord);
+      
+      const response = await request(app)
+        .put('/api/conversations/1')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({ title: 'Updated Title' });
+      
+      expect(response.status).toBe(200);
+      expect(mockConversation.findOne).toHaveBeenCalledWith({
+        where: { id: 1, user_id: 1 }
+      });
+      expect(mockConversationRecord.update).toHaveBeenCalledWith({ title: 'Updated Title' });
+    });
+
+    test('should return 404 when conversation not found or not owned', async () => {
+      mockConversation.findOne.mockResolvedValue(null);
+      
+      const response = await request(app)
+        .put('/api/conversations/999')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({ title: 'Updated Title' });
+      
+      expect(response.status).toBe(404);
+      expect(response.body.error).toBe('Conversation not found or you do not have permission to edit it');
+    });
+
+    test('should return 400 when title is missing', async () => {
+      const response = await request(app)
+        .put('/api/conversations/1')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({});
+      
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toBeDefined();
+    });
+
+    test('should return 400 when title is empty', async () => {
+      const response = await request(app)
+        .put('/api/conversations/1')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({ title: '' });
+      
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toBeDefined();
+    });
+
+    test('should return 400 when title is too long', async () => {
+      const longTitle = 'a'.repeat(201); // 201 characters
+      
+      const response = await request(app)
+        .put('/api/conversations/1')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({ title: longTitle });
+      
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toBeDefined();
+    });
+
+    test('should handle database errors gracefully', async () => {
+      mockConversation.findOne.mockRejectedValue(new Error('Database error'));
+      
+      const response = await request(app)
+        .put('/api/conversations/1')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({ title: 'Updated Title' });
+      
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Internal server error');
+    });
+
+    test('should require authentication', async () => {
+      const response = await request(app)
+        .put('/api/conversations/1')
+        .send({ title: 'Updated Title' });
+      
+      expect(response.status).toBe(401);
     });
   });
 });

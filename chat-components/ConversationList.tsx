@@ -74,7 +74,10 @@ const ConversationList: React.FC<ConversationListProps> = ({
       {conversations.length > 0 ? (
         <ul>
           {conversations.map(conversation => (
-            <li key={conversation.id}>
+            <li 
+              key={conversation.id}
+              onClick={() => !onTitleUpdate && editingId !== conversation.id && onConversationClick(conversation.id)}
+            >
               <div className="conversation-item">
                 {editingId === conversation.id ? (
                   <div className="title-edit-container">
@@ -94,15 +97,27 @@ const ConversationList: React.FC<ConversationListProps> = ({
                 ) : (
                   <span 
                     className={`conversation-title ${onTitleUpdate ? 'editable' : ''}`}
-                    onClick={(e) => onTitleUpdate ? handleTitleClick(e, conversation) : onConversationClick(conversation.id)}
-                    title={onTitleUpdate ? 'Click to edit title' : 'Click to open conversation'}
+                    onClick={(e) => {
+                      if (onTitleUpdate) {
+                        e.stopPropagation();
+                        handleTitleClick(e, conversation);
+                      }
+                    }}
+                    title={onTitleUpdate ? 'Click to edit title' : undefined}
                   >
                     {conversation.title}
                   </span>
                 )}
                 <span 
                   className="conversation-meta"
-                  onClick={() => editingId !== conversation.id && onConversationClick(conversation.id)}
+                  onClick={(e) => {
+                    if (onTitleUpdate) {
+                      e.stopPropagation();
+                    }
+                    if (editingId !== conversation.id) {
+                      onConversationClick(conversation.id);
+                    }
+                  }}
                 >
                   {conversation.messages && conversation.messages.length > 0 
                     ? `${conversation.messages.length} messages`
