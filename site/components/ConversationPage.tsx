@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Alert, Box } from '@mui/material';
 import Conversation from '../../chat-components/Conversation';
 import { Message as MessageType } from '../../chat-components/types/Message';
-import { apiGet, apiPost, ApiError } from '../utils/api';
+import { apiGet, apiPost, apiPut, apiDelete, ApiError } from '../utils/api';
 import { useToast } from './ToastProvider';
 import ErrorBoundary from './ErrorBoundary';
 import { ConversationSkeleton, LoadingOverlay } from './SkeletonLoaders';
@@ -94,6 +94,99 @@ const ConversationPage: React.FC = () => {
     }
   };
 
+  const handleEditMessage = async (messageId: string, newContent: string) => {
+    // Store original message for rollback
+    const originalMessage = messages.find(msg => msg.id === messageId);
+    if (!originalMessage) {
+      const errorMsg = 'Message not found';
+      showError(errorMsg);
+      throw new Error(errorMsg);
+    }
+
+    // Optimistic update
+    setMessages(prevMessages => 
+      prevMessages.map(msg => 
+        msg.id === messageId 
+          ? { ...msg, content: newContent, timestamp: new Date().toISOString() }
+          : msg
+      )
+    );
+
+    try {
+      const updatedMessage = await apiPut(`/api/messages/${messageId}`, { 
+        content: newContent 
+      });
+      
+      // Update with server response
+      setMessages(prevMessages => 
+        prevMessages.map(msg => 
+          msg.id === messageId 
+            ? { ...msg, content: updatedMessage.content, timestamp: updatedMessage.timestamp }
+            : msg
+        )
+      );
+      
+      showSuccess('Message updated successfully');
+      
+    } catch (error) {
+      console.error('Error editing message:', error);
+      const apiError = error as ApiError;
+      
+      // Rollback optimistic update
+      setMessages(prevMessages => 
+        prevMessages.map(msg => 
+          msg.id === messageId ? originalMessage : msg
+        )
+      );
+      
+      let errorMessage = 'Failed to edit message. Please try again.';
+      if (apiError.code === 'NETWORK_ERROR') {
+        errorMessage = 'Network error. Please check your connection.';
+      } else if (apiError.status === 401 || apiError.status === 403) {
+        errorMessage = 'Authentication failed. Please sign in again.';
+      } else if (apiError.status === 404) {
+        errorMessage = 'Message not found.';
+      }
+      
+      setError(errorMessage);
+      showError(errorMessage);
+      throw error;
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    // Store original messages for rollback
+    const originalMessages = [...messages];
+
+    // Optimistic update - remove message
+    setMessages(prevMessages => prevMessages.filter(msg => msg.id !== messageId));
+
+    try {
+      await apiDelete(`/api/messages/${messageId}`);
+      showSuccess('Message deleted successfully');
+      
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      const apiError = error as ApiError;
+      
+      // Rollback optimistic update
+      setMessages(originalMessages);
+      
+      let errorMessage = 'Failed to delete message. Please try again.';
+      if (apiError.code === 'NETWORK_ERROR') {
+        errorMessage = 'Network error. Please check your connection.';
+      } else if (apiError.status === 401 || apiError.status === 403) {
+        errorMessage = 'Authentication failed. Please sign in again.';
+      } else if (apiError.status === 404) {
+        errorMessage = 'Message not found.';
+      }
+      
+      setError(errorMessage);
+      showError(errorMessage);
+      throw error;
+    }
+  };
+
   return (
     <ErrorBoundary>
       <Box sx={{ p: 2 }}>
@@ -110,7 +203,9 @@ const ConversationPage: React.FC = () => {
           <Conversation 
             messages={messages} 
             onSubmit={handleNewMessageSubmit} 
-            author="User" 
+            author="User"
+            onEdit={handleEditMessage}
+            onDelete={handleDeleteMessage}
           />
         </LoadingOverlay>
         
