@@ -1,22 +1,22 @@
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 
-const SECRET_KEY = 'test-secret-key-that-is-32-characters-long-for-testing';
+const SECRET_KEY = process.env.SECRET_KEY || 'test-secret-key-that-is-32-characters-long-for-testing';
 
 // Mock database models - must be defined before jest.mock calls
 const mockUser = {
-  findOne: jest.fn(),
-  create: jest.fn(),
+  findOne: jest.fn().mockResolvedValue(null),
+  create: jest.fn().mockResolvedValue({ get: jest.fn() }),
 };
 
 const mockConversation = {
-  findAll: jest.fn(),
-  create: jest.fn(),
+  findAll: jest.fn().mockResolvedValue([]),
+  create: jest.fn().mockResolvedValue({ get: jest.fn() }),
 };
 
 const mockMessage = {
-  findAll: jest.fn(),
-  findByPk: jest.fn(),
+  findAll: jest.fn().mockResolvedValue([]),
+  findByPk: jest.fn().mockResolvedValue(null),
 };
 
 jest.mock('../../server/database/models/User', () => ({
@@ -34,6 +34,21 @@ jest.mock('../../server/database/models/Message', () => ({
 import app from '../../server/app';
 
 describe('Security Tests', () => {
+
+  beforeEach(() => {
+    // Reset all mocks before each test
+    jest.clearAllMocks();
+    
+    // Reset mock functions to default working state
+    mockUser.findOne = jest.fn().mockResolvedValue(null);
+    mockUser.create = jest.fn().mockResolvedValue({ get: jest.fn() });
+    
+    mockConversation.findAll = jest.fn().mockResolvedValue([]);
+    mockConversation.create = jest.fn().mockResolvedValue({ get: jest.fn() });
+    
+    mockMessage.findAll = jest.fn().mockResolvedValue([]);
+    mockMessage.findByPk = jest.fn().mockResolvedValue(null);
+  });
   beforeAll(() => {
     process.env.SECRET_KEY = SECRET_KEY;
     process.env.NODE_ENV = 'production'; // Test rate limiting in production mode
