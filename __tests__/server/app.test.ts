@@ -10,6 +10,7 @@ const mockUser = {
 const mockConversation = {
   findAll: jest.fn(),
   create: jest.fn(),
+  findOne: jest.fn(),
 };
 
 const mockMessage = {
@@ -50,6 +51,112 @@ const SECRET_KEY = process.env.SECRET_KEY || 'fallback-secret-key';
 describe('Server App - Additional Coverage Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  describe('Environment Variable Validation', () => {
+    test('should throw error when SECRET_KEY is not set', () => {
+      // Save original value
+      const originalSecretKey = process.env.SECRET_KEY;
+      
+      // Clear SECRET_KEY
+      delete process.env.SECRET_KEY;
+      
+      // Re-require app module to trigger the SECRET_KEY check
+      jest.resetModules();
+      
+      expect(() => {
+        require('../../server/app');
+      }).toThrow('SECRET_KEY environment variable is required');
+      
+      // Restore original value
+      process.env.SECRET_KEY = originalSecretKey;
+    });
+  });
+
+  describe('Error Handler Middleware', () => {
+    const validToken = jwt.sign({ id: 1 }, SECRET_KEY);
+
+    test('should handle JWT errors', async () => {
+      // Mock a JWT error by using an invalid token format
+      const response = await request(app)
+        .get('/api/conversations')
+        .set('Authorization', 'Bearer invalid.jwt.token');
+      
+      expect(response.status).toBe(403);
+      expect(response.body.error).toBeDefined();
+    });
+
+    test('should handle JsonWebTokenError specifically', async () => {
+      // Mock a JsonWebTokenError 
+      const jsonWebTokenError = new Error('jwt malformed');
+      jsonWebTokenError.name = 'JsonWebTokenError';
+      
+      // Mock jwt.verify to throw JsonWebTokenError
+      const jwt = require('jsonwebtoken');
+      const originalVerify = jwt.verify;
+      jwt.verify = jest.fn().mockImplementation(() => {
+        throw jsonWebTokenError;
+      });
+      
+      const response = await request(app)
+        .get('/api/conversations')
+        .set('Authorization', 'Bearer some-token');
+      
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe('Invalid authentication token');
+      expect(response.body.code).toBe('JWT_ERROR');
+      
+      // Restore original function
+      jwt.verify = originalVerify;
+    });
+
+    test('should handle Sequelize database errors', async () => {
+      const sequelizeError = new Error('Database constraint violation');
+      sequelizeError.name = 'SequelizeError';
+      mockConversation.findAll.mockRejectedValue(sequelizeError);
+      
+      const response = await request(app)
+        .get('/api/conversations')
+        .set('Authorization', `Bearer ${validToken}`);
+      
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Database error');
+    });
+
+    test('should handle validation errors', async () => {
+      const response = await request(app)
+        .post('/api/add_message')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({}); // Missing required fields
+      
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.code).toBe('VALIDATION_ERROR');
+    });
+
+    test('should handle validation errors with details', async () => {
+      // Test the validation error path that includes details
+      const response = await request(app)
+        .put('/api/messages/1')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({}); // Missing content field
+      
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.code).toBe('VALIDATION_ERROR');
+      expect(response.body.details).toBeDefined();
+    });
+
+    test('should handle database connection errors', async () => {
+      mockConversation.findAll.mockRejectedValue(new Error('Database connection failed'));
+      
+      const response = await request(app)
+        .get('/api/conversations')
+        .set('Authorization', `Bearer ${validToken}`);
+      
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Internal server error');
+    });
   });
 
   describe('Authentication Middleware', () => {
@@ -118,6 +225,25 @@ describe('Server App - Additional Coverage Tests', () => {
       expect(response.status).toBe(500);
       expect(response.body.error).toBe('Internal server error');
     });
+
+    test('should successfully sign in with valid credentials', async () => {
+      const bcrypt = require('bcrypt');
+      const mockUserInstance = {
+        get: jest.fn(() => 1),
+        hashed_password: await bcrypt.hash('test123', 10)
+      };
+      
+      mockUser.findOne.mockResolvedValue(mockUserInstance);
+      bcrypt.compare = jest.fn().mockResolvedValue(true);
+      
+      const response = await request(app)
+        .post('/api/signin')
+        .send({ username: 'testuser', password: 'test123' });
+      
+      expect(response.status).toBe(200);
+      expect(response.body.token).toBeDefined();
+      expect(typeof response.body.token).toBe('string');
+    });
   });
 
   describe('POST /api/register', () => {
@@ -172,6 +298,29 @@ describe('Server App - Additional Coverage Tests', () => {
       expect(response.status).toBe(500);
       expect(response.body.error).toBe('Internal server error');
     });
+
+    test('should successfully register new user', async () => {
+      const newUser = {
+        get: jest.fn((key) => {
+          if (key === 'id') return 1;
+          return null;
+        }),
+        username: 'newuser',
+        email: 'new@example.com'
+      };
+      
+      mockUser.findOne.mockResolvedValue(null);
+      mockUser.create.mockResolvedValue(newUser);
+      
+      const response = await request(app)
+        .post('/api/register')
+        .send({ username: 'newuser', email: 'new@example.com', password: 'test123' });
+      
+      expect(response.status).toBe(201);
+      expect(response.body.id).toBe(1);
+      expect(response.body.username).toBe('newuser');
+      expect(response.body.email).toBe('new@example.com');
+    });
   });
 
   describe('POST /api/add_message - Validation', () => {
@@ -223,6 +372,27 @@ describe('Server App - Additional Coverage Tests', () => {
       expect(response.body.error).toBe('Validation failed');
       expect(response.body.code).toBe('VALIDATION_ERROR');
       expect(response.body.details).toBeDefined();
+    });
+
+    test('should successfully add message', async () => {
+      const { addMessage } = require('../../server/helpers/messageHelpers');
+      const mockMessage = { get: jest.fn(() => '123') };
+      
+      addMessage.mockResolvedValue(mockMessage);
+      (convertIdToNumber as jest.Mock).mockReturnValue(1);
+      (convertMessageToApiFormat as jest.Mock).mockReturnValue({
+        id: '123',
+        content: 'Test message',
+        timestamp: '2023-01-01T00:00:00.000Z'
+      });
+      
+      const response = await request(app)
+        .post('/api/add_message')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({ content: 'Test message', conversationId: '1' });
+      
+      expect(response.status).toBe(201);
+      expect(response.body.id).toBe('123');
     });
   });
 
@@ -276,6 +446,29 @@ describe('Server App - Additional Coverage Tests', () => {
       expect(response.body.code).toBe('VALIDATION_ERROR');
       expect(response.body.details).toBeDefined();
     });
+
+    test('should successfully generate completion', async () => {
+      const { generateCompletion } = require('../../server/helpers/messageHelpers');
+      const mockCompletion = { 
+        get: jest.fn((key) => {
+          if (key === 'id') return 456;
+          if (key === 'content') return 'Generated response';
+          return null;
+        })
+      };
+      
+      generateCompletion.mockResolvedValue(mockCompletion);
+      (convertIdToNumber as jest.Mock).mockReturnValue(123);
+      
+      const response = await request(app)
+        .post('/api/get_completion_for_message')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({ messageId: '123', model: 'gpt-4', temperature: 0.5 });
+      
+      expect(response.status).toBe(201);
+      expect(response.body.id).toBe('456');
+      expect(response.body.content).toBe('Generated response');
+    });
   });
 
   describe('POST /api/get_completion - Validation', () => {
@@ -328,6 +521,35 @@ describe('Server App - Additional Coverage Tests', () => {
       expect(response.body.code).toBe('VALIDATION_ERROR');
       expect(response.body.details).toBeDefined();
     });
+
+    test('should successfully start streaming completion', async () => {
+      const { generateCompletion } = require('../../server/helpers/messageHelpers');
+      const mockCompletion = { 
+        get: jest.fn((key) => {
+          if (key === 'id') return 789;
+          if (key === 'content') return 'Streaming response';
+          return null;
+        })
+      };
+      
+      generateCompletion.mockResolvedValue(mockCompletion);
+      (convertIdToNumber as jest.Mock).mockReturnValue(456);
+      
+      const response = await request(app)
+        .post('/api/get_completion')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({ model: 'gpt-4', parentId: '456', temperature: 0.7 });
+      
+      expect(response.status).toBe(200);
+      expect(response.headers['content-type']).toBe('application/json');
+      expect(response.headers['cache-control']).toBe('no-cache');
+      expect(response.headers['connection']).toBe('keep-alive');
+      expect(response.text).toContain('"id":"789"');
+      expect(response.text).toContain('"content":"Streaming response"');
+      expect(response.text).toContain('Example stream data part 1');
+      expect(response.text).toContain('Example stream data part 2');
+      expect(response.text).toContain('Example stream data part 3');
+    });
   });
 
   describe('POST /api/create_conversation - Validation', () => {
@@ -368,6 +590,28 @@ describe('Server App - Additional Coverage Tests', () => {
       expect(response.body.code).toBe('VALIDATION_ERROR');
       expect(response.body.details).toBeDefined();
     });
+
+    test('should successfully create conversation', async () => {
+      const { addMessage, generateCompletion } = require('../../server/helpers/messageHelpers');
+      
+      const mockConversationInstance = { get: jest.fn(() => 10) };
+      const mockMessage = { get: jest.fn(() => 20) };
+      const mockCompletion = { get: jest.fn(() => 30) };
+      
+      mockConversation.create.mockResolvedValue(mockConversationInstance);
+      addMessage.mockResolvedValue(mockMessage);
+      generateCompletion.mockResolvedValue(mockCompletion);
+      
+      const response = await request(app)
+        .post('/api/create_conversation')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({ initialMessage: 'Hello', model: 'gpt-4', temperature: 0.5 });
+      
+      expect(response.status).toBe(201);
+      expect(response.body.conversationId).toBe('10');
+      expect(response.body.initialMessageId).toBe('20');
+      expect(response.body.completionMessageId).toBe('30');
+    });
   });
 
   describe('Error Handling - Database Errors', () => {
@@ -391,6 +635,123 @@ describe('Server App - Additional Coverage Tests', () => {
         .get('/api/conversations/1/messages')
         .set('Authorization', `Bearer ${validToken}`);
       
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Internal server error');
+    });
+
+    test('should handle 404 for conversation not found', async () => {
+      mockConversation.findOne = jest.fn().mockResolvedValue(null);
+      
+      const response = await request(app)
+        .get('/api/conversations/999/messages')
+        .set('Authorization', `Bearer ${validToken}`);
+      
+      expect(response.status).toBe(404);
+      expect(response.body.error).toBe('Conversation not found');
+    });
+
+    test('should return 500 when create conversation fails', async () => {
+      mockConversation.create.mockRejectedValue(new Error('Database error'));
+      
+      const response = await request(app)
+        .post('/api/create_conversation')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({ initialMessage: 'Hello', model: 'gpt-4', temperature: 0.5 });
+      
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Internal server error');
+    });
+
+    test('should successfully get all conversations', async () => {
+      const { convertConversationToApiFormat } = require('../../server/helpers/typeConverters');
+      const mockConversations = [
+        { id: 1, title: 'Test Conversation 1' },
+        { id: 2, title: 'Test Conversation 2' }
+      ];
+      
+      mockConversation.findAll.mockResolvedValue(mockConversations);
+      convertConversationToApiFormat.mockImplementation((conv: any) => ({
+        id: conv.id.toString(),
+        title: conv.title,
+        userId: '1',
+        messages: []
+      }));
+      
+      const response = await request(app)
+        .get('/api/conversations')
+        .set('Authorization', `Bearer ${validToken}`);
+      
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveLength(2);
+      expect(response.body[0].title).toBe('Test Conversation 1');
+      expect(response.body[1].title).toBe('Test Conversation 2');
+    });
+
+    test('should successfully get conversation messages', async () => {
+      const { convertMessageToApiFormat } = require('../../server/helpers/typeConverters');
+      const mockMessages = [
+        { id: 1, content: 'Hello', conversation_id: 1 },
+        { id: 2, content: 'Hi there', conversation_id: 1 }
+      ];
+      
+      mockConversation.findOne.mockResolvedValue({ id: 1, user_id: 1 });
+      mockMessage.findAll.mockResolvedValue(mockMessages);
+      (convertIdToNumber as jest.Mock).mockReturnValue(1);
+      convertMessageToApiFormat.mockImplementation((msg: any) => ({
+        id: msg.id.toString(),
+        content: msg.content,
+        conversationId: msg.conversation_id.toString()
+      }));
+      
+      const response = await request(app)
+        .get('/api/conversations/1/messages')
+        .set('Authorization', `Bearer ${validToken}`);
+      
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveLength(2);
+      expect(response.body[0].content).toBe('Hello');
+      expect(response.body[1].content).toBe('Hi there');
+    });
+
+    test('should handle edit message database error', async () => {
+      const mockMessageInstance = {
+        get: jest.fn((key) => {
+          if (key === 'user_id') return 1;
+          if (key === 'id') return 1;
+          return null;
+        }),
+        update: jest.fn().mockRejectedValue(new Error('Database error')),
+      };
+
+      mockMessage.findByPk = jest.fn().mockResolvedValue(mockMessageInstance);
+      (convertIdToNumber as jest.Mock).mockReturnValue(1);
+      
+      const response = await request(app)
+        .put('/api/messages/1')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({ content: 'Updated content' });
+
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Internal server error');
+    });
+
+    test('should handle delete message database error', async () => {
+      const mockMessageInstance = {
+        get: jest.fn((key) => {
+          if (key === 'user_id') return 1;
+          if (key === 'id') return 1;
+          return null;
+        }),
+        destroy: jest.fn().mockRejectedValue(new Error('Database error')),
+      };
+
+      mockMessage.findByPk = jest.fn().mockResolvedValue(mockMessageInstance);
+      (convertIdToNumber as jest.Mock).mockReturnValue(1);
+      
+      const response = await request(app)
+        .delete('/api/messages/1')
+        .set('Authorization', `Bearer ${validToken}`);
+
       expect(response.status).toBe(500);
       expect(response.body.error).toBe('Internal server error');
     });
@@ -439,7 +800,9 @@ describe('Server App - Additional Coverage Tests', () => {
         .send({});
 
       expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.code).toBe('VALIDATION_ERROR');
+      expect(response.body.details).toBeDefined();
     });
 
     test('should return 404 when message not found', async () => {

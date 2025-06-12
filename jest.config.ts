@@ -15,10 +15,10 @@ export default {
   coverageReporters: ['text', 'lcov'],
   coverageThreshold: {
     global: {
-      statements: 85,
-      branches: 79, // Lowered to account for new security validation code
-      lines: 85,
-      functions: 89,
+      statements: 95,
+      branches: 95,
+      lines: 95,
+      functions: 95,
     },
   },
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'], // Path is correct
