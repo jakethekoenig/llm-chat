@@ -53,18 +53,6 @@ const ConversationPage: React.FC = () => {
     
     try {
       const mostRecentMessageId = messages.length > 0 ? messages[messages.length - 1].id : null;
-<<<<<<< HEAD
-=======
-      
-      // First, send the user message
-      const response = await fetchWithAuth(`/api/add_message`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content: message, conversationId: conversationId, parentId: mostRecentMessageId })
-      });
->>>>>>> main
       
       const data = await apiPost('/api/add_message', {
         content: message,
@@ -72,22 +60,15 @@ const ConversationPage: React.FC = () => {
         parentId: mostRecentMessageId
       });
 
-<<<<<<< HEAD
       // Add UI-specific fields to the returned message
-=======
-      const newMessage = await response.json();
->>>>>>> main
       const messageWithUiFields = {
         ...data,
         author: 'User'
       };
       
       setMessages(prevMessages => [...prevMessages, messageWithUiFields]);
-<<<<<<< HEAD
       showSuccess('Message sent successfully');
-=======
       yield `You: ${message}\n\n`;
->>>>>>> main
       
       // Now stream the AI response
       const streamResponse = await fetchWithAuth(`/api/get_completion`, {
@@ -96,7 +77,7 @@ const ConversationPage: React.FC = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          parentId: newMessage.id, 
+          parentId: data.id, 
           model: 'gpt-4o',
           temperature: 0.7 
         })
@@ -136,7 +117,7 @@ const ConversationPage: React.FC = () => {
                     content: '',
                     author: 'AI',
                     timestamp: new Date().toISOString(),
-                    parentId: newMessage.id
+                    parentId: data.id
                   };
                   setMessages(prevMessages => [...prevMessages, aiMessage]);
                 }
@@ -166,7 +147,6 @@ const ConversationPage: React.FC = () => {
       }
       
     } catch (error) {
-<<<<<<< HEAD
       console.error('Error sending message:', error);
       const apiError = error as ApiError;
       
