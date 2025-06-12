@@ -35,6 +35,8 @@ const ConversationPage: React.FC = () => {
     try {
       setError(null);
       const mostRecentMessageId = messages.length > 0 ? messages[messages.length - 1].id : null;
+      
+      // First, send the user message
       const response = await fetchWithAuth(`/api/add_message`, {
         method: 'POST',
         headers: {
@@ -48,21 +50,94 @@ const ConversationPage: React.FC = () => {
       }
 
       const newMessage = await response.json();
-      // Add UI-specific fields
       const messageWithUiFields = {
         ...newMessage,
         author: 'User'
       };
       
       setMessages(prevMessages => [...prevMessages, messageWithUiFields]);
+      yield `You: ${message}\n\n`;
       
-      // Yield the message content to support streaming interface
-      yield message;
+      // Now stream the AI response
+      const streamResponse = await fetchWithAuth(`/api/get_completion`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          parentId: newMessage.id, 
+          model: 'gpt-4o',
+          temperature: 0.7 
+        })
+      });
+
+      if (!streamResponse.ok) {
+        throw new Error('Failed to get AI response');
+      }
+
+      const reader = streamResponse.body?.getReader();
+      const decoder = new TextDecoder();
+      let aiMessageId: string | null = null;
+      let fullAiContent = '';
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                
+                if (data.error) {
+                  throw new Error(data.error);
+                }
+                
+                if (data.messageId && !aiMessageId) {
+                  aiMessageId = data.messageId;
+                  // Add empty AI message to messages list
+                  const aiMessage = {
+                    id: data.messageId,
+                    content: '',
+                    author: 'AI',
+                    timestamp: new Date().toISOString(),
+                    parentId: newMessage.id
+                  };
+                  setMessages(prevMessages => [...prevMessages, aiMessage]);
+                }
+                
+                if (data.chunk && aiMessageId) {
+                  fullAiContent += data.chunk;
+                  // Update the AI message content
+                  setMessages(prevMessages => 
+                    prevMessages.map(msg => 
+                      msg.id === aiMessageId 
+                        ? { ...msg, content: fullAiContent }
+                        : msg
+                    )
+                  );
+                  yield data.chunk;
+                }
+                
+                if (data.isComplete) {
+                  break;
+                }
+              } catch (parseError) {
+                console.error('Error parsing stream data:', parseError);
+              }
+            }
+          }
+        }
+      }
       
     } catch (error) {
-      console.error('Error sending message:', error);
-      setError('Failed to send message. Please try again.');
-      yield 'Error: Failed to send message';
+      console.error('Error in conversation:', error);
+      setError('Failed to process message. Please try again.');
+      yield 'Error: Failed to process message';
     }
   };
 

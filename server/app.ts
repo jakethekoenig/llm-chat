@@ -9,7 +9,7 @@ import { User } from './database/models/User';
 import { Op } from 'sequelize';
 import { Conversation } from './database/models/Conversation';
 import { Message } from './database/models/Message';
-import { addMessage, generateCompletion } from './helpers/messageHelpers';
+import { addMessage, generateCompletion, generateStreamingCompletion } from './helpers/messageHelpers';
 import { body, validationResult } from 'express-validator';
 import { 
   convertMessageToApiFormat, 
@@ -193,34 +193,38 @@ app.post('/api/get_completion', authenticateToken, [
 
   try {
     const dbParentId = convertIdToNumber(parentId);
-    const completionMessage = await generateCompletion(dbParentId, model, temperature);
-    res.setHeader('Content-Type', 'application/json');
+    
+    res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', '*');
 
-    const streamData = JSON.stringify({ id: (completionMessage.get('id') as number).toString(), content: completionMessage.get('content') as string});
-    res.write(`data: ${streamData}\n\n`);
+    req.on('close', () => {
+      res.end();
+    });
 
-    // Placeholder for actual streaming logic
-    const messages = [
-      { chunk: 'Example stream data part 1' },
-      { chunk: 'Example stream data part 2' },
-      { chunk: 'Example stream data part 3' }
-    ];
-
-    let index = 0;
-    const interval = setInterval(() => {
-      if (index < messages.length) {
-        const chunkData = JSON.stringify(messages[index]);
-        res.write(`data: ${chunkData}\n\n`);
-        index++;
-      } else {
-        clearInterval(interval);
-        res.end();
+    for await (const chunk of generateStreamingCompletion(dbParentId, model, temperature)) {
+      const data = JSON.stringify({
+        messageId: chunk.messageId.toString(),
+        chunk: chunk.chunk,
+        isComplete: chunk.isComplete
+      });
+      res.write(`data: ${data}\n\n`);
+      
+      if (chunk.isComplete) {
+        break;
       }
-    }, 1000);
+    }
+    
+    res.end();
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Streaming error:', error);
+    const errorData = JSON.stringify({ 
+      error: 'Failed to generate completion',
+      isComplete: true 
+    });
+    res.write(`data: ${errorData}\n\n`);
+    res.end();
   }
 });
 
