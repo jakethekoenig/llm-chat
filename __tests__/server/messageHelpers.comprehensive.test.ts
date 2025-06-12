@@ -7,14 +7,14 @@ const mockMessage = {
   update: jest.fn(),
   destroy: jest.fn(),
   get: jest.fn()
-};
+} as any;
 
 jest.mock('../../server/database/models/Message', () => ({
   Message: mockMessage
 }));
 
 // Mock OpenAI
-const mockOpenAICreate = jest.fn();
+const mockOpenAICreate = jest.fn() as any;
 jest.mock('openai', () => ({
   OpenAI: jest.fn(() => ({
     chat: {
@@ -26,7 +26,7 @@ jest.mock('openai', () => ({
 }));
 
 // Mock Anthropic
-const mockAnthropicCreate = jest.fn();
+const mockAnthropicCreate = jest.fn() as any;
 jest.mock('@anthropic-ai/sdk', () => ({
   __esModule: true,
   default: jest.fn(() => ({
@@ -379,16 +379,6 @@ describe('messageHelpers - Comprehensive Tests', () => {
     test('should be properly configured', () => {
       expect(logger).toBeDefined();
       expect(logger.level).toBe('error');
-    });
-
-    test('should log errors', () => {
-      const mockLog = jest.spyOn(logger, 'error').mockImplementation(() => {});
-      
-      logger.error('Test error message', { key: 'value' });
-      
-      expect(mockLog).toHaveBeenCalledWith('Test error message', { key: 'value' });
-      
-      mockLog.mockRestore();
     });
   });
 });

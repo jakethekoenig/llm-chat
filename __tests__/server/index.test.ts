@@ -4,7 +4,7 @@ import { jest } from '@jest/globals';
 jest.mock('../../server/app', () => ({
   __esModule: true,
   default: {
-    listen: jest.fn((port, callback) => {
+    listen: jest.fn((port: any, callback?: () => void) => {
       if (callback) callback();
       return { close: jest.fn() };
     })
@@ -13,9 +13,9 @@ jest.mock('../../server/app', () => ({
 
 describe('Server Index - Environment Validation', () => {
   let originalEnv: NodeJS.ProcessEnv;
-  let mockExit: jest.SpyInstance;
-  let mockConsoleError: jest.SpyInstance;
-  let mockConsoleLog: jest.SpyInstance;
+  let mockExit: any;
+  let mockConsoleError: any;
+  let mockConsoleLog: any;
 
   beforeEach(() => {
     originalEnv = { ...process.env };

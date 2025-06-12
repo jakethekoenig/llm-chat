@@ -13,17 +13,17 @@ describe('Database Models', () => {
     });
 
     // Reinitialize models with test database
-    User.init(User.getTableName ? User.rawAttributes : (User as any).rawAttributes, {
+    User.init((User as any).rawAttributes, {
       sequelize,
       modelName: 'User'
     });
 
-    Conversation.init(Conversation.getTableName ? Conversation.rawAttributes : (Conversation as any).rawAttributes, {
+    Conversation.init((Conversation as any).rawAttributes, {
       sequelize,
       modelName: 'Conversation'
     });
 
-    Message.init(Message.getTableName ? Message.rawAttributes : (Message as any).rawAttributes, {
+    Message.init((Message as any).rawAttributes, {
       sequelize,
       modelName: 'Message'
     });
@@ -292,7 +292,7 @@ describe('Database Models', () => {
       });
 
       // Load parent with replies
-      const parentWithReplies = await Message.findByPk(parentMessage.get('id'), {
+      const parentWithReplies = await Message.findByPk(parentMessage.get('id') as number, {
         include: [{ association: 'Replies' }]
       });
 
@@ -301,7 +301,7 @@ describe('Database Models', () => {
       expect(replies[0].get('content')).toBe('Child message');
 
       // Load child with parent
-      const childWithParent = await Message.findByPk(childMessage.get('id'), {
+      const childWithParent = await Message.findByPk(childMessage.get('id') as number, {
         include: [{ association: 'Parent' }]
       });
 
