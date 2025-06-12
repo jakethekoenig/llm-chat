@@ -56,6 +56,11 @@ const MessageDemo = () => {
     { id: '2', content: 'Conversation 2', author: 'User2', timestamp: new Date().toISOString(), parentId: null },
   ];
 
+  const handleNewMessageSubmit = async function* (message: string) {
+    // Mock async generator for demo purposes
+    yield `Echo: ${message}`;
+  };
+
   return (
     <MessageConfigProvider config={{ buttons: { copy: 'enabled', share: 'enabled', delete: 'enabled', edit: 'enabled' }, theme: { primaryColor: '#007BFF', secondaryColor: '#6C757D', mode: 'light' } }}>
       <div>
