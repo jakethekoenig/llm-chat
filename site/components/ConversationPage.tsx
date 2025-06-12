@@ -8,23 +8,6 @@ import { useToast } from './ToastProvider';
 import ErrorBoundary from './ErrorBoundary';
 import { ConversationSkeleton, LoadingOverlay } from './SkeletonLoaders';
 import '../App.css';
-
-// TODO: Refactor interface so this co-ercion isn't necessary.
-function snakeToCamelCase(obj) {
-  if (typeof obj !== 'object' || obj === null) {
-    return obj;
-  }
-
-  if (Array.isArray(obj)) {
-    return obj.map(snakeToCamelCase);
-  }
-
-  return Object.keys(obj).reduce((acc, key) => {
-    const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-    acc[camelKey] = snakeToCamelCase(obj[key]);
-    return acc;
-  }, {});
-}
 const ConversationPage: React.FC = () => {
   const { conversationId } = useParams<{ conversationId: string }>();
   const [messages, setMessages] = useState<MessageType[]>([]);
@@ -39,7 +22,7 @@ const ConversationPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         const data = await apiGet(`/api/conversations/${conversationId}/messages`);
-        setMessages(snakeToCamelCase(data));
+        setMessages(data);
       } catch (error) {
         console.error('Error fetching messages:', error);
         const apiError = error as ApiError;
@@ -77,15 +60,13 @@ const ConversationPage: React.FC = () => {
         parentId: mostRecentMessageId
       });
 
-      const newMessage = { 
-        id: data.id, 
-        content: message, 
-        author: 'User', 
-        timestamp: new Date().toISOString(), 
-        parentId: mostRecentMessageId 
+      // Add UI-specific fields to the returned message
+      const messageWithUiFields = {
+        ...data,
+        author: 'User'
       };
       
-      setMessages(prevMessages => [...prevMessages, newMessage]);
+      setMessages(prevMessages => [...prevMessages, messageWithUiFields]);
       showSuccess('Message sent successfully');
       
       // Yield the message content to support streaming interface

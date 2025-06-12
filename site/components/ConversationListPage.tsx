@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Alert, Box, Button, TextField, Stack, Typography, Card, CardContent } from '@mui/material';
 import '../App.css';
 import ConversationList from '../../chat-components/ConversationList';
-import { Message as MessageType } from '../../chat-components/types/Message';
+import { Conversation as ConversationType } from '../../chat-components/types/Conversation';
 import { apiGet, apiPost, ApiError } from '../utils/api';
 import { useToast } from './ToastProvider';
 import ErrorBoundary from './ErrorBoundary';
@@ -12,7 +12,7 @@ import { ConversationListSkeleton, LoadingOverlay, FormSkeleton } from './Skelet
 // Component to display the list of conversations
 const ConversationListPage: React.FC = () => {
   // State to store the list of conversations
-  const [conversations, setConversations] = useState<MessageType[]>([]);
+  const [conversations, setConversations] = useState<ConversationType[]>([]);
   // State to store any error messages
   const [error, setError] = useState<string | null>(null);
   // State to track loading status
@@ -26,11 +26,7 @@ const ConversationListPage: React.FC = () => {
         setIsLoadingConversations(true);
         setError(null);
         const data = await apiGet('/api/conversations');
-        setConversations(data.map((conversation: any) => ({
-          id: conversation.id,
-          content: conversation.title || conversation.content || 'Untitled Conversation',
-          author: conversation.author || 'Unknown'
-        })));
+        setConversations(data);
       } catch (error) {
         console.error('Error fetching conversations:', error);
         const apiError = error as ApiError;
@@ -77,11 +73,14 @@ const ConversationListPage: React.FC = () => {
       });
       
       if (data.conversationId) {
-        setConversations([...conversations, { 
-          id: data.conversationId, 
-          content: initialMessage as string,
-          author: 'User'
-        }]);
+        // Add the new conversation to the list
+        const newConversation: ConversationType = {
+          id: data.conversationId,
+          title: 'New Conversation',
+          userId: '', // This will be filled by the server when we fetch conversations again
+          messages: []
+        };
+        setConversations([...conversations, newConversation]);
         showSuccess('Conversation created successfully');
         navigate(`/conversations/${data.conversationId}`);
       }

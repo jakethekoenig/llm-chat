@@ -36,4 +36,9 @@ jobs:
         chrome-version: '136'
 
     - name: Run tests
+      env:
+        SECRET_KEY: test-secret-key-that-is-32-characters-long-for-ci-testing
+        OPENAI_API_KEY: test-openai-key-for-ci
+        ANTHROPIC_API_KEY: test-anthropic-key-for-ci
+        NODE_ENV: test
       run: npm run test:ci

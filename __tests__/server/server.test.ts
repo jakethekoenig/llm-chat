@@ -13,11 +13,13 @@ const obtainAuthToken = async () => {
 };
 
 beforeAll(() => {
+  process.env.SECRET_KEY = 'test-secret-key-that-is-32-characters-long-for-testing';
   process.env.OPENAI_API_KEY = 'test-openai-key';
   process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
 });
 
 afterAll(() => {
+  delete process.env.SECRET_KEY;
   delete process.env.OPENAI_API_KEY;
   delete process.env.ANTHROPIC_API_KEY;
 });

@@ -4,6 +4,11 @@ import '@testing-library/jest-dom';
 import 'jest-styled-components';
 import { cleanup } from '@testing-library/react';
 
+// Set up environment variables for testing
+process.env.SECRET_KEY = 'test-secret-key-that-is-32-characters-long-for-testing';
+process.env.OPENAI_API_KEY = 'test-openai-key';
+process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
+
 // Polyfill TextEncoder/TextDecoder for Node.js tests
 import { TextEncoder, TextDecoder } from 'util';
 global.TextEncoder = TextEncoder as any;

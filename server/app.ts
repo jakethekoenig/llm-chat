@@ -3,17 +3,64 @@ import jwt from 'jsonwebtoken';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import bcrypt from 'bcrypt';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { User } from './database/models/User';
 import { Op } from 'sequelize';
 import { Conversation } from './database/models/Conversation';
 import { Message } from './database/models/Message';
 import { addMessage, generateCompletion } from './helpers/messageHelpers';
 import { body, validationResult } from 'express-validator';
+import { 
+  convertMessageToApiFormat, 
+  convertConversationToApiFormat, 
+  convertUserToApiFormat,
+  convertIdToNumber 
+} from './helpers/typeConverters';
 
 const app = express();
-const SECRET_KEY = process.env.SECRET_KEY || 'fallback-secret-key';
 
-app.use(bodyParser.json());
+// Get SECRET_KEY from environment - no fallback for security
+const SECRET_KEY = process.env.SECRET_KEY;
+if (!SECRET_KEY) {
+  throw new Error('SECRET_KEY environment variable is required');
+}
+
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
+}));
+
+// Rate limiting - more permissive in test environment
+const isTestEnv = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: isTestEnv ? 10000 : 100, // Much higher limit for tests
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: isTestEnv ? () => true : undefined, // Skip rate limiting in tests
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: isTestEnv ? 10000 : 5, // Much higher limit for tests
+  message: 'Too many authentication attempts, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: isTestEnv ? () => true : undefined, // Skip rate limiting in tests
+});
+
+app.use(limiter);
+app.use(bodyParser.json({ limit: '10mb' })); // Add size limit
 app.use(cors());
 
 // Standardized error response interface
@@ -131,7 +178,7 @@ export const authenticateToken = (req: express.Request, res: express.Response, n
 };
 
 // Sign-in route
-app.post('/api/signin', asyncHandler(async (req: express.Request, res: express.Response) => {
+app.post('/api/signin', authLimiter, asyncHandler(async (req: express.Request, res: express.Response) => {
   const { username, password } = req.body;
   
   if (!username || !password) {
@@ -161,7 +208,7 @@ app.post('/api/signin', asyncHandler(async (req: express.Request, res: express.R
 }));
 
 // Register route
-app.post('/api/register', asyncHandler(async (req: express.Request, res: express.Response) => {
+app.post('/api/register', authLimiter, asyncHandler(async (req: express.Request, res: express.Response) => {
   const { username, email, password } = req.body;
   
   if (!username || !email || !password) {
@@ -199,8 +246,15 @@ app.post('/api/register', asyncHandler(async (req: express.Request, res: express
 // Add message submission endpoint
 app.post('/api/add_message', authenticateToken, [
   body('content').notEmpty().withMessage('Content is required'),
-  body('conversationId').isInt().withMessage('Conversation ID must be an integer'),
-  body('parentId').optional().isInt().withMessage('Parent ID must be an integer')
+  body('conversationId').custom((value) => {
+    if (!value) throw new Error('Conversation ID is required');
+    if (isNaN(parseInt(value))) throw new Error('Conversation ID must be a valid number');
+    return true;
+  }),
+  body('parentId').optional().custom((value) => {
+    if (value && isNaN(parseInt(value))) throw new Error('Parent ID must be an integer');
+    return true;
+  })
 ], asyncHandler(async (req: express.Request, res: express.Response) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -217,13 +271,20 @@ app.post('/api/add_message', authenticateToken, [
   const { content, conversationId, parentId } = req.body;
   const userId = (req as any).user.id;
 
-  const message = await addMessage(content, conversationId, parentId, userId);
-  res.status(201).json({ id: message.get('id') });
+  const dbConversationId = convertIdToNumber(conversationId);
+  const dbParentId = parentId ? convertIdToNumber(parentId) : null;
+  const message = await addMessage(content, dbConversationId, dbParentId, userId);
+  const formattedMessage = convertMessageToApiFormat(message);
+  res.status(201).json(formattedMessage);
 }));
 
 // Get completion for message endpoint with validation
 app.post('/api/get_completion_for_message', authenticateToken, [
-  body('messageId').isInt().withMessage('Message ID must be an integer'),
+  body('messageId').custom((value) => {
+    if (!value) throw new Error('Message ID is required');
+    if (isNaN(parseInt(value))) throw new Error('Message ID must be a valid number');
+    return true;
+  }),
   body('model').notEmpty().withMessage('Model is required'),
   body('temperature').isFloat().withMessage('Temperature must be a float')
 ], asyncHandler(async (req: express.Request, res: express.Response) => {
@@ -241,14 +302,19 @@ app.post('/api/get_completion_for_message', authenticateToken, [
 
   const { messageId, model, temperature } = req.body;
 
-  const completionMessage = await generateCompletion(messageId, model, temperature);
-  res.status(201).json({ id: completionMessage.get('id'), content: completionMessage.get('content')});
+  const dbMessageId = convertIdToNumber(messageId);
+  const completionMessage = await generateCompletion(dbMessageId, model, temperature);
+  res.status(201).json({ id: (completionMessage.get('id') as number).toString(), content: completionMessage.get('content') as string});
 }));
 
 // Streaming endpoint with validation
 app.post('/api/get_completion', authenticateToken, [
   body('model').notEmpty().withMessage('Model is required'),
-  body('parentId').isInt().withMessage('Parent ID must be an integer'),
+  body('parentId').custom((value) => {
+    if (!value) throw new Error('Parent ID is required');
+    if (isNaN(parseInt(value))) throw new Error('Parent ID must be a valid number');
+    return true;
+  }),
   body('temperature').isFloat().withMessage('Temperature must be a float')
 ], asyncHandler(async (req: express.Request, res: express.Response) => {
   const errors = validationResult(req);
@@ -265,12 +331,13 @@ app.post('/api/get_completion', authenticateToken, [
 
   const { model, parentId, temperature } = req.body;
 
-  const completionMessage = await generateCompletion(parentId, model, temperature);
+  const dbParentId = convertIdToNumber(parentId);
+  const completionMessage = await generateCompletion(dbParentId, model, temperature);
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
 
-  const streamData = JSON.stringify({ id: completionMessage.get('id'), content: completionMessage.get('content')});
+  const streamData = JSON.stringify({ id: (completionMessage.get('id') as number).toString(), content: completionMessage.get('content') as string});
   res.write(`data: ${streamData}\n\n`);
 
   // Placeholder for actual streaming logic
@@ -303,7 +370,9 @@ app.get('/api/conversations', authenticateToken, asyncHandler(async (req: expres
       required: false
     }]
   });
-  res.json(conversations);
+  
+  const formattedConversations = conversations.map(convertConversationToApiFormat);
+  res.json(formattedConversations);
 }));
 
 // Route to get all messages in a specific conversation
@@ -311,9 +380,11 @@ app.get('/api/conversations/:conversationId/messages', authenticateToken, asyncH
   const { conversationId } = req.params;
   const userId = (req as any).user.id;
   
+  const dbConversationId = convertIdToNumber(conversationId);
+  
   // Verify user has access to this conversation
   const conversation = await Conversation.findOne({
-    where: { id: conversationId, user_id: userId }
+    where: { id: dbConversationId, user_id: userId }
   });
   
   if (!conversation) {
@@ -327,9 +398,10 @@ app.get('/api/conversations/:conversationId/messages', authenticateToken, asyncH
   }
   
   const messages = await Message.findAll({
-    where: { conversation_id: conversationId }
+    where: { conversation_id: dbConversationId }
   });
-  res.json(messages);
+  const formattedMessages = messages.map(convertMessageToApiFormat);
+  res.json(formattedMessages);
 }));
 
 // Create conversation with initial message endpoint
@@ -358,9 +430,9 @@ app.post('/api/create_conversation', authenticateToken, [
   const message = await addMessage(initialMessage, conversation.get('id') as number, null, userId);
   const completionMessage = await generateCompletion(message.get('id') as number, model, temperature);
   res.status(201).json({ 
-    conversationId: conversation.get('id'), 
-    initialMessageId: message.get('id'), 
-    completionMessageId: completionMessage.get('id') 
+    conversationId: (conversation.get('id') as number).toString(), 
+    initialMessageId: (message.get('id') as number).toString(), 
+    completionMessageId: (completionMessage.get('id') as number).toString()
   });
 }));
 
