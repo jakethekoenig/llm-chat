@@ -619,13 +619,15 @@ describe('Message Component', () => {
     expect(screen.getByText('Delete Message')).toBeInTheDocument();
     expect(screen.getByText('Are you sure you want to delete this message? This action cannot be undone.')).toBeInTheDocument();
     
-    // Click confirm
+    // Click confirm - wrap in act to handle async state updates
     const confirmButton = screen.getByRole('button', { name: 'Delete' });
-    fireEvent.click(confirmButton);
-    
-    // Just verify the delete function was called
-    await waitFor(() => {
-      expect(onDelete).toHaveBeenCalledWith('1');
+    await act(async () => {
+      fireEvent.click(confirmButton);
+      
+      // Just verify the delete function was called
+      await waitFor(() => {
+        expect(onDelete).toHaveBeenCalledWith('1');
+      });
     });
   });
 
@@ -663,13 +665,15 @@ describe('Message Component', () => {
     // Should show delete dialog
     expect(screen.getByText('Delete Message')).toBeInTheDocument();
     
-    // Click cancel
+    // Click cancel - wrap in act to handle state updates
     const cancelButton = screen.getByRole('button', { name: 'Cancel' });
-    fireEvent.click(cancelButton);
-    
-    // Dialog should be closed and onDelete should not be called
-    await waitFor(() => {
-      expect(screen.queryByText('Delete Message')).not.toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(cancelButton);
+      
+      // Dialog should be closed and onDelete should not be called
+      await waitFor(() => {
+        expect(screen.queryByText('Delete Message')).not.toBeInTheDocument();
+      });
     });
     expect(onDelete).not.toHaveBeenCalled();
   });
@@ -687,18 +691,20 @@ describe('Message Component', () => {
     const deleteButton = screen.getByText('Delete');
     fireEvent.click(deleteButton);
     
-    // Click confirm
+    // Click confirm - wrap in act to handle async state updates
     const confirmButton = screen.getByRole('button', { name: 'Delete' });
-    fireEvent.click(confirmButton);
-    
-    // Wait for the delete operation to be called (it will fail)
-    await waitFor(() => {
-      expect(onDelete).toHaveBeenCalledWith('1');
-    });
-    
-    // Verify error was logged
-    await waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to delete message:', expect.any(Error));
+    await act(async () => {
+      fireEvent.click(confirmButton);
+      
+      // Wait for the delete operation to be called (it will fail)
+      await waitFor(() => {
+        expect(onDelete).toHaveBeenCalledWith('1');
+      });
+      
+      // Verify error was logged
+      await waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalledWith('Failed to delete message:', expect.any(Error));
+      });
     });
     
     consoleSpy.mockRestore();
@@ -719,21 +725,23 @@ describe('Message Component', () => {
     const deleteButton = screen.getByText('Delete');
     fireEvent.click(deleteButton);
     
-    // Click confirm
+    // Click confirm - wrap in act to handle async state updates
     const confirmButton = screen.getByRole('button', { name: 'Delete' });
-    fireEvent.click(confirmButton);
-    
-    // Buttons should be disabled during loading
-    await waitFor(() => {
-      expect(confirmButton).toBeDisabled();
-      expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+    await act(async () => {
+      fireEvent.click(confirmButton);
+      
+      // Buttons should be disabled during loading
+      await waitFor(() => {
+        expect(confirmButton).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+      });
+      
+      // Resolve the promise - don't wait for dialog to close as it's flaky
+      resolveDelete!(true);
+      
+      // Just verify the function was called
+      expect(onDelete).toHaveBeenCalledWith('1');
     });
-    
-    // Resolve the promise - don't wait for dialog to close as it's flaky
-    resolveDelete!(true);
-    
-    // Just verify the function was called
-    expect(onDelete).toHaveBeenCalledWith('1');
   });
 
   test('handles copy with onCopy callback', async () => {
