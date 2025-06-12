@@ -10,12 +10,11 @@ const mockUser = {
 const mockConversation = {
   findAll: jest.fn(),
   create: jest.fn(),
-  findOne: jest.fn(),
-  update: jest.fn(),
 };
 
 const mockMessage = {
   findAll: jest.fn(),
+  findByPk: jest.fn(),
 };
 
 jest.mock('../../server/database/models/User', () => ({
@@ -35,8 +34,16 @@ jest.mock('../../server/helpers/messageHelpers', () => ({
   generateCompletion: jest.fn(),
 }));
 
+jest.mock('../../server/helpers/typeConverters', () => ({
+  convertMessageToApiFormat: jest.fn(),
+  convertConversationToApiFormat: jest.fn(),
+  convertUserToApiFormat: jest.fn(),
+  convertIdToNumber: jest.fn(),
+}));
+
 // Import after mocking
 import app from '../../server/app';
+import { convertMessageToApiFormat, convertIdToNumber } from '../../server/helpers/typeConverters';
 
 const SECRET_KEY = process.env.SECRET_KEY || 'fallback-secret-key';
 
@@ -355,6 +362,157 @@ describe('Server App - Additional Coverage Tests', () => {
       
       expect(response.status).toBe(500);
       expect(response.body.error).toBe('Internal server error');
+    });
+  });
+
+  describe('PUT /api/messages/:messageId - Edit Message', () => {
+    const validToken = jwt.sign({ id: 1 }, SECRET_KEY);
+
+    test('should edit message successfully', async () => {
+      const mockMessageInstance = {
+        get: jest.fn((key) => {
+          if (key === 'user_id') return 1;
+          if (key === 'id') return 1;
+          if (key === 'content') return 'Updated content';
+          return null;
+        }),
+        update: jest.fn().mockResolvedValue(undefined),
+      };
+
+      mockMessage.findByPk = jest.fn().mockResolvedValue(mockMessageInstance);
+      
+      // Mock the type converters
+      (convertIdToNumber as jest.Mock).mockReturnValue(1);
+      (convertMessageToApiFormat as jest.Mock).mockReturnValue({
+        id: '1',
+        content: 'Updated content',
+        timestamp: '2023-01-01T00:00:00.000Z',
+        conversationId: '1',
+        userId: '1',
+        parentId: null
+      });
+
+      const response = await request(app)
+        .put('/api/messages/1')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({ content: 'Updated content' });
+
+      expect(response.status).toBe(200);
+      expect(response.body.content).toBe('Updated content');
+    });
+
+    test('should return 400 when content is missing', async () => {
+      const response = await request(app)
+        .put('/api/messages/1')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({});
+
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toBeDefined();
+    });
+
+    test('should return 404 when message not found', async () => {
+      mockMessage.findByPk = jest.fn().mockResolvedValue(null);
+      (convertIdToNumber as jest.Mock).mockReturnValue(999);
+
+      const response = await request(app)
+        .put('/api/messages/999')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({ content: 'Updated content' });
+
+      expect(response.status).toBe(404);
+      expect(response.body.error).toBe('Message not found');
+    });
+
+    test('should return 403 when user does not own message', async () => {
+      const mockMessageInstance = {
+        get: jest.fn((key) => {
+          if (key === 'user_id') return 2; // Different user
+          return null;
+        }),
+      };
+
+      mockMessage.findByPk = jest.fn().mockResolvedValue(mockMessageInstance);
+      (convertIdToNumber as jest.Mock).mockReturnValue(1);
+
+      const response = await request(app)
+        .put('/api/messages/1')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({ content: 'Updated content' });
+
+      expect(response.status).toBe(403);
+      expect(response.body.error).toBe('You can only edit your own messages');
+    });
+
+    test('should return 401 when no auth token', async () => {
+      const response = await request(app)
+        .put('/api/messages/1')
+        .send({ content: 'Updated content' });
+
+      expect(response.status).toBe(401);
+    });
+  });
+
+  describe('DELETE /api/messages/:messageId - Delete Message', () => {
+    const validToken = jwt.sign({ id: 1 }, SECRET_KEY);
+
+    test('should delete message successfully', async () => {
+      const mockMessageInstance = {
+        get: jest.fn((key) => {
+          if (key === 'user_id') return 1;
+          return null;
+        }),
+        destroy: jest.fn().mockResolvedValue(undefined),
+      };
+
+      mockMessage.findByPk = jest.fn().mockResolvedValue(mockMessageInstance);
+      (convertIdToNumber as jest.Mock).mockReturnValue(1);
+
+      const response = await request(app)
+        .delete('/api/messages/1')
+        .set('Authorization', `Bearer ${validToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.deletedMessageId).toBe('1');
+    });
+
+    test('should return 404 when message not found', async () => {
+      mockMessage.findByPk = jest.fn().mockResolvedValue(null);
+      (convertIdToNumber as jest.Mock).mockReturnValue(999);
+
+      const response = await request(app)
+        .delete('/api/messages/999')
+        .set('Authorization', `Bearer ${validToken}`);
+
+      expect(response.status).toBe(404);
+      expect(response.body.error).toBe('Message not found');
+    });
+
+    test('should return 403 when user does not own message', async () => {
+      const mockMessageInstance = {
+        get: jest.fn((key) => {
+          if (key === 'user_id') return 2; // Different user
+          return null;
+        }),
+      };
+
+      mockMessage.findByPk = jest.fn().mockResolvedValue(mockMessageInstance);
+      (convertIdToNumber as jest.Mock).mockReturnValue(1);
+
+      const response = await request(app)
+        .delete('/api/messages/1')
+        .set('Authorization', `Bearer ${validToken}`);
+
+      expect(response.status).toBe(403);
+      expect(response.body.error).toBe('You can only delete your own messages');
+    });
+
+    test('should return 401 when no auth token', async () => {
+      const response = await request(app)
+        .delete('/api/messages/1');
+
+      expect(response.status).toBe(401);
     });
   });
 

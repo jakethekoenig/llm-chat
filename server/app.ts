@@ -298,6 +298,80 @@ app.put('/api/conversations/:conversationId', authenticateToken, [
   }
 });
 
+// Edit message endpoint
+app.put('/api/messages/:messageId', authenticateToken, [
+  body('content').notEmpty().withMessage('Content is required'),
+], async (req: express.Request, res: express.Response) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { messageId } = req.params;
+  const { content } = req.body;
+  const userId = (req as any).user.id;
+
+  try {
+    const dbMessageId = convertIdToNumber(messageId);
+    const message = await Message.findByPk(dbMessageId);
+    
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    // Check if user owns the message
+    if (message.get('user_id') !== userId) {
+      return res.status(403).json({ error: 'You can only edit your own messages' });
+    }
+
+    // Update the message
+    await message.update({ 
+      content,
+      timestamp: new Date()
+    });
+
+    const updatedMessage = convertMessageToApiFormat(message);
+    res.json({
+      id: updatedMessage.id,
+      content: updatedMessage.content,
+      timestamp: updatedMessage.timestamp
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Delete message endpoint
+app.delete('/api/messages/:messageId', authenticateToken, async (req: express.Request, res: express.Response) => {
+  const { messageId } = req.params;
+  const userId = (req as any).user.id;
+
+  try {
+    const dbMessageId = convertIdToNumber(messageId);
+    const message = await Message.findByPk(dbMessageId);
+    
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    // Check if user owns the message
+    if (message.get('user_id') !== userId) {
+      return res.status(403).json({ error: 'You can only delete your own messages' });
+    }
+
+    // For now, we'll do a hard delete. In the future, we might want to implement soft delete
+    // and handle cascade effects (what happens to child messages)
+    await message.destroy();
+
+    res.json({
+      success: true,
+      deletedMessageId: messageId
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Helper function to generate meaningful title from message content
 const generateTitleFromMessage = (content: string): string => {
   // Remove extra whitespace and truncate to reasonable length
