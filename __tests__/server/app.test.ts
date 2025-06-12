@@ -611,4 +611,178 @@ describe('Server App - Additional Coverage Tests', () => {
       expect(response.status).toBe(401);
     });
   });
+
+  describe('PUT /api/messages/:messageId - Additional Coverage', () => {
+    const validToken = jwt.sign({ id: 1 }, SECRET_KEY);
+
+    test('should handle database errors gracefully', async () => {
+      mockMessage.findByPk = jest.fn().mockRejectedValue(new Error('Database error'));
+      (convertIdToNumber as jest.Mock).mockReturnValue(1);
+
+      const response = await request(app)
+        .put('/api/messages/1')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({ content: 'Updated content' });
+
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Internal server error');
+    });
+
+    test('should handle update operation errors', async () => {
+      const mockMessageInstance = {
+        get: jest.fn((key) => key === 'user_id' ? 1 : null),
+        update: jest.fn().mockRejectedValue(new Error('Update failed')),
+      };
+
+      mockMessage.findByPk = jest.fn().mockResolvedValue(mockMessageInstance);
+      (convertIdToNumber as jest.Mock).mockReturnValue(1);
+
+      const response = await request(app)
+        .put('/api/messages/1')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({ content: 'Updated content' });
+
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Internal server error');
+    });
+  });
+
+  describe('DELETE /api/messages/:messageId - Additional Coverage', () => {
+    const validToken = jwt.sign({ id: 1 }, SECRET_KEY);
+
+    test('should handle database errors gracefully', async () => {
+      mockMessage.findByPk = jest.fn().mockRejectedValue(new Error('Database error'));
+      (convertIdToNumber as jest.Mock).mockReturnValue(1);
+
+      const response = await request(app)
+        .delete('/api/messages/1')
+        .set('Authorization', `Bearer ${validToken}`);
+
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Internal server error');
+    });
+
+    test('should handle destroy operation errors', async () => {
+      const mockMessageInstance = {
+        get: jest.fn((key) => key === 'user_id' ? 1 : null),
+        destroy: jest.fn().mockRejectedValue(new Error('Destroy failed')),
+      };
+
+      mockMessage.findByPk = jest.fn().mockResolvedValue(mockMessageInstance);
+      (convertIdToNumber as jest.Mock).mockReturnValue(1);
+
+      const response = await request(app)
+        .delete('/api/messages/1')
+        .set('Authorization', `Bearer ${validToken}`);
+
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Internal server error');
+    });
+  });
+
+  describe('Helper function coverage', () => {
+    test('should handle type converter errors', async () => {
+      const validToken = jwt.sign({ id: 1 }, SECRET_KEY);
+      (convertIdToNumber as jest.Mock).mockImplementation(() => {
+        throw new Error('Invalid ID format');
+      });
+
+      const response = await request(app)
+        .put('/api/messages/invalid')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({ content: 'Updated content' });
+
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Internal server error');
+    });
+
+    test('should handle conversation creation with type converter error', async () => {
+      const validToken = jwt.sign({ id: 1 }, SECRET_KEY);
+      (convertIdToNumber as jest.Mock).mockImplementation(() => {
+        throw new Error('Invalid ID format');
+      });
+
+      const response = await request(app)
+        .put('/api/conversations/invalid')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({ title: 'Updated Title' });
+
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Internal server error');
+    });
+  });
+
+  describe('Additional error paths', () => {
+    const validToken = jwt.sign({ id: 1 }, SECRET_KEY);
+
+    test('should handle JWT verification errors', async () => {
+      const response = await request(app)
+        .get('/api/conversations')
+        .set('Authorization', 'Bearer malformed.jwt.token');
+      
+      expect(response.status).toBe(403);
+      expect(response.body.message).toBe('Invalid or expired token');
+    });
+
+    test('should handle missing Authorization header', async () => {
+      const response = await request(app)
+        .get('/api/conversations');
+      
+      expect(response.status).toBe(401);
+    });
+
+    test('should handle bcrypt comparison error in signin', async () => {
+      const mockUser = {
+        get: jest.fn(() => 'hashedpassword'),
+      };
+      mockUser.findOne = jest.fn().mockResolvedValue(mockUser);
+      
+      // Mock bcrypt.compare to reject
+      jest.doMock('bcrypt', () => ({
+        compare: jest.fn().mockRejectedValue(new Error('Bcrypt error')),
+        hash: jest.fn(),
+      }));
+
+      const response = await request(app)
+        .post('/api/signin')
+        .send({ username: 'testuser', password: 'wrongpassword' });
+      
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Internal server error');
+    });
+
+    test('should handle conversation update with API format conversion error', async () => {
+      const mockConversationRecord = {
+        id: 1,
+        title: 'Updated Title',
+        user_id: 1,
+        get: jest.fn((field: string) => {
+          if (field === 'id') return 1;
+          if (field === 'title') return 'Updated Title';
+          if (field === 'user_id') return 1;
+          return null;
+        }),
+        update: jest.fn().mockResolvedValue(true),
+      };
+      
+      mockConversation.findOne.mockResolvedValue(mockConversationRecord);
+      (convertIdToNumber as jest.Mock).mockReturnValue(1);
+      
+      // Mock convertConversationToApiFormat to throw
+      jest.doMock('../../server/helpers/typeConverters', () => ({
+        convertConversationToApiFormat: jest.fn().mockImplementation(() => {
+          throw new Error('Conversion error');
+        }),
+        convertIdToNumber: jest.fn().mockReturnValue(1),
+      }));
+
+      const response = await request(app)
+        .put('/api/conversations/1')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({ title: 'Updated Title' });
+      
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Internal server error');
+    });
+  });
 });

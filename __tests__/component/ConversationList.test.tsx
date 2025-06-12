@@ -168,7 +168,9 @@ test('saves title on blur', async () => {
   // Blur to save
   fireEvent.blur(input);
   
-  expect(mockTitleUpdate).toHaveBeenCalledWith('1', 'Updated Title');
+  await waitFor(() => {
+    expect(mockTitleUpdate).toHaveBeenCalledWith('1', 'Updated Title');
+  });
 });
 
 test('does not save empty title', async () => {
@@ -221,7 +223,9 @@ test('handles title update failure', async () => {
   // Press Enter to save
   fireEvent.keyDown(input, { key: 'Enter' });
   
-  expect(mockTitleUpdate).toHaveBeenCalledWith('1', 'Failed Title');
+  await waitFor(() => {
+    expect(mockTitleUpdate).toHaveBeenCalledWith('1', 'Failed Title');
+  });
   
   consoleErrorSpy.mockRestore();
 });
@@ -252,13 +256,17 @@ test('shows updating indicator during title save', async () => {
   fireEvent.keyDown(input, { key: 'Enter' });
   
   // Should show updating indicator
-  expect(screen.getByText('Saving...')).toBeInTheDocument();
+  await waitFor(() => {
+    expect(screen.getByText('Saving...')).toBeInTheDocument();
+  });
   
   // Resolve the promise
   resolveUpdate!(true);
   
   // Wait for update to complete
-  await screen.findByText('Conversation One');
+  await waitFor(() => {
+    expect(screen.getByText('Conversation One')).toBeInTheDocument();
+  });
 });
 
 test('prevents multiple saves when already updating', async () => {
@@ -290,10 +298,17 @@ test('prevents multiple saves when already updating', async () => {
   fireEvent.keyDown(input, { key: 'Enter' });
   
   // Should only be called once
-  expect(mockTitleUpdate).toHaveBeenCalledTimes(1);
+  await waitFor(() => {
+    expect(mockTitleUpdate).toHaveBeenCalledTimes(1);
+  });
   
   // Resolve the promise
   resolveUpdate!(true);
+  
+  // Wait for completion
+  await waitFor(() => {
+    expect(screen.getByText('Conversation One')).toBeInTheDocument();
+  });
 });
 
 test('disables input while updating', async () => {
@@ -322,10 +337,17 @@ test('disables input while updating', async () => {
   fireEvent.keyDown(input, { key: 'Enter' });
   
   // Input should be disabled
-  expect(input).toBeDisabled();
+  await waitFor(() => {
+    expect(input).toBeDisabled();
+  });
   
   // Resolve the promise
   resolveUpdate!(true);
+  
+  // Wait for completion
+  await waitFor(() => {
+    expect(screen.getByText('Conversation One')).toBeInTheDocument();
+  });
 });
 
 test('does not trigger conversation click when onTitleUpdate is provided and clicking li', () => {
@@ -345,7 +367,7 @@ test('does not trigger conversation click when onTitleUpdate is provided and cli
   expect(mockClick).not.toHaveBeenCalled();
 });
 
-test('handles editing existing conversation while another is being edited', () => {
+test('handles editing existing conversation while another is being edited', async () => {
   const mockClick = jest.fn();
   const mockTitleUpdate = jest.fn().mockResolvedValue(true);
   render(
@@ -364,7 +386,9 @@ test('handles editing existing conversation while another is being edited', () =
   fireEvent.click(screen.getByText('Conversation Two'));
   
   // Should now be editing the second conversation
-  expect(screen.getByDisplayValue('Conversation Two')).toBeInTheDocument();
+  await waitFor(() => {
+    expect(screen.getByDisplayValue('Conversation Two')).toBeInTheDocument();
+  });
   // First conversation should not be in edit mode
   expect(screen.queryByDisplayValue('Conversation One')).not.toBeInTheDocument();
 });
