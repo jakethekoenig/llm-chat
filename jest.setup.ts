@@ -4,6 +4,11 @@ import '@testing-library/jest-dom';
 import 'jest-styled-components';
 import { cleanup } from '@testing-library/react';
 
+// Polyfill TextEncoder/TextDecoder for Node.js tests
+import { TextEncoder, TextDecoder } from 'util';
+global.TextEncoder = TextEncoder as any;
+global.TextDecoder = TextDecoder as any;
+
 // Extend Sequelize type to include the log property
 declare module 'sequelize' {
   interface Sequelize {
