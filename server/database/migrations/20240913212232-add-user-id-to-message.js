@@ -3,10 +3,16 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Add user_id column to Conversations table
+    // Add user_id column to Conversations table with foreign key constraint
     await queryInterface.addColumn('Conversations', 'user_id', {
       type: Sequelize.INTEGER,
       allowNull: false,
+      references: {
+        model: 'Users',
+        key: 'id',
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE',
     });
 
     // Add model column to Messages table
