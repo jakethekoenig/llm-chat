@@ -111,6 +111,86 @@ describe('messageHelpers - Streaming Functions', () => {
     process.env.MISTRAL_API_KEY = 'test-mistral-key';
     process.env.OPENROUTER_API_KEY = 'test-openrouter-key';
     
+    // Re-setup OpenAI mock after clearAllMocks
+    const OpenAI = require('openai').OpenAI;
+    OpenAI.mockImplementation((config: any) => {
+      const isOpenRouter = config?.baseURL === 'https://openrouter.ai/api/v1';
+      const responseContent = isOpenRouter ? 'Mocked OpenRouter response' : 'Mocked OpenAI response';
+      
+      return {
+        chat: {
+          completions: {
+            create: jest.fn().mockImplementation(({ stream }: any) => {
+              if (stream) {
+                const mockStream = {
+                  async *[Symbol.asyncIterator]() {
+                    yield { choices: [{ delta: { content: 'Hello' } }] };
+                    yield { choices: [{ delta: { content: ' world' } }] };
+                    yield { choices: [{ delta: { content: '!' } }] };
+                    if (!isOpenRouter) {
+                      yield { choices: [{ delta: { content: '' } }], usage: { prompt_tokens: 100, completion_tokens: 50 } };
+                    }
+                  }
+                };
+                return Promise.resolve(mockStream);
+              } else {
+                return Promise.resolve({
+                  choices: [{
+                    message: { role: "assistant", content: responseContent }
+                  }],
+                  usage: isOpenRouter ? undefined : { prompt_tokens: 100, completion_tokens: 50 }
+                });
+              }
+            })
+          }
+        }
+      };
+    });
+    
+    // Re-setup Anthropic mock after clearAllMocks
+    const Anthropic = require('@anthropic-ai/sdk').default;
+    Anthropic.mockImplementation(() => ({
+      messages: {
+        create: jest.fn().mockImplementation(({ stream }: any) => {
+          if (stream) {
+            const mockStream = {
+              async *[Symbol.asyncIterator]() {
+                yield { type: 'content_block_delta', delta: { type: 'text_delta', text: 'Hello' } };
+                yield { type: 'content_block_delta', delta: { type: 'text_delta', text: ' world' } };
+                yield { type: 'content_block_delta', delta: { type: 'text_delta', text: '!' } };
+                yield { type: 'message_delta', usage: { input_tokens: 100, output_tokens: 50 } };
+              }
+            };
+            return Promise.resolve(mockStream);
+          } else {
+            return Promise.resolve({
+              content: [{ type: 'text', text: 'Mocked Anthropic response' }],
+              usage: { input_tokens: 100, output_tokens: 50 }
+            });
+          }
+        })
+      }
+    }));
+    
+    // Re-setup Mistral mock after clearAllMocks
+    const Mistral = require('@mistralai/mistralai').Mistral;
+    Mistral.mockImplementation(() => ({
+      chat: {
+        complete: jest.fn().mockResolvedValue({
+          choices: [{
+            message: { content: 'Mocked Mistral response' }
+          }]
+        }),
+        stream: jest.fn().mockResolvedValue({
+          async *[Symbol.asyncIterator]() {
+            yield { data: { choices: [{ delta: { content: 'Hello' } }] } };
+            yield { data: { choices: [{ delta: { content: ' from' } }] } };
+            yield { data: { choices: [{ delta: { content: ' Mistral!' } }] } };
+          }
+        })
+      }
+    }));
+    
     // Mock message structure
     const mockParentMessage = {
       get: jest.fn((field: string) => {
@@ -466,27 +546,43 @@ describe('messageHelpers - Streaming Functions', () => {
     });
 
     test('should use OpenAI for streaming unknown model types', async () => {
+      // Ensure OpenAI API key is set
+      process.env.OPENAI_API_KEY = 'test-openai-key';
+      
       const chunks: any[] = [];
       
-      for await (const chunk of generateStreamingCompletion(1, 'unknown-model', 0.7)) {
-        chunks.push(chunk);
+      try {
+        for await (const chunk of generateStreamingCompletion(1, 'unknown-model', 0.7)) {
+          chunks.push(chunk);
+        }
+        
+        expect(chunks.length).toBeGreaterThan(0);
+        expect(chunks[chunks.length - 1].isComplete).toBe(true);
+        expect(Message.findByPk).toHaveBeenCalledWith(1);
+        expect(Message.create).toHaveBeenCalled();
+      } catch (error) {
+        console.error('Streaming test failed:', error);
+        throw error;
       }
-      
-      expect(chunks.length).toBeGreaterThan(0);
-      expect(chunks[chunks.length - 1].isComplete).toBe(true);
-      expect(Message.findByPk).toHaveBeenCalledWith(1);
-      expect(Message.create).toHaveBeenCalled();
     });
 
     test('should handle edge case with different Llama model naming', async () => {
+      // Ensure OpenRouter API key is set for Llama models
+      process.env.OPENROUTER_API_KEY = 'test-openrouter-key';
+      
       const chunks: any[] = [];
       
-      for await (const chunk of generateStreamingCompletion(1, 'llama3-custom', 0.7)) {
-        chunks.push(chunk);
+      try {
+        for await (const chunk of generateStreamingCompletion(1, 'llama3-custom', 0.7)) {
+          chunks.push(chunk);
+        }
+        
+        expect(chunks.length).toBeGreaterThan(0);
+        expect(chunks[chunks.length - 1].isComplete).toBe(true);
+      } catch (error) {
+        console.error('Llama streaming test failed:', error);
+        throw error;
       }
-      
-      expect(chunks.length).toBeGreaterThan(0);
-      expect(chunks[chunks.length - 1].isComplete).toBe(true);
     });
 
     test('should handle Mistral model variants', async () => {
