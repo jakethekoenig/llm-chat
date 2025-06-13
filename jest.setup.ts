@@ -66,7 +66,6 @@ Sequelize.prototype.log = () => {};
 
 // Suppress React Testing Library act() warnings during tests
 // These warnings are about test environment configuration, not application bugs
-const originalError = console.error;
 beforeAll(() => {
   console.error = (...args: any[]) => {
     if (
