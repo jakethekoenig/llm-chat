@@ -1042,11 +1042,9 @@ describe('Server App - Additional Coverage Tests', () => {
   });
 
   describe('Helper function coverage', () => {
+    const validToken = jwt.sign({ id: 1 }, SECRET_KEY);
+    
     test('should handle type converter errors', async () => {
-      const validToken = jwt.sign({ id: 1 }, SECRET_KEY);
-        throw new Error('Invalid ID format');
-      });
-
       const response = await request(app)
         .put('/api/messages/invalid')
         .set('Authorization', `Bearer ${validToken}`)
@@ -1057,10 +1055,6 @@ describe('Server App - Additional Coverage Tests', () => {
     });
 
     test('should handle conversation creation with type converter error', async () => {
-      const validToken = jwt.sign({ id: 1 }, SECRET_KEY);
-        throw new Error('Invalid ID format');
-      });
-
       const response = await request(app)
         .put('/api/conversations/invalid')
         .set('Authorization', `Bearer ${validToken}`)
