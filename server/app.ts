@@ -43,7 +43,12 @@ const isTestEnv = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: isTestEnv ? 10000 : 100, // Much higher limit for tests
-  message: 'Too many requests from this IP, please try again later.',
+  message: {
+    error: 'Too many requests',
+    message: 'Too many requests from this IP, please try again later.',
+    code: 'RATE_LIMIT_EXCEEDED',
+    timestamp: new Date().toISOString(),
+  },
   standardHeaders: true,
   legacyHeaders: false,
   skip: isTestEnv ? () => true : undefined, // Skip rate limiting in tests
@@ -51,8 +56,13 @@ const limiter = rateLimit({
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isTestEnv ? 10000 : 5, // Much higher limit for tests
-  message: 'Too many authentication attempts, please try again later.',
+  max: isTestEnv ? 10000 : 20, // Increased from 5 to 20 for better dev experience
+  message: {
+    error: 'Too many authentication attempts',
+    message: 'Too many authentication attempts, please try again later.',
+    code: 'AUTH_RATE_LIMIT_EXCEEDED',
+    timestamp: new Date().toISOString(),
+  },
   standardHeaders: true,
   legacyHeaders: false,
   skip: isTestEnv ? () => true : undefined, // Skip rate limiting in tests

@@ -6,6 +6,7 @@ import { Message as MessageType } from '../../chat-components/types/Message';
 import { Conversation as ConversationType } from '../../chat-components/types/Conversation';
 import { apiGet, apiPost, apiPut, apiDelete, ApiError, fetchWithAuth } from '../utils/api';
 import { useToast } from './ToastProvider';
+import { ErrorHandlers } from '../utils/errorHandling';
 import ErrorBoundary from './ErrorBoundary';
 import { ConversationSkeleton, LoadingOverlay } from './SkeletonLoaders';
 import '../App.css';
@@ -44,18 +45,10 @@ const ConversationPage: React.FC = () => {
         setMessages(messages);
       } catch (error) {
         console.error('Error fetching conversation data:', error);
-        const apiError = error as ApiError;
+        const formattedError = ErrorHandlers.conversation(error);
         
-        if (apiError.status === 404) {
-          setError('Conversation not found or you do not have access to it.');
-          showError('Conversation not found');
-        } else if (apiError.code === 'NETWORK_ERROR') {
-          setError('Network error. Please check your connection and try again.');
-          showError('Network error - please check your connection');
-        } else {
-          setError('Failed to load conversation. Please try again later.');
-          showError('Failed to load conversation');
-        }
+        setError(formattedError.message);
+        showError(formattedError.message);
       } finally {
         setIsLoading(false);
       }
@@ -108,7 +101,9 @@ const ConversationPage: React.FC = () => {
       setIsEditingTitle(false);
     } catch (error) {
       console.error('Error updating conversation title:', error);
-      setError('Failed to update conversation title. Please try again.');
+      const formattedError = ErrorHandlers.form(error);
+      setError(formattedError.message);
+      showError(formattedError.message);
     } finally {
       setIsUpdatingTitle(false);
     }
@@ -228,21 +223,11 @@ const ConversationPage: React.FC = () => {
       
     } catch (error) {
       console.error('Error sending message:', error);
-      const apiError = error as ApiError;
+      const formattedError = ErrorHandlers.form(error);
       
-      let errorMessage = 'Failed to send message. Please try again.';
-      
-      if (apiError.code === 'NETWORK_ERROR') {
-        errorMessage = 'Network error. Please check your connection.';
-      } else if (apiError.code === 'VALIDATION_ERROR') {
-        errorMessage = 'Message validation failed. Please check your input.';
-      } else if (apiError.status === 401 || apiError.status === 403) {
-        errorMessage = 'Authentication failed. Please sign in again.';
-      }
-      
-      setError(errorMessage);
-      showError(errorMessage);
-      yield `Error: ${errorMessage}`;
+      setError(formattedError.message);
+      showError(formattedError.message);
+      yield `Error: ${formattedError.message}`;
     } finally {
       setIsSubmitting(false);
     }
@@ -293,17 +278,10 @@ const ConversationPage: React.FC = () => {
         )
       );
       
-      let errorMessage = 'Failed to edit message. Please try again.';
-      if (apiError.code === 'NETWORK_ERROR') {
-        errorMessage = 'Network error. Please check your connection.';
-      } else if (apiError.status === 401 || apiError.status === 403) {
-        errorMessage = 'Authentication failed. Please sign in again.';
-      } else if (apiError.status === 404) {
-        errorMessage = 'Message not found.';
-      }
+      const formattedError = ErrorHandlers.form(error);
       
-      setError(errorMessage);
-      showError(errorMessage);
+      setError(formattedError.message);
+      showError(formattedError.message);
       throw error;
     }
   };
@@ -326,17 +304,10 @@ const ConversationPage: React.FC = () => {
       // Rollback optimistic update
       setMessages(originalMessages);
       
-      let errorMessage = 'Failed to delete message. Please try again.';
-      if (apiError.code === 'NETWORK_ERROR') {
-        errorMessage = 'Network error. Please check your connection.';
-      } else if (apiError.status === 401 || apiError.status === 403) {
-        errorMessage = 'Authentication failed. Please sign in again.';
-      } else if (apiError.status === 404) {
-        errorMessage = 'Message not found.';
-      }
+      const formattedError = ErrorHandlers.form(error);
       
-      setError(errorMessage);
-      showError(errorMessage);
+      setError(formattedError.message);
+      showError(formattedError.message);
       throw error;
     }
   };
