@@ -129,8 +129,8 @@ test('renders empty conversation list', () => {
 
 test('renders conversation list with no messages', () => {
   const conversations = [
-    { id: '1', title: 'Empty Conversation', userId: '1', messages: [] },
-    { id: '2', title: 'No Messages', userId: '2', messages: [] },
+    { id: 1, title: 'Empty Conversation', userId: 1, messages: [] },
+    { id: 2, title: 'No Messages', userId: 2, messages: [] },
   ];
   render(<ConversationList conversations={conversations} onConversationClick={() => {}} />);
   expect(screen.getByText('Empty Conversation')).toBeInTheDocument();
