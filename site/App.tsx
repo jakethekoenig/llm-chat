@@ -52,7 +52,7 @@ const AppContent = () => {
     initAuth();
   }, [auth]);
 
-  if (!isAuthInitialized) {
+  if (!isAuthInitialized || !auth.isAuthChecked) {
     return <div>Initializing...</div>;
   }
 
@@ -78,8 +78,20 @@ const AppContent = () => {
                   <Navigate to="/signin" replace />
                 )
               } />
-              <Route path="/signin" element={<SignIn />} />
-              <Route path="/register" element={<Register />} />
+              <Route path="/signin" element={
+                auth.isAuthenticated ? (
+                  <Navigate to="/" replace />
+                ) : (
+                  <SignIn />
+                )
+              } />
+              <Route path="/register" element={
+                auth.isAuthenticated ? (
+                  <Navigate to="/" replace />
+                ) : (
+                  <Register />
+                )
+              } />
               <Route path="/showcase" element={<MessageDemo />} />
               <Route 
                 path="/conversations/:conversationId" 

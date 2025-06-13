@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 interface AuthContextType {
   isAuthenticated: boolean;
   token: string | null;
+  isAuthChecked: boolean;
   login: (token: string) => void;
   logout: () => void;
 }
@@ -11,6 +12,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   token: null,
+  isAuthChecked: false,
   login: () => {},
   logout: () => {},
 });
@@ -19,7 +21,8 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!token);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isAuthChecked, setIsAuthChecked] = useState<boolean>(false);
   const navigate = useNavigate();
 
   const login = (newToken: string) => {
@@ -35,16 +38,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     navigate('/signin');
   };
 
-  useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    if (storedToken) {
-      setToken(storedToken);
-      setIsAuthenticated(true);
+  const validateToken = async (tokenToValidate: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/conversations', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${tokenToValidate}`,
+        },
+      });
+      return response.ok;
+    } catch {
+      return false;
     }
+  };
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const storedToken = localStorage.getItem('token');
+      if (storedToken) {
+        const isValid = await validateToken(storedToken);
+        if (isValid) {
+          setToken(storedToken);
+          setIsAuthenticated(true);
+        } else {
+          localStorage.removeItem('token');
+          setToken(null);
+          setIsAuthenticated(false);
+        }
+      }
+      setIsAuthChecked(true);
+    };
+    
+    checkAuth();
   }, []);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, token, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, token, isAuthChecked, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
