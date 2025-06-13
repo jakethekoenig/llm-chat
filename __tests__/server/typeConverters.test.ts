@@ -160,10 +160,10 @@ describe('Type Converters', () => {
   describe('convertApiMessageToDbFormat', () => {
     it('should convert API message format to database format', () => {
       const apiMessage = {
-        id: '123',
-        conversationId: '456',
-        parentId: '789',
-        userId: '101',
+        id: 123,
+        conversationId: 456,
+        parentId: 789,
+        userId: 101,
         content: 'Test message',
         model: 'gpt-4o',
         temperature: 0.7,
@@ -186,9 +186,9 @@ describe('Type Converters', () => {
 
     it('should handle null values correctly', () => {
       const apiMessage = {
-        conversationId: '456',
+        conversationId: 456,
         parentId: null,
-        userId: '101',
+        userId: 101,
         content: 'Test message',
         model: null,
         temperature: null

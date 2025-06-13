@@ -141,7 +141,7 @@ test('renders conversation list with no messages', () => {
 test('calls onConversationClick when conversation is clicked', () => {
   const mockClick = jest.fn();
   const conversations = [
-    { id: '1', title: 'Clickable Conversation', userId: '1', messages: [createTestMessage('1', 'Hello', 'User1')] },
+    { id: 1, title: 'Clickable Conversation', userId: 1, messages: [createTestMessage(1, 'Hello', 'User1')] },
   ];
   render(<ConversationList conversations={conversations} onConversationClick={mockClick} />);
   
