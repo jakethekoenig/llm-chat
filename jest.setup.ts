@@ -36,6 +36,18 @@ import { TextEncoder, TextDecoder } from 'util';
 global.TextEncoder = TextEncoder as any;
 global.TextDecoder = TextDecoder as any;
 
+// Polyfill ReadableStream for Mistral SDK
+if (typeof global.ReadableStream === 'undefined') {
+  try {
+    const { ReadableStream } = require('node:stream/web');
+    global.ReadableStream = ReadableStream;
+  } catch {
+    // Fallback for older Node versions
+    const { ReadableStream } = require('web-streams-polyfill/ponyfill');
+    global.ReadableStream = ReadableStream;
+  }
+}
+
 // Extend Sequelize type to include the log property
 declare module 'sequelize' {
   interface Sequelize {
