@@ -40,7 +40,6 @@ jest.mock('../../server/helpers/typeConverters', () => ({
   convertMessageToApiFormat: jest.fn(),
   convertConversationToApiFormat: jest.fn(),
   convertUserToApiFormat: jest.fn(),
-  convertIdToNumber: jest.fn(),
 }));
 
 // Set SECRET_KEY before importing app to avoid module load errors
@@ -49,7 +48,7 @@ process.env.SECRET_KEY = SECRET_KEY;
 
 // Import after mocking and setting environment
 import app from '../../server/app';
-import { convertMessageToApiFormat, convertIdToNumber } from '../../server/helpers/typeConverters';
+import { convertMessageToApiFormat } from '../../server/helpers/typeConverters';
 
 describe('Server App - Additional Coverage Tests', () => {
 
@@ -70,7 +69,6 @@ describe('Server App - Additional Coverage Tests', () => {
     mockMessage.findByPk = jest.fn().mockResolvedValue(null);
     
     // Reset type converter mocks
-    (convertIdToNumber as jest.Mock).mockImplementation((id) => parseInt(id));
     (convertMessageToApiFormat as jest.Mock).mockImplementation((msg) => msg);
   });
 
@@ -86,8 +84,6 @@ describe('Server App - Additional Coverage Tests', () => {
     const validToken = jwt.sign({ id: 1 }, SECRET_KEY);
 
     test('should handle ValidationError in global error handler', async () => {
-      // Mock convertIdToNumber to throw a ValidationError since it's synchronous
-      (convertIdToNumber as jest.Mock).mockImplementation(() => {
         const validationError = new Error('Validation failed') as any;
         validationError.name = 'ValidationError';
         validationError.errors = ['Field is required'];
@@ -421,7 +417,6 @@ describe('Server App - Additional Coverage Tests', () => {
       const mockMessage = { get: jest.fn(() => '123') };
       
       addMessage.mockResolvedValue(mockMessage);
-      (convertIdToNumber as jest.Mock).mockReturnValue(1);
       (convertMessageToApiFormat as jest.Mock).mockReturnValue({
         id: '123',
         content: 'Test message',
@@ -636,7 +631,6 @@ describe('Server App - Additional Coverage Tests', () => {
     test('should return 500 when messages query fails', async () => {
       // Mock conversation found first
       mockConversation.findOne.mockResolvedValue({ id: 1, user_id: 1 });
-      (convertIdToNumber as jest.Mock).mockReturnValue(1);
       // Then make messages query fail
       mockMessage.findAll.mockRejectedValue(new Error('Database error'));
       
@@ -650,7 +644,6 @@ describe('Server App - Additional Coverage Tests', () => {
 
     test('should handle 404 for conversation not found', async () => {
       mockConversation.findOne.mockResolvedValue(null);
-      (convertIdToNumber as jest.Mock).mockReturnValue(999);
       
       const response = await request(app)
         .get('/api/conversations/999/messages')
@@ -688,7 +681,6 @@ describe('Server App - Additional Coverage Tests', () => {
       // Test with valid conversation but empty messages to avoid mock interference
       mockConversation.findOne.mockResolvedValue({ id: 1, user_id: 1 });
       mockMessage.findAll.mockResolvedValue([]);
-      (convertIdToNumber as jest.Mock).mockReturnValue(1);
       
       const response = await request(app)
         .get('/api/conversations/1/messages')
@@ -709,7 +701,6 @@ describe('Server App - Additional Coverage Tests', () => {
       };
 
       mockMessage.findByPk = jest.fn().mockResolvedValue(mockMessageInstance);
-      (convertIdToNumber as jest.Mock).mockReturnValue(1);
       
       const response = await request(app)
         .put('/api/messages/1')
@@ -731,7 +722,6 @@ describe('Server App - Additional Coverage Tests', () => {
       };
 
       mockMessage.findByPk = jest.fn().mockResolvedValue(mockMessageInstance);
-      (convertIdToNumber as jest.Mock).mockReturnValue(1);
       
       const response = await request(app)
         .delete('/api/messages/1')
@@ -759,7 +749,6 @@ describe('Server App - Additional Coverage Tests', () => {
       mockMessage.findByPk = jest.fn().mockResolvedValue(mockMessageInstance);
       
       // Mock the type converters
-      (convertIdToNumber as jest.Mock).mockReturnValue(1);
       (convertMessageToApiFormat as jest.Mock).mockReturnValue({
         id: '1',
         content: 'Updated content',
@@ -792,7 +781,6 @@ describe('Server App - Additional Coverage Tests', () => {
 
     test('should return 404 when message not found', async () => {
       mockMessage.findByPk = jest.fn().mockResolvedValue(null);
-      (convertIdToNumber as jest.Mock).mockReturnValue(999);
 
       const response = await request(app)
         .put('/api/messages/999')
@@ -812,7 +800,6 @@ describe('Server App - Additional Coverage Tests', () => {
       };
 
       mockMessage.findByPk = jest.fn().mockResolvedValue(mockMessageInstance);
-      (convertIdToNumber as jest.Mock).mockReturnValue(1);
 
       const response = await request(app)
         .put('/api/messages/1')
@@ -846,7 +833,6 @@ describe('Server App - Additional Coverage Tests', () => {
       };
 
       mockMessage.findByPk = jest.fn().mockResolvedValue(mockMessageInstance);
-      (convertIdToNumber as jest.Mock).mockReturnValue(1);
 
       const response = await request(app)
         .delete('/api/messages/1')
@@ -859,7 +845,6 @@ describe('Server App - Additional Coverage Tests', () => {
 
     test('should return 404 when message not found', async () => {
       mockMessage.findByPk = jest.fn().mockResolvedValue(null);
-      (convertIdToNumber as jest.Mock).mockReturnValue(999);
 
       const response = await request(app)
         .delete('/api/messages/999')
@@ -878,7 +863,6 @@ describe('Server App - Additional Coverage Tests', () => {
       };
 
       mockMessage.findByPk = jest.fn().mockResolvedValue(mockMessageInstance);
-      (convertIdToNumber as jest.Mock).mockReturnValue(1);
 
       const response = await request(app)
         .delete('/api/messages/1')
@@ -998,7 +982,6 @@ describe('Server App - Additional Coverage Tests', () => {
 
     test('should handle database errors gracefully', async () => {
       mockMessage.findByPk = jest.fn().mockRejectedValue(new Error('Database error'));
-      (convertIdToNumber as jest.Mock).mockReturnValue(1);
 
       const response = await request(app)
         .put('/api/messages/1')
@@ -1016,7 +999,6 @@ describe('Server App - Additional Coverage Tests', () => {
       };
 
       mockMessage.findByPk = jest.fn().mockResolvedValue(mockMessageInstance);
-      (convertIdToNumber as jest.Mock).mockReturnValue(1);
 
       const response = await request(app)
         .put('/api/messages/1')
@@ -1033,7 +1015,6 @@ describe('Server App - Additional Coverage Tests', () => {
 
     test('should handle database errors gracefully', async () => {
       mockMessage.findByPk = jest.fn().mockRejectedValue(new Error('Database error'));
-      (convertIdToNumber as jest.Mock).mockReturnValue(1);
 
       const response = await request(app)
         .delete('/api/messages/1')
@@ -1050,7 +1031,6 @@ describe('Server App - Additional Coverage Tests', () => {
       };
 
       mockMessage.findByPk = jest.fn().mockResolvedValue(mockMessageInstance);
-      (convertIdToNumber as jest.Mock).mockReturnValue(1);
 
       const response = await request(app)
         .delete('/api/messages/1')
@@ -1064,7 +1044,6 @@ describe('Server App - Additional Coverage Tests', () => {
   describe('Helper function coverage', () => {
     test('should handle type converter errors', async () => {
       const validToken = jwt.sign({ id: 1 }, SECRET_KEY);
-      (convertIdToNumber as jest.Mock).mockImplementation(() => {
         throw new Error('Invalid ID format');
       });
 
@@ -1079,7 +1058,6 @@ describe('Server App - Additional Coverage Tests', () => {
 
     test('should handle conversation creation with type converter error', async () => {
       const validToken = jwt.sign({ id: 1 }, SECRET_KEY);
-      (convertIdToNumber as jest.Mock).mockImplementation(() => {
         throw new Error('Invalid ID format');
       });
 
@@ -1126,7 +1104,6 @@ describe('Server App - Additional Coverage Tests', () => {
 
     test('should handle conversation update for non-existent conversation', async () => {
       mockConversation.findOne.mockResolvedValue(null);
-      (convertIdToNumber as jest.Mock).mockReturnValue(999);
 
       const response = await request(app)
         .put('/api/conversations/999')
