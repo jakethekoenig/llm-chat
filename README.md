@@ -66,7 +66,7 @@ Before running the server, you need to set up your environment variables:
 1. Copy the example environment file: `cp .env.example .env`
 2. Edit `.env` and set the required values:
    - `SECRET_KEY`: A strong random secret (minimum 32 characters) for JWT tokens
-   - `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`: At least one LLM API key is required
+   - `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `DEEPSEEK_API_KEY`: At least one LLM API key is required
    - `PORT`: Optional, defaults to 3000
 
 ### Required Environment Variables
@@ -75,6 +75,7 @@ Before running the server, you need to set up your environment variables:
 - **API Keys**: Set at least one of these for LLM completions:
   - `OPENAI_API_KEY`: For GPT models
   - `ANTHROPIC_API_KEY`: For Claude models
+  - `DEEPSEEK_API_KEY`: For DeepSeek models
 
 ### Example
 
@@ -85,6 +86,7 @@ SECRET_KEY=your-super-secure-random-string-here-32-chars-minimum
 # Add your API keys (at least one required)
 OPENAI_API_KEY=sk-your-openai-key-here
 ANTHROPIC_API_KEY=sk-ant-your-anthropic-key-here
+DEEPSEEK_API_KEY=sk-your-deepseek-key-here
 
 # Optional: Custom port
 PORT=3000

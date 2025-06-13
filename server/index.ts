@@ -18,9 +18,10 @@ function validateEnvironment() {
   // Check that at least one API key is set
   const hasOpenAI = !!process.env.OPENAI_API_KEY;
   const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
+  const hasDeepSeek = !!process.env.DEEPSEEK_API_KEY;
   
-  if (!hasOpenAI && !hasAnthropic) {
-    missingVars.push('OPENAI_API_KEY or ANTHROPIC_API_KEY (at least one LLM API key is required)');
+  if (!hasOpenAI && !hasAnthropic && !hasDeepSeek) {
+    missingVars.push('OPENAI_API_KEY, ANTHROPIC_API_KEY, or DEEPSEEK_API_KEY (at least one LLM API key is required)');
   }
 
   if (missingVars.length > 0) {
@@ -50,4 +51,5 @@ app.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT}`);
   console.log(`📊 OpenAI API: ${process.env.OPENAI_API_KEY ? '✅ configured' : '❌ not set'}`);
   console.log(`📊 Anthropic API: ${process.env.ANTHROPIC_API_KEY ? '✅ configured' : '❌ not set'}`);
+  console.log(`📊 DeepSeek API: ${process.env.DEEPSEEK_API_KEY ? '✅ configured' : '❌ not set'}`);
 });
