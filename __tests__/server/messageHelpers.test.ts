@@ -9,7 +9,7 @@ jest.mock('../../server/database/models/Message', () => ({
   }
 }));
 
-import { generateStreamingCompletion, generateCompletion, addMessage } from '../../server/helpers/messageHelpers';
+import { generateStreamingCompletion, generateCompletion, addMessage, isGeminiModel, isAnthropicModel } from '../../server/helpers/messageHelpers';
 import { Message } from '../../server/database/models/Message';
 
 // Mock OpenAI
@@ -44,6 +44,17 @@ jest.mock('openai', () => ({
       }
     };
   })
+}));
+
+// Mock Google GenerativeAI
+const mockGenerateContent = jest.fn();
+const mockGenerateContentStream = jest.fn();
+const mockGetGenerativeModel = jest.fn();
+
+jest.mock('@google/generative-ai', () => ({
+  GoogleGenerativeAI: jest.fn().mockImplementation(() => ({
+    getGenerativeModel: mockGetGenerativeModel
+  }))
 }));
 
 // Mock Anthropic
@@ -362,6 +373,141 @@ describe('messageHelpers - Streaming Functions', () => {
         user_id: 2
       });
       expect(result).toBe(mockMessage);
+    });
+
+    test('should add message with parent id', async () => {
+      const mockMessage = {
+        get: jest.fn((field: string) => {
+          switch (field) {
+            case 'id': return 10;
+            case 'content': return 'Reply content';
+            case 'conversation_id': return 1;
+            case 'parent_id': return 5;
+            case 'user_id': return 2;
+            default: return null;
+          }
+        }),
+        update: jest.fn(),
+        destroy: jest.fn()
+      };
+      
+      (Message.create as jest.Mock).mockResolvedValue(mockMessage);
+      
+      const result = await addMessage('Reply content', 1, 5, 2);
+      
+      expect(Message.create).toHaveBeenCalledWith({
+        content: 'Reply content',
+        conversation_id: 1,
+        parent_id: 5,
+        user_id: 2
+      });
+      expect(result).toBe(mockMessage);
+    });
+  });
+
+  describe('Model Detection', () => {
+    test('should detect Gemini models correctly', () => {
+      expect(isGeminiModel('gemini-pro')).toBe(true);
+      expect(isGeminiModel('gemini-1.5-pro')).toBe(true);
+      expect(isGeminiModel('gemini-flash')).toBe(true);
+      expect(isGeminiModel('text-bison')).toBe(true);
+      expect(isGeminiModel('chat-bison')).toBe(true);
+      expect(isGeminiModel('palm-2')).toBe(true);
+      expect(isGeminiModel('GEMINI-PRO')).toBe(true); // case insensitive
+      expect(isGeminiModel('gpt-4')).toBe(false);
+      expect(isGeminiModel('claude-3')).toBe(false);
+    });
+
+    test('should detect Anthropic models correctly', () => {
+      expect(isAnthropicModel('claude-3-5-sonnet')).toBe(true);
+      expect(isAnthropicModel('claude-3-haiku')).toBe(true);
+      expect(isAnthropicModel('claude-3-opus')).toBe(true);
+      expect(isAnthropicModel('CLAUDE-SONNET')).toBe(true); // case insensitive
+      expect(isAnthropicModel('gpt-4')).toBe(false);
+      expect(isAnthropicModel('gemini-pro')).toBe(false);
+    });
+  });
+
+  describe('Gemini Integration', () => {
+    beforeEach(() => {
+      process.env.GOOGLE_API_KEY = 'test-google-key';
+      
+      // Set up Gemini mocks
+      mockGetGenerativeModel.mockReturnValue({
+        generateContent: mockGenerateContent,
+        generateContentStream: mockGenerateContentStream
+      });
+      
+      mockGenerateContent.mockResolvedValue({
+        response: {
+          text: () => 'Gemini response'
+        }
+      });
+      
+      mockGenerateContentStream.mockResolvedValue({
+        stream: (async function* () {
+          yield { text: () => 'Gemini ' };
+          yield { text: () => 'streaming ' };
+          yield { text: () => 'response' };
+        })()
+      });
+    });
+
+    afterEach(() => {
+      delete process.env.GOOGLE_API_KEY;
+      jest.clearAllMocks();
+    });
+
+    test('should generate completion for Gemini model', async () => {
+      const completion = await generateCompletion(1, 'gemini-pro', 0.7);
+      
+      expect(Message.create).toHaveBeenCalledWith({
+        content: 'Gemini response',
+        parent_id: 1,
+        conversation_id: 1,
+        user_id: 1,
+        model: 'gemini-pro',
+        temperature: 0.7
+      });
+      expect(completion).toBe(mockMessage);
+    });
+
+    test('should handle missing Google API key', async () => {
+      delete process.env.GOOGLE_API_KEY;
+      
+      await expect(generateCompletion(1, 'gemini-pro', 0.7))
+        .rejects.toThrow('Failed to generate completion');
+    });
+
+    test('should generate streaming completion for Gemini model', async () => {
+      const chunks: string[] = [];
+      const generator = generateStreamingCompletion(1, 'gemini-pro', 0.7);
+      
+      for await (const chunk of generator) {
+        chunks.push(chunk.chunk);
+        if (chunk.isComplete) break;
+      }
+      
+      expect(chunks).toEqual(['Gemini ', 'streaming ', 'response', '']);
+    });
+
+    test('should handle Gemini API errors', async () => {
+      mockGenerateContent.mockRejectedValue(new Error('Gemini API error'));
+      
+      await expect(generateCompletion(1, 'gemini-pro', 0.7))
+        .rejects.toThrow('Failed to generate completion');
+    });
+
+    test('should handle streaming API errors', async () => {
+      mockGenerateContentStream.mockRejectedValue(new Error('Streaming error'));
+      
+      const generator = generateStreamingCompletion(1, 'gemini-pro', 0.7);
+      
+      await expect(async () => {
+        for await (const chunk of generator) {
+          // Should throw error
+        }
+      }).rejects.toThrow('Failed to generate streaming completion');
     });
   });
 
