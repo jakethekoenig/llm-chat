@@ -88,3 +88,14 @@ export interface SignInRequest {
   username: string;
   password: string;
 }
+
+export interface UpdateConversationRequest {
+  title: string;
+}
+
+export interface UpdateConversationResponse {
+  id: string;
+  title: string;
+  userId: string;
+  messages?: Message[];
+}

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Alert, Box, Button, TextField, Stack, Typography, Card, CardContent } from '@mui/material';
 import '../App.css';
+import './ConversationListPage.css';
 import ConversationList from '../../chat-components/ConversationList';
 import { Conversation as ConversationType } from '../../chat-components/types/Conversation';
 import { apiGet, apiPost, ApiError } from '../utils/api';
@@ -60,6 +61,39 @@ const ConversationListPage: React.FC = () => {
     navigate(`/conversations/${conversationId}`);
   };
 
+  const handleTitleUpdate = async (conversationId: string, newTitle: string): Promise<boolean> => {
+    try {
+      const response = await fetchWithAuth(`/api/conversations/${conversationId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ title: newTitle })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update conversation title');
+      }
+      
+      const updatedConversation = await response.json();
+      
+      // Update the local conversations state
+      setConversations(prev => 
+        prev.map(conv => 
+          conv.id === conversationId 
+            ? { ...conv, title: updatedConversation.title }
+            : conv
+        )
+      );
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating conversation title:', error);
+      setError('Failed to update conversation title. Please try again.');
+      return false;
+    }
+  };
+
   const handleCreateConversation = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -73,15 +107,8 @@ const ConversationListPage: React.FC = () => {
       });
       
       if (data.conversationId) {
-        // Add the new conversation to the list
-        const newConversation: ConversationType = {
-          id: data.conversationId,
-          title: 'New Conversation',
-          userId: '', // This will be filled by the server when we fetch conversations again
-          messages: []
-        };
-        setConversations([...conversations, newConversation]);
         showSuccess('Conversation created successfully');
+        // Navigate to the new conversation - the server will generate a meaningful title
         navigate(`/conversations/${data.conversationId}`);
       }
     } catch (error) {
@@ -186,7 +213,8 @@ const ConversationListPage: React.FC = () => {
             
             <ConversationList 
               conversations={conversations} 
-              onConversationClick={handleConversationClick} 
+              onConversationClick={handleConversationClick}
+              onTitleUpdate={handleTitleUpdate}
             />
           </>
         </LoadingOverlay>

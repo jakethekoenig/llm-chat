@@ -2,19 +2,19 @@ import request from 'supertest';
 
 // Mock database models for faster testing - must be defined before jest.mock calls
 const mockUser = {
-  findOne: jest.fn(),
-  create: jest.fn(),
+  findOne: jest.fn().mockResolvedValue(null),
+  create: jest.fn().mockResolvedValue({ get: jest.fn() }),
 };
 
 const mockConversation = {
-  findAll: jest.fn(),
-  create: jest.fn(),
+  findAll: jest.fn().mockResolvedValue([]),
+  create: jest.fn().mockResolvedValue({ get: jest.fn() }),
 };
 
 const mockMessage = {
-  findAll: jest.fn(),
-  findByPk: jest.fn(),
-  create: jest.fn(),
+  findAll: jest.fn().mockResolvedValue([]),
+  findByPk: jest.fn().mockResolvedValue(null),
+  create: jest.fn().mockResolvedValue({ get: jest.fn() }),
 };
 
 jest.mock('../../server/database/models/User', () => ({ User: mockUser }));
@@ -60,6 +60,22 @@ jest.mock('../../server/helpers/typeConverters', () => ({
 }));
 
 describe('Performance Tests', () => {
+
+  beforeEach(() => {
+    // Reset all mocks before each test
+    jest.clearAllMocks();
+    
+    // Reset mock functions to default working state
+    mockUser.findOne = jest.fn().mockResolvedValue(null);
+    mockUser.create = jest.fn().mockResolvedValue({ get: jest.fn() });
+    
+    mockConversation.findAll = jest.fn().mockResolvedValue([]);
+    mockConversation.create = jest.fn().mockResolvedValue({ get: jest.fn() });
+    
+    mockMessage.findAll = jest.fn().mockResolvedValue([]);
+    mockMessage.findByPk = jest.fn().mockResolvedValue(null);
+    mockMessage.create = jest.fn().mockResolvedValue({ get: jest.fn() });
+  });
   const SECRET_KEY = 'test-secret-key-that-is-32-characters-long-for-testing';
   let authToken: string;
 

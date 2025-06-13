@@ -133,3 +133,68 @@ body {
 h1, h2 {
   text-align: center;
 }
+
+/* Conversation Page Header Styles */
+.conversation-header {
+  margin-bottom: 20px;
+  padding: 16px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.conversation-title-header {
+  margin: 0;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  display: inline-block;
+  max-width: 100%;
+  word-break: break-word;
+}
+
+.conversation-title-header:hover {
+  background-color: #f8f9fa;
+}
+
+.title-edit-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: flex-start;
+}
+
+.conversation-title-input {
+  font-size: 1.5em;
+  font-weight: bold;
+  padding: 8px 12px;
+  border: 2px solid #007bff;
+  border-radius: 4px;
+  font-family: inherit;
+  background-color: white;
+  outline: none;
+  min-width: 300px;
+  max-width: 100%;
+}
+
+.conversation-title-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.updating-indicator {
+  font-size: 0.9em;
+  color: #007bff;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .conversation-title-input {
+    min-width: 250px;
+  }
+  
+  .title-edit-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}

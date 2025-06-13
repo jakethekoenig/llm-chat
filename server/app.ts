@@ -412,6 +412,45 @@ app.get('/api/conversations/:conversationId/messages', authenticateToken, asyncH
   res.json(formattedMessages);
 }));
 
+// Update conversation endpoint
+app.put('/api/conversations/:conversationId', authenticateToken, [
+  body('title').notEmpty().withMessage('Title is required').isLength({ max: 200 }).withMessage('Title must be 200 characters or less')
+], async (req: express.Request, res: express.Response) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { conversationId } = req.params;
+  const { title } = req.body;
+  const userId = (req as any).user.id;
+
+  try {
+    const dbConversationId = convertIdToNumber(conversationId);
+    
+    // Find the conversation and verify ownership
+    const conversation = await Conversation.findOne({
+      where: { 
+        id: dbConversationId,
+        user_id: userId 
+      }
+    });
+
+    if (!conversation) {
+      return res.status(404).json({ error: 'Conversation not found or you do not have permission to edit it' });
+    }
+
+    // Update the title
+    await conversation.update({ title });
+    
+    const updatedConversation = convertConversationToApiFormat(conversation);
+    res.json(updatedConversation);
+  } catch (error) {
+    console.error('Error updating conversation:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Edit message endpoint
 app.put('/api/messages/:messageId', authenticateToken, [
   body('content').notEmpty().withMessage('Content is required'),
@@ -509,6 +548,38 @@ app.delete('/api/messages/:messageId', authenticateToken, asyncHandler(async (re
   });
 }));
 
+// Helper function to generate meaningful title from message content
+const generateTitleFromMessage = (content: string): string => {
+  // Remove extra whitespace and truncate to reasonable length
+  const cleanContent = content.trim().replace(/\s+/g, ' ');
+  
+  // If content is short enough, use it as title
+  if (cleanContent.length <= 50) {
+    return cleanContent;
+  }
+  
+  // Find a good breaking point (end of sentence, word boundary)
+  let title = cleanContent.substring(0, 47);
+  const lastSentenceEnd = title.lastIndexOf('.');
+  const lastQuestionEnd = title.lastIndexOf('?');
+  const lastExclamationEnd = title.lastIndexOf('!');
+  
+  const sentenceEnd = Math.max(lastSentenceEnd, lastQuestionEnd, lastExclamationEnd);
+  
+  if (sentenceEnd > 20) {
+    // Good sentence ending found
+    return cleanContent.substring(0, sentenceEnd + 1);
+  }
+  
+  // Fall back to word boundary
+  const lastSpace = title.lastIndexOf(' ');
+  if (lastSpace > 20) {
+    title = cleanContent.substring(0, lastSpace);
+  }
+  
+  return title + '...';
+};
+
 // Create conversation with initial message endpoint
 app.post('/api/create_conversation', authenticateToken, [
   body('initialMessage').notEmpty().withMessage('Initial message is required'),
@@ -530,15 +601,20 @@ app.post('/api/create_conversation', authenticateToken, [
   const { initialMessage, model, temperature } = req.body;
   const userId = (req as any).user.id;
 
-  const defaultTitle = 'New Conversation';
-  const conversation = await Conversation.create({ title: defaultTitle, user_id: userId });
-  const message = await addMessage(initialMessage, conversation.get('id') as number, null, userId);
-  const completionMessage = await generateCompletion(message.get('id') as number, model, temperature);
-  res.status(201).json({ 
-    conversationId: (conversation.get('id') as number).toString(), 
-    initialMessageId: (message.get('id') as number).toString(), 
-    completionMessageId: (completionMessage.get('id') as number).toString()
-  });
+  try {
+    // Generate a meaningful title from the initial message
+    const generatedTitle = generateTitleFromMessage(initialMessage);
+    const conversation = await Conversation.create({ title: generatedTitle, user_id: userId });
+    const message = await addMessage(initialMessage, conversation.get('id') as number, null, userId);
+    const completionMessage = await generateCompletion(message.get('id') as number, model, temperature);
+    res.status(201).json({ 
+      conversationId: (conversation.get('id') as number).toString(), 
+      initialMessageId: (message.get('id') as number).toString(), 
+      completionMessageId: (completionMessage.get('id') as number).toString() 
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
 }));
 
 // Add global error handler middleware at the end
