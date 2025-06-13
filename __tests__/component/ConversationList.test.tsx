@@ -1,6 +1,6 @@
 // __tests__/component/ConversationList.test.tsx
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import ConversationList from '../../chat-components/ConversationList';
 import '@testing-library/jest-dom';
 
@@ -85,22 +85,30 @@ test('handles title editing when onTitleUpdate is provided', async () => {
   expect(titleElement).toHaveClass('editable');
   
   // Click on title should start editing
-  fireEvent.click(titleElement);
+  await act(async () => {
+    fireEvent.click(titleElement);
+  });
   
   // Should show input field
   const input = screen.getByDisplayValue('Conversation One');
   expect(input).toBeInTheDocument();
   
   // Change the title
-  fireEvent.change(input, { target: { value: 'Updated Title' } });
+  await act(async () => {
+    fireEvent.change(input, { target: { value: 'Updated Title' } });
+  });
   
   // Press Enter to save
-  fireEvent.keyDown(input, { key: 'Enter' });
+  await act(async () => {
+    fireEvent.keyDown(input, { key: 'Enter' });
+  });
   
-  expect(mockTitleUpdate).toHaveBeenCalledWith('1', 'Updated Title');
+  await waitFor(() => {
+    expect(mockTitleUpdate).toHaveBeenCalledWith('1', 'Updated Title');
+  });
 });
 
-test('cancels title editing on Escape key', () => {
+test('cancels title editing on Escape key', async () => {
   const mockClick = jest.fn();
   const mockTitleUpdate = jest.fn().mockResolvedValue(true);
   render(
@@ -112,13 +120,17 @@ test('cancels title editing on Escape key', () => {
   );
   
   // Click on title to start editing
-  fireEvent.click(screen.getByText('Conversation One'));
+  await act(async () => {
+    fireEvent.click(screen.getByText('Conversation One'));
+  });
   
   // Should show input field
   const input = screen.getByDisplayValue('Conversation One');
   
   // Press Escape to cancel
-  fireEvent.keyDown(input, { key: 'Escape' });
+  await act(async () => {
+    fireEvent.keyDown(input, { key: 'Escape' });
+  });
   
   // Should return to normal display
   expect(screen.getByText('Conversation One')).toBeInTheDocument();
@@ -160,14 +172,20 @@ test('saves title on blur', async () => {
   );
   
   // Click on title to start editing
-  fireEvent.click(screen.getByText('Conversation One'));
+  await act(async () => {
+    fireEvent.click(screen.getByText('Conversation One'));
+  });
   
   // Change the title
   const input = screen.getByDisplayValue('Conversation One');
-  fireEvent.change(input, { target: { value: 'Updated Title' } });
+  await act(async () => {
+    fireEvent.change(input, { target: { value: 'Updated Title' } });
+  });
   
   // Blur to save
-  fireEvent.blur(input);
+  await act(async () => {
+    fireEvent.blur(input);
+  });
   
   await waitFor(() => {
     expect(mockTitleUpdate).toHaveBeenCalledWith('1', 'Updated Title');
