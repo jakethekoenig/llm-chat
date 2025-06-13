@@ -132,6 +132,8 @@ describe('Message Component', () => {
       await waitFor(() => {
         expect(onDelete).toHaveBeenCalledWith('1');
       });
+      // Flush all pending microtasks and timers
+      await new Promise(resolve => setTimeout(resolve, 10));
     });
   });
 
@@ -637,6 +639,8 @@ describe('Message Component', () => {
       await waitFor(() => {
         expect(onDelete).toHaveBeenCalledWith('1');
       });
+      // Flush all pending microtasks and timers
+      await new Promise(resolve => setTimeout(resolve, 10));
     });
   });
 
@@ -715,6 +719,9 @@ describe('Message Component', () => {
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith('Failed to delete message:', expect.any(Error));
       });
+      
+      // Flush all pending microtasks and timers
+      await new Promise(resolve => setTimeout(resolve, 10));
     });
     
     consoleSpy.mockRestore();
