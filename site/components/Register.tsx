@@ -19,6 +19,12 @@ const Register: React.FC = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent multiple simultaneous submissions
+    if (isLoading) {
+      return;
+    }
+    
     setIsLoading(true);
     setError('');
 
