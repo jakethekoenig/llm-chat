@@ -19,9 +19,10 @@ function validateEnvironment() {
   const hasOpenAI = !!process.env.OPENAI_API_KEY;
   const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
   const hasGoogle = !!process.env.GOOGLE_API_KEY;
+  const hasOpenRouter = !!process.env.OPENROUTER_API_KEY;
   
-  if (!hasOpenAI && !hasAnthropic && !hasGoogle) {
-    missingVars.push('OPENAI_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_API_KEY (at least one LLM API key is required)');
+  if (!hasOpenAI && !hasAnthropic && !hasGoogle && !hasOpenRouter) {
+    missingVars.push('OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY, or OPENROUTER_API_KEY (at least one LLM API key is required)');
   }
 
   if (missingVars.length > 0) {
@@ -52,4 +53,5 @@ app.listen(PORT, () => {
   console.log(`📊 OpenAI API: ${process.env.OPENAI_API_KEY ? '✅ configured' : '❌ not set'}`);
   console.log(`📊 Anthropic API: ${process.env.ANTHROPIC_API_KEY ? '✅ configured' : '❌ not set'}`);
   console.log(`📊 Google API: ${process.env.GOOGLE_API_KEY ? '✅ configured' : '❌ not set'}`);
+  console.log(`📊 OpenRouter API: ${process.env.OPENROUTER_API_KEY ? '✅ configured' : '❌ not set'}`);
 });
