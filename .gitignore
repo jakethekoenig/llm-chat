@@ -3,5 +3,7 @@ coverage
 dist
 dist-server
 todo
-database_development.sqlite
+# SQLite database files - these are generated locally and shouldn't be committed
+*.sqlite
+*.sqlite3
 .env
