@@ -64,6 +64,25 @@ declare module 'sequelize' {
 // Suppress Sequelize logging during tests
 Sequelize.prototype.log = () => {};
 
+// Suppress React Testing Library act() warnings during tests
+// These warnings are about test environment configuration, not application bugs
+beforeAll(() => {
+  console.error = (...args: any[]) => {
+    if (
+      typeof args[0] === 'string' &&
+      (args[0].includes('Warning: The current testing environment is not configured to support act(...)') ||
+       args[0].includes('Warning: An update to') && args[0].includes('was not wrapped in act(...)'))
+    ) {
+      return;
+    }
+    originalError.call(console, ...args);
+  };
+});
+
+afterAll(() => {
+  console.error = originalError;
+});
+
 // Cleanup after each test
 afterEach(() => {
   cleanup();

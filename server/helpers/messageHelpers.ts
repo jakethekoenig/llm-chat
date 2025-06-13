@@ -4,6 +4,7 @@ import 'openai/shims/node';
 import '@anthropic-ai/sdk/shims/node';
 import { OpenAI } from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Mistral } from '@mistralai/mistralai';
 import { createLogger, transports, format } from 'winston';
 import * as messageHelpers from './messageHelpers';
@@ -77,9 +78,14 @@ export const addMessage = async (
   return message;
 };
 
-const isAnthropicModel = (model: string): boolean => {
+export const isAnthropicModel = (model: string): boolean => {
   const anthropicIdentifiers = ['claude', 'sonnet', 'haiku', 'opus'];
   return anthropicIdentifiers.some(identifier => model.toLowerCase().includes(identifier));
+};
+
+export const isGeminiModel = (model: string): boolean => {
+  const geminiIdentifiers = ['gemini', 'bison', 'palm'];
+  return geminiIdentifiers.some(identifier => model.toLowerCase().includes(identifier));
 };
 
 const isMistralModel = (model: string): boolean => {
@@ -155,6 +161,63 @@ const generateAnthropicStreamingCompletion = async function* (
   // Calculate final cost when stream is complete
   const cost = usage ? calculateAnthropicCost(model, usage) : 0;
   yield { text: '', cost, isComplete: true };
+};
+
+const generateGeminiCompletion = async (content: string, model: string, temperature: number) => {
+  const apiKey = process.env.GOOGLE_API_KEY;
+  if (!apiKey) {
+    throw new Error('Google API key is not set');
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const geminiModel = genAI.getGenerativeModel({ model });
+
+  const result = await geminiModel.generateContent({
+    contents: [{ role: 'user', parts: [{ text: content }] }],
+    generationConfig: {
+      temperature,
+      maxOutputTokens: 1024,
+    },
+  });
+
+  const response = await result.response;
+  const text = response.text();
+  
+  // Gemini may not provide usage data, so cost defaults to 0
+  const cost = 0; // TODO: Add Gemini cost calculation when usage data is available
+  return { text, cost };
+};
+
+const generateGeminiStreamingCompletion = async function* (
+  content: string, 
+  model: string, 
+  temperature: number
+): AsyncIterable<{ text: string; cost?: number; isComplete: boolean }> {
+  const apiKey = process.env.GOOGLE_API_KEY;
+  if (!apiKey) {
+    throw new Error('Google API key is not set');
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const geminiModel = genAI.getGenerativeModel({ model });
+
+  const result = await geminiModel.generateContentStream({
+    contents: [{ role: 'user', parts: [{ text: content }] }],
+    generationConfig: {
+      temperature,
+      maxOutputTokens: 1024,
+    },
+  });
+
+  for await (const chunk of result.stream) {
+    const chunkText = chunk.text();
+    if (chunkText) {
+      yield { text: chunkText, isComplete: false };
+    }
+  }
+
+  // Gemini may not provide usage data, so cost defaults to 0
+  yield { text: '', cost: 0, isComplete: true };
 };
 
 const generateOpenAICompletion = async (content: string, model: string, temperature: number) => {
@@ -365,6 +428,8 @@ export const generateCompletion = async (messageId: number, model: string, tempe
     let completion: { text: string; cost: number };
     if (isAnthropicModel(model)) {
       completion = await generateAnthropicCompletion(content, model, temperature);
+    } else if (isGeminiModel(model)) {
+      completion = await generateGeminiCompletion(content, model, temperature);
     } else if (isMistralModel(model)) {
       completion = await generateMistralCompletion(content, model, temperature);
     } else if (isLlamaModel(model)) {
@@ -429,6 +494,8 @@ export const generateStreamingCompletion = async function* (
     let streamGenerator: AsyncIterable<{ text: string; cost?: number; isComplete: boolean }>;
     if (isAnthropicModel(model)) {
       streamGenerator = generateAnthropicStreamingCompletion(content, model, temperature);
+    } else if (isGeminiModel(model)) {
+      streamGenerator = generateGeminiStreamingCompletion(content, model, temperature);
     } else if (isMistralModel(model)) {
       streamGenerator = generateMistralStreamingCompletion(content, model, temperature);
     } else if (isLlamaModel(model)) {
