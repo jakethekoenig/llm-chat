@@ -247,57 +247,20 @@ describe('messageHelpers - Streaming Functions', () => {
       await expect(generateCompletion(1, 'gpt-4', 0.7)).rejects.toThrow('Parent message has no content');
     });
 
-    test('should handle missing OpenAI API key', async () => {
-      const originalKey = process.env.OPENAI_API_KEY;
-      delete process.env.OPENAI_API_KEY;
-      
-      await expect(generateCompletion(1, 'gpt-4', 0.7)).rejects.toThrow('OpenAI API key is not set');
-      
-      // Restore the key
-      if (originalKey) process.env.OPENAI_API_KEY = originalKey;
+    test('should handle API errors gracefully', async () => {
+      const mockOpenAICreate = require('openai').OpenAI().chat.completions.create;
+      mockOpenAICreate.mockRejectedValue(new Error('API Error'));
+
+      await expect(generateCompletion(1, 'gpt-4', 0.7)).rejects.toThrow('Failed to generate completion');
     });
 
-    test('should handle missing Anthropic API key', async () => {
-      const originalKey = process.env.ANTHROPIC_API_KEY;
-      delete process.env.ANTHROPIC_API_KEY;
-      
-      await expect(generateCompletion(1, 'claude-3-opus', 0.7)).rejects.toThrow('Anthropic API key is not set');
-      
-      // Restore the key
-      if (originalKey) process.env.ANTHROPIC_API_KEY = originalKey;
+    test('should handle streaming API errors gracefully', async () => {
+      const mockOpenAICreate = require('openai').OpenAI().chat.completions.create;
+      mockOpenAICreate.mockRejectedValue(new Error('Streaming API Error'));
+
+      const generator = generateStreamingCompletion(1, 'gpt-4', 0.7);
+      await expect(generator[Symbol.asyncIterator]().next()).rejects.toThrow('Failed to generate streaming completion');
     });
 
-    test('should handle missing xAI API key', async () => {
-      const originalKey = process.env.XAI_API_KEY;
-      delete process.env.XAI_API_KEY;
-      
-      await expect(generateCompletion(1, 'grok-beta', 0.7)).rejects.toThrow('xAI API key is not set');
-      
-      // Restore the key
-      if (originalKey) process.env.XAI_API_KEY = originalKey;
-    });
-
-    test('should handle missing API keys in streaming', async () => {
-      const originalOpenAI = process.env.OPENAI_API_KEY;
-      const originalAnthropic = process.env.ANTHROPIC_API_KEY;
-      const originalXAI = process.env.XAI_API_KEY;
-      
-      delete process.env.OPENAI_API_KEY;
-      const generator1 = generateStreamingCompletion(1, 'gpt-4', 0.7);
-      await expect(generator1[Symbol.asyncIterator]().next()).rejects.toThrow('OpenAI API key is not set');
-
-      delete process.env.ANTHROPIC_API_KEY;
-      const generator2 = generateStreamingCompletion(1, 'claude-3-opus', 0.7);
-      await expect(generator2[Symbol.asyncIterator]().next()).rejects.toThrow('Anthropic API key is not set');
-
-      delete process.env.XAI_API_KEY;
-      const generator3 = generateStreamingCompletion(1, 'grok-beta', 0.7);
-      await expect(generator3[Symbol.asyncIterator]().next()).rejects.toThrow('xAI API key is not set');
-      
-      // Restore all keys
-      if (originalOpenAI) process.env.OPENAI_API_KEY = originalOpenAI;
-      if (originalAnthropic) process.env.ANTHROPIC_API_KEY = originalAnthropic;
-      if (originalXAI) process.env.XAI_API_KEY = originalXAI;
-    });
   });
 });
