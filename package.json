@@ -41,6 +41,7 @@
     "@emotion/react": "^11.13.0",
     "@emotion/styled": "^11.13.0",
     "@fontsource/roboto": "^5.0.14",
+    "@google/generative-ai": "^0.21.0",
     "@mistralai/mistralai": "1.7.2",
     "@mui/icons-material": "^5.16.7",
     "@mui/material": "^5.16.7",

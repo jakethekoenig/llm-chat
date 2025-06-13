@@ -78,12 +78,13 @@ describe('Server Index - Environment Validation', () => {
     process.env.SECRET_KEY = 'a-very-long-secret-key-that-is-32-characters-long-for-testing';
     delete process.env.OPENAI_API_KEY;
     delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.GOOGLE_API_KEY;
     delete process.env.MISTRAL_API_KEY;
     delete process.env.OPENROUTER_API_KEY;
 
     expect(() => require('../../server/index')).toThrow('process.exit called');
     expect(mockConsoleError).toHaveBeenCalledWith('❌ Missing required environment variables:');
-    expect(mockConsoleError).toHaveBeenCalledWith('  - OPENAI_API_KEY, ANTHROPIC_API_KEY, MISTRAL_API_KEY, or OPENROUTER_API_KEY (at least one LLM API key is required)');
+    expect(mockConsoleError).toHaveBeenCalledWith('  - OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY, MISTRAL_API_KEY, or OPENROUTER_API_KEY (at least one LLM API key is required)');
     expect(mockExit).toHaveBeenCalledWith(1);
   });
 

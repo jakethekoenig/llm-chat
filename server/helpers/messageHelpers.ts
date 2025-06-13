@@ -4,6 +4,7 @@ import 'openai/shims/node';
 import '@anthropic-ai/sdk/shims/node';
 import { OpenAI } from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Mistral } from '@mistralai/mistralai';
 import { createLogger, transports, format } from 'winston';
 import * as messageHelpers from './messageHelpers';
@@ -35,9 +36,14 @@ export const addMessage = async (
   return message;
 };
 
-const isAnthropicModel = (model: string): boolean => {
+export const isAnthropicModel = (model: string): boolean => {
   const anthropicIdentifiers = ['claude', 'sonnet', 'haiku', 'opus'];
   return anthropicIdentifiers.some(identifier => model.toLowerCase().includes(identifier));
+};
+
+export const isGeminiModel = (model: string): boolean => {
+  const geminiIdentifiers = ['gemini', 'bison', 'palm'];
+  return geminiIdentifiers.some(identifier => model.toLowerCase().includes(identifier));
 };
 
 const isMistralModel = (model: string): boolean => {
@@ -102,6 +108,56 @@ const generateAnthropicStreamingCompletion = async function* (
   for await (const chunk of stream) {
     if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
       yield chunk.delta.text;
+    }
+  }
+};
+
+const generateGeminiCompletion = async (content: string, model: string, temperature: number) => {
+  const apiKey = process.env.GOOGLE_API_KEY;
+  if (!apiKey) {
+    throw new Error('Google API key is not set');
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const geminiModel = genAI.getGenerativeModel({ model });
+
+  const result = await geminiModel.generateContent({
+    contents: [{ role: 'user', parts: [{ text: content }] }],
+    generationConfig: {
+      temperature,
+      maxOutputTokens: 1024,
+    },
+  });
+
+  const response = await result.response;
+  return response.text();
+};
+
+const generateGeminiStreamingCompletion = async function* (
+  content: string, 
+  model: string, 
+  temperature: number
+): AsyncIterable<string> {
+  const apiKey = process.env.GOOGLE_API_KEY;
+  if (!apiKey) {
+    throw new Error('Google API key is not set');
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const geminiModel = genAI.getGenerativeModel({ model });
+
+  const result = await geminiModel.generateContentStream({
+    contents: [{ role: 'user', parts: [{ text: content }] }],
+    generationConfig: {
+      temperature,
+      maxOutputTokens: 1024,
+    },
+  });
+
+  for await (const chunk of result.stream) {
+    const chunkText = chunk.text();
+    if (chunkText) {
+      yield chunkText;
     }
   }
 };
@@ -287,6 +343,8 @@ export const generateCompletion = async (messageId: number, model: string, tempe
     let completionContent: string;
     if (isAnthropicModel(model)) {
       completionContent = await generateAnthropicCompletion(content, model, temperature);
+    } else if (isGeminiModel(model)) {
+      completionContent = await generateGeminiCompletion(content, model, temperature);
     } else if (isMistralModel(model)) {
       completionContent = await generateMistralCompletion(content, model, temperature);
     } else if (isLlamaModel(model)) {
@@ -350,6 +408,8 @@ export const generateStreamingCompletion = async function* (
     let streamGenerator: AsyncIterable<string>;
     if (isAnthropicModel(model)) {
       streamGenerator = generateAnthropicStreamingCompletion(content, model, temperature);
+    } else if (isGeminiModel(model)) {
+      streamGenerator = generateGeminiStreamingCompletion(content, model, temperature);
     } else if (isMistralModel(model)) {
       streamGenerator = generateMistralStreamingCompletion(content, model, temperature);
     } else if (isLlamaModel(model)) {
