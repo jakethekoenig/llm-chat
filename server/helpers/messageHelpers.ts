@@ -14,10 +14,8 @@ const logger = createLogger({
     format.timestamp(),
     format.json()
   ),
-  transports: process.env.NODE_ENV === 'test' ? [
-    // Silent transport for tests to avoid winston warnings
-    new transports.Stream({ stream: { write: () => {} } })
-  ] : [
+  silent: process.env.NODE_ENV === 'test',
+  transports: [
     new transports.Console()
   ]
 });
