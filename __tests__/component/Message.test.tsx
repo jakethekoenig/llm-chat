@@ -124,7 +124,7 @@ describe('Message Component', () => {
     expect(screen.getByText('Delete Message')).toBeInTheDocument();
     expect(screen.getByText('Are you sure you want to delete this message? This action cannot be undone.')).toBeInTheDocument();
     
-    // Click confirm in dialog
+    // Click confirm in dialog - wrap in act to handle async state updates
     const confirmButton = screen.getByRole('button', { name: 'Delete' });
     await act(async () => {
       fireEvent.click(confirmButton);
@@ -415,17 +415,19 @@ describe('Message Component', () => {
     const textField = screen.getByDisplayValue('Test message content');
     fireEvent.change(textField, { target: { value: 'Updated message' } });
     
-    // Click save
+    // Click save - wrap in act to handle async state updates
     const saveButton = screen.getByText('Save');
-    fireEvent.click(saveButton);
-    
-    await waitFor(() => {
-      expect(onEdit).toHaveBeenCalledWith('1', 'Updated message');
-    });
+    await act(async () => {
+      fireEvent.click(saveButton);
+      
+      await waitFor(() => {
+        expect(onEdit).toHaveBeenCalledWith('1', 'Updated message');
+      });
 
-    // Should still be in edit mode on error
-    await waitFor(() => {
-      expect(screen.getByDisplayValue('Updated message')).toBeInTheDocument();
+      // Should still be in edit mode on error
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('Updated message')).toBeInTheDocument();
+      });
     });
     
     consoleSpy.mockRestore();

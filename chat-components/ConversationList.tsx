@@ -119,10 +119,17 @@ const ConversationList: React.FC<ConversationListProps> = ({
                     }
                   }}
                 >
-                  {conversation.messages && conversation.messages.length > 0 
-                    ? `${conversation.messages.length} messages`
-                    : 'No messages'
-                  }
+                  {conversation.messages && conversation.messages.length > 0 ? (
+                    <>
+                      {`${conversation.messages.length} messages`}
+                      {(() => {
+                        const totalCost = conversation.messages.reduce((sum, msg) => 
+                          sum + (msg.cost || 0), 0
+                        );
+                        return totalCost > 0 ? ` • $${totalCost.toFixed(6)}` : '';
+                      })()}
+                    </>
+                  ) : 'No messages'}
                 </span>
               </div>
             </li>

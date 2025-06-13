@@ -17,6 +17,7 @@ describe('Type Converters', () => {
         content: 'Test message',
         model: 'gpt-4o',
         temperature: 0.7,
+        cost: 0.001234,
         timestamp: new Date('2023-01-01T00:00:00Z')
       };
 
@@ -30,6 +31,7 @@ describe('Type Converters', () => {
         content: 'Test message',
         model: 'gpt-4o',
         temperature: 0.7,
+        cost: 0.001234,
         timestamp: '2023-01-01T00:00:00.000Z'
       });
     });
@@ -43,6 +45,7 @@ describe('Type Converters', () => {
         content: 'Test message',
         model: null,
         temperature: null,
+        cost: null,
         timestamp: new Date('2023-01-01T00:00:00Z')
       };
 
@@ -56,6 +59,7 @@ describe('Type Converters', () => {
         content: 'Test message',
         model: null,
         temperature: null,
+        cost: null,
         timestamp: '2023-01-01T00:00:00.000Z'
       });
     });
@@ -91,6 +95,7 @@ describe('Type Converters', () => {
           content: 'Test message',
           model: null,
           temperature: null,
+          cost: null,
           timestamp: new Date('2023-01-01T00:00:00Z')
         }]
       };
@@ -109,6 +114,7 @@ describe('Type Converters', () => {
           content: 'Test message',
           model: null,
           temperature: null,
+          cost: null,
           timestamp: '2023-01-01T00:00:00.000Z'
         }]
       });

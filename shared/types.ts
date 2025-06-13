@@ -15,6 +15,7 @@ export interface Message {
   content: string;
   model?: string | null;
   temperature?: number | null;
+  cost?: number | null;
   timestamp: string;
 }
 

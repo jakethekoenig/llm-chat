@@ -52,7 +52,7 @@ const ButtonContainer = styled.div`
 `;
 
 const Message: React.FC<MessageProps> = ({ renderers = [], currentIndex = 0, totalSiblings = 0, ...props }) => {
-  const { $isAuthor, content, author, timestamp, buttons, onCopy, onShare, onDelete, onEdit, onClick, onPrev, onNext, hasSiblings, conversationId, userId, parentId, model, temperature, id, ...filteredProps } = props;
+  const { $isAuthor, content, author, timestamp, buttons, onCopy, onShare, onDelete, onEdit, onClick, onPrev, onNext, hasSiblings, conversationId, userId, parentId, model, temperature, cost, id, ...filteredProps } = props;
   const globalConfig = useMessageConfig();
   const [displayedContent, setDisplayedContent] = useState<string>('');
   const isMountedRef = useRef(true);
@@ -225,7 +225,14 @@ const Message: React.FC<MessageProps> = ({ renderers = [], currentIndex = 0, tot
           <>
             <MessageContent>{renderContent(displayedContent)}</MessageContent>
             {author && <><br></br><MessageAuthor>{author}</MessageAuthor></>}
-            {timestamp && <MessageTimestamp>{new Date(timestamp).toLocaleString()}</MessageTimestamp>}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+              {timestamp && <MessageTimestamp>{new Date(timestamp).toLocaleString()}</MessageTimestamp>}
+              {cost !== null && cost !== undefined && (
+                <MessageTimestamp style={{ color: '#888', fontWeight: 'bold' }}>
+                  ${cost.toFixed(6)}
+                </MessageTimestamp>
+              )}
+            </div>
             <ButtonContainer>
               {finalButtons.copy === 'enabled' && <Button onClick={handleCopy} startIcon={<CopyIcon />}>Copy</Button>}
               {finalButtons.share === 'enabled' && <Button onClick={onShare} startIcon={<ShareIcon />}>Share</Button>}
