@@ -128,10 +128,10 @@ describe('Message Component', () => {
     const confirmButton = screen.getByRole('button', { name: 'Delete' });
     await act(async () => {
       fireEvent.click(confirmButton);
-    });
-    
-    await waitFor(() => {
-      expect(onDelete).toHaveBeenCalledWith('1');
+      // Wait for the async operation to complete within act
+      await waitFor(() => {
+        expect(onDelete).toHaveBeenCalledWith('1');
+      });
     });
   });
 
@@ -633,8 +633,7 @@ describe('Message Component', () => {
     const confirmButton = screen.getByRole('button', { name: 'Delete' });
     await act(async () => {
       fireEvent.click(confirmButton);
-      
-      // Just verify the delete function was called
+      // Wait for async operations to complete within act
       await waitFor(() => {
         expect(onDelete).toHaveBeenCalledWith('1');
       });
