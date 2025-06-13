@@ -4,6 +4,7 @@ import 'openai/shims/node';
 import '@anthropic-ai/sdk/shims/node';
 import { OpenAI } from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
+import { Mistral } from '@mistralai/mistralai';
 import { createLogger, transports, format } from 'winston';
 import * as messageHelpers from './messageHelpers';
 const logger = createLogger({
@@ -37,6 +38,11 @@ export const addMessage = async (
 const isAnthropicModel = (model: string): boolean => {
   const anthropicIdentifiers = ['claude', 'sonnet', 'haiku', 'opus'];
   return anthropicIdentifiers.some(identifier => model.toLowerCase().includes(identifier));
+};
+
+const isMistralModel = (model: string): boolean => {
+  const mistralIdentifiers = ['mistral', 'mixtral', 'codestral'];
+  return mistralIdentifiers.some(identifier => model.toLowerCase().includes(identifier));
 };
 
 const generateAnthropicCompletion = async (content: string, model: string, temperature: number) => {
@@ -137,6 +143,72 @@ const generateOpenAIStreamingCompletion = async function* (
   }
 };
 
+const generateMistralCompletion = async (content: string, model: string, temperature: number) => {
+  const apiKey = process.env.MISTRAL_API_KEY;
+  if (!apiKey) {
+    throw new Error('Mistral API key is not set');
+  }
+
+  const client = new Mistral({
+    apiKey: apiKey,
+  });
+
+  const response = await client.chat.complete({
+    model,
+    messages: [{ role: 'user', content }],
+    temperature,
+  });
+
+  const messageContent = response.choices[0].message?.content;
+  if (typeof messageContent === 'string') {
+    return messageContent;
+  } else if (Array.isArray(messageContent)) {
+    // Extract text from ContentChunk array
+    return messageContent.map(chunk => 
+      typeof chunk === 'string' ? chunk : (chunk.type === 'text' && 'text' in chunk ? chunk.text : '')
+    ).join('');
+  }
+  return '';
+};
+
+const generateMistralStreamingCompletion = async function* (
+  content: string, 
+  model: string, 
+  temperature: number
+): AsyncIterable<string> {
+  const apiKey = process.env.MISTRAL_API_KEY;
+  if (!apiKey) {
+    throw new Error('Mistral API key is not set');
+  }
+
+  const client = new Mistral({
+    apiKey: apiKey,
+  });
+
+  const stream = await client.chat.stream({
+    model,
+    messages: [{ role: 'user', content }],
+    temperature,
+  });
+
+  for await (const chunk of stream) {
+    const deltaContent = chunk.data.choices[0]?.delta?.content;
+    if (deltaContent) {
+      if (typeof deltaContent === 'string') {
+        yield deltaContent;
+      } else if (Array.isArray(deltaContent)) {
+        // Extract text from ContentChunk array
+        const textContent = deltaContent.map(chunk => 
+          typeof chunk === 'string' ? chunk : (chunk.type === 'text' && 'text' in chunk ? chunk.text : '')
+        ).join('');
+        if (textContent) {
+          yield textContent;
+        }
+      }
+    }
+  }
+};
+
 export const generateCompletion = async (messageId: number, model: string, temperature: number) => {
   const parentMessage: Message | null = await Message.findByPk(messageId);
   if (!parentMessage) {
@@ -149,9 +221,14 @@ export const generateCompletion = async (messageId: number, model: string, tempe
   }
 
   try {
-    const completionContent = isAnthropicModel(model)
-      ? await generateAnthropicCompletion(content, model, temperature)
-      : await generateOpenAICompletion(content, model, temperature);
+    let completionContent: string;
+    if (isAnthropicModel(model)) {
+      completionContent = await generateAnthropicCompletion(content, model, temperature);
+    } else if (isMistralModel(model)) {
+      completionContent = await generateMistralCompletion(content, model, temperature);
+    } else {
+      completionContent = await generateOpenAICompletion(content, model, temperature);
+    }
 
     console.log('completionContent:', completionContent);
     const completionMessage: Message = await Message.create({
@@ -201,9 +278,14 @@ export const generateStreamingCompletion = async function* (
   let fullContent = '';
 
   try {
-    const streamGenerator = isAnthropicModel(model)
-      ? generateAnthropicStreamingCompletion(content, model, temperature)
-      : generateOpenAIStreamingCompletion(content, model, temperature);
+    let streamGenerator: AsyncIterable<string>;
+    if (isAnthropicModel(model)) {
+      streamGenerator = generateAnthropicStreamingCompletion(content, model, temperature);
+    } else if (isMistralModel(model)) {
+      streamGenerator = generateMistralStreamingCompletion(content, model, temperature);
+    } else {
+      streamGenerator = generateOpenAIStreamingCompletion(content, model, temperature);
+    }
 
     for await (const chunk of streamGenerator) {
       fullContent += chunk;
