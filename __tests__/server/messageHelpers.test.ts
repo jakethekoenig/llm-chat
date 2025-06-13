@@ -75,6 +75,7 @@ describe('messageHelpers - Streaming Functions', () => {
     // Set up environment variables
     process.env.OPENAI_API_KEY = 'test-openai-key';
     process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
+    process.env.DEEPSEEK_API_KEY = 'test-deepseek-key';
     
     // Mock message structure
     const mockParentMessage = {
@@ -106,6 +107,7 @@ describe('messageHelpers - Streaming Functions', () => {
   afterEach(() => {
     delete process.env.OPENAI_API_KEY;
     delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.DEEPSEEK_API_KEY;
   });
 
   describe('generateStreamingCompletion', () => {
@@ -126,6 +128,19 @@ describe('messageHelpers - Streaming Functions', () => {
       const chunks: any[] = [];
       
       for await (const chunk of generateStreamingCompletion(1, 'claude-3-opus', 0.7)) {
+        chunks.push(chunk);
+      }
+      
+      expect(chunks.length).toBeGreaterThan(0);
+      expect(chunks[chunks.length - 1].isComplete).toBe(true);
+      expect(Message.findByPk).toHaveBeenCalledWith(1);
+      expect(Message.create).toHaveBeenCalled();
+    });
+
+    test('should stream DeepSeek completion successfully', async () => {
+      const chunks: any[] = [];
+      
+      for await (const chunk of generateStreamingCompletion(1, 'deepseek-chat', 0.7)) {
         chunks.push(chunk);
       }
       
