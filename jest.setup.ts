@@ -16,7 +16,7 @@ const originalError = console.error;
 console.error = (...args: any[]) => {
   if (
     typeof args[0] === 'string' &&
-    (args[0].includes('Warning: An update to Message inside a test was not wrapped in act') ||
+    ((args[0].includes('Warning: An update to') && args[0].includes('inside a test was not wrapped in act')) ||
      args[0].includes('Warning: The current testing environment is not configured to support act'))
   ) {
     return;
@@ -29,6 +29,7 @@ process.env.SECRET_KEY = 'test-secret-key-that-is-32-characters-long-for-testing
 process.env.OPENAI_API_KEY = 'test-openai-key';
 process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
 process.env.MISTRAL_API_KEY = 'test-mistral-key';
+process.env.OPENROUTER_API_KEY = 'test-openrouter-key';
 
 // Polyfill TextEncoder/TextDecoder for Node.js tests
 import { TextEncoder, TextDecoder } from 'util';
