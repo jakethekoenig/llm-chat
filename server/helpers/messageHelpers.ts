@@ -234,6 +234,10 @@ export const generateCompletion = async (messageId: number, model: string, tempe
   } catch (error) {
     if (error instanceof Error) {
       logger.error('Error generating completion:', { message: error.message });
+      // Preserve API key errors for better user experience
+      if (error.message.includes('API key is not set')) {
+        throw error;
+      }
     } else {
       logger.error('Error generating completion:', { error });
     }

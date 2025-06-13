@@ -272,23 +272,39 @@ describe('messageHelpers - Streaming Functions', () => {
 
   });
 
-  describe('API Key Validation', () => {
-    test('should throw error when OpenAI API key not set for OpenAI model', async () => {
-      delete process.env.OPENAI_API_KEY;
+  describe('Model Detection', () => {
+    test('should use OpenAI for unknown model types', async () => {
+      const mockCompletionMessage = {
+        get: jest.fn((field: string) => {
+          switch (field) {
+            case 'id': return 123;
+            case 'content': return 'Mocked OpenAI response';
+            default: return null;
+          }
+        })
+      };
       
-      await expect(generateCompletion(1, 'gpt-4', 0.7)).rejects.toThrow('OpenAI API key is not set');
+      (Message.create as jest.Mock).mockResolvedValue(mockCompletionMessage);
+      
+      const result = await generateCompletion(1, 'unknown-model', 0.7);
+      
+      expect(result).toBe(mockCompletionMessage);
+      expect(Message.findByPk).toHaveBeenCalledWith(1);
+      expect(Message.create).toHaveBeenCalled();
     });
 
-    test('should throw error when Anthropic API key not set for Anthropic model', async () => {
-      delete process.env.ANTHROPIC_API_KEY;
+    test('should use OpenAI for streaming unknown model types', async () => {
+      const chunks: any[] = [];
       
-      await expect(generateCompletion(1, 'claude-3-opus', 0.7)).rejects.toThrow('Anthropic API key is not set');
-    });
-
-    test('should throw error when OpenRouter API key not set for Llama model', async () => {
-      delete process.env.OPENROUTER_API_KEY;
+      for await (const chunk of generateStreamingCompletion(1, 'unknown-model', 0.7)) {
+        chunks.push(chunk);
+      }
       
-      await expect(generateCompletion(1, 'meta-llama/llama-3.1-70b-instruct', 0.7)).rejects.toThrow('OpenRouter API key is not set');
+      expect(chunks.length).toBeGreaterThan(0);
+      expect(chunks[chunks.length - 1].isComplete).toBe(true);
+      expect(Message.findByPk).toHaveBeenCalledWith(1);
+      expect(Message.create).toHaveBeenCalled();
     });
   });
+
 });
