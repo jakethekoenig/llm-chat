@@ -1,17 +1,25 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
+import { useToast } from './ToastProvider';
+import { ErrorHandlers } from '../utils/errorHandling';
+import { ApiError } from '../utils/api';
 import '../App.css';
 
 const SignIn: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { showSuccess, showError } = useToast();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
     try {
       const response = await fetch('/api/signin', {
         method: 'POST',
@@ -20,15 +28,33 @@ const SignIn: React.FC = () => {
         },
         body: JSON.stringify({ username, password }),
       });
+      
       const data = await response.json();
+      
       if (!response.ok) {
-        throw new Error(data.message || 'Invalid credentials');
+        // Create an ApiError-like object with server response details
+        const apiError = new Error(data.message || data.error || 'Sign in failed') as ApiError;
+        apiError.status = response.status;
+        apiError.code = data.code;
+        apiError.details = data.details;
+        throw apiError;
       }
+      
       login(data.token);
-      setError('');
+      showSuccess('Welcome back!');
       navigate('/');
     } catch (err) {
-      setError('Invalid credentials');
+      const formattedError = ErrorHandlers.auth(err);
+      setError(formattedError.message);
+      
+      // Also show toast for better visibility
+      if (formattedError.severity === 'error') {
+        showError(formattedError.message);
+      } else {
+        showError(formattedError.message);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -52,8 +78,10 @@ const SignIn: React.FC = () => {
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
-        {error && <p>{error}</p>}
-        <button type="submit">Sign In</button>
+        {error && <p className="error-message">{error}</p>}
+        <button type="submit" disabled={isLoading}>
+          {isLoading ? 'Signing In...' : 'Sign In'}
+        </button>
       </form>
     </div>
   );

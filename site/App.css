@@ -37,6 +37,23 @@ body {
   border-radius: 4px;
 }
 
+.error-message {
+  color: #d32f2f;
+  background-color: #ffebee;
+  border: 1px solid #ffcdd2;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin: 8px 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.form-container button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .side-pane {
   position: fixed;
   top: 0;

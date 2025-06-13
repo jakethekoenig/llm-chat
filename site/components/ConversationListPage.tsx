@@ -7,6 +7,7 @@ import ConversationList from '../../chat-components/ConversationList';
 import { Conversation as ConversationType } from '../../chat-components/types/Conversation';
 import { apiGet, apiPost, ApiError } from '../utils/api';
 import { useToast } from './ToastProvider';
+import { ErrorHandlers } from '../utils/errorHandling';
 import ErrorBoundary from './ErrorBoundary';
 import { ConversationListSkeleton, LoadingOverlay, FormSkeleton } from './SkeletonLoaders';
 
@@ -30,18 +31,10 @@ const ConversationListPage: React.FC = () => {
         setConversations(data);
       } catch (error) {
         console.error('Error fetching conversations:', error);
-        const apiError = error as ApiError;
+        const formattedError = ErrorHandlers.conversation(error);
         
-        let errorMessage = 'Failed to load conversations.';
-        
-        if (apiError.code === 'NETWORK_ERROR') {
-          errorMessage = 'Network error. Please check your connection and try again.';
-        } else if (apiError.status === 401 || apiError.status === 403) {
-          errorMessage = 'Authentication failed. Please sign in again.';
-        }
-        
-        setError(errorMessage);
-        showError(errorMessage);
+        setError(formattedError.message);
+        showError(formattedError.message);
       } finally {
         setIsLoadingConversations(false);
       }
@@ -113,22 +106,10 @@ const ConversationListPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Error creating conversation:', error);
-      const apiError = error as ApiError;
+      const formattedError = ErrorHandlers.form(error);
       
-      let errorMessage = 'An unexpected error occurred while creating the conversation.';
-      
-      if (apiError.code === 'NETWORK_ERROR') {
-        errorMessage = 'Network error. Please check your connection and try again.';
-      } else if (apiError.code === 'VALIDATION_ERROR') {
-        errorMessage = 'Please check your input and try again.';
-      } else if (apiError.status === 401 || apiError.status === 403) {
-        errorMessage = 'Authentication failed. Please sign in again.';
-      } else if (apiError.message) {
-        errorMessage = apiError.message;
-      }
-      
-      setError(errorMessage);
-      showError(errorMessage);
+      setError(formattedError.message);
+      showError(formattedError.message);
     } finally {
       setIsLoading(false);
     }
