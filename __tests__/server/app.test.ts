@@ -69,6 +69,7 @@ describe('Server App - Additional Coverage Tests', () => {
     mockMessage.findByPk = jest.fn().mockResolvedValue(null);
     
     // Reset type converter mocks
+    
     (convertMessageToApiFormat as jest.Mock).mockImplementation((msg) => msg);
   });
 
@@ -417,6 +418,7 @@ describe('Server App - Additional Coverage Tests', () => {
       const mockMessage = { get: jest.fn(() => '123') };
       
       addMessage.mockResolvedValue(mockMessage);
+      
       (convertMessageToApiFormat as jest.Mock).mockReturnValue({
         id: '123',
         content: 'Test message',
@@ -631,6 +633,7 @@ describe('Server App - Additional Coverage Tests', () => {
     test('should return 500 when messages query fails', async () => {
       // Mock conversation found first
       mockConversation.findOne.mockResolvedValue({ id: 1, user_id: 1 });
+      
       // Then make messages query fail
       mockMessage.findAll.mockRejectedValue(new Error('Database error'));
       
@@ -644,6 +647,7 @@ describe('Server App - Additional Coverage Tests', () => {
 
     test('should handle 404 for conversation not found', async () => {
       mockConversation.findOne.mockResolvedValue(null);
+      
       
       const response = await request(app)
         .get('/api/conversations/999/messages')
@@ -682,6 +686,7 @@ describe('Server App - Additional Coverage Tests', () => {
       mockConversation.findOne.mockResolvedValue({ id: 1, user_id: 1 });
       mockMessage.findAll.mockResolvedValue([]);
       
+      
       const response = await request(app)
         .get('/api/conversations/1/messages')
         .set('Authorization', `Bearer ${validToken}`);
@@ -701,6 +706,7 @@ describe('Server App - Additional Coverage Tests', () => {
       };
 
       mockMessage.findByPk = jest.fn().mockResolvedValue(mockMessageInstance);
+      
       
       const response = await request(app)
         .put('/api/messages/1')
@@ -722,6 +728,7 @@ describe('Server App - Additional Coverage Tests', () => {
       };
 
       mockMessage.findByPk = jest.fn().mockResolvedValue(mockMessageInstance);
+      
       
       const response = await request(app)
         .delete('/api/messages/1')
@@ -749,6 +756,7 @@ describe('Server App - Additional Coverage Tests', () => {
       mockMessage.findByPk = jest.fn().mockResolvedValue(mockMessageInstance);
       
       // Mock the type converters
+      
       (convertMessageToApiFormat as jest.Mock).mockReturnValue({
         id: '1',
         content: 'Updated content',
@@ -781,6 +789,7 @@ describe('Server App - Additional Coverage Tests', () => {
 
     test('should return 404 when message not found', async () => {
       mockMessage.findByPk = jest.fn().mockResolvedValue(null);
+      
 
       const response = await request(app)
         .put('/api/messages/999')
@@ -800,6 +809,7 @@ describe('Server App - Additional Coverage Tests', () => {
       };
 
       mockMessage.findByPk = jest.fn().mockResolvedValue(mockMessageInstance);
+      
 
       const response = await request(app)
         .put('/api/messages/1')
@@ -833,6 +843,7 @@ describe('Server App - Additional Coverage Tests', () => {
       };
 
       mockMessage.findByPk = jest.fn().mockResolvedValue(mockMessageInstance);
+      
 
       const response = await request(app)
         .delete('/api/messages/1')
@@ -845,6 +856,7 @@ describe('Server App - Additional Coverage Tests', () => {
 
     test('should return 404 when message not found', async () => {
       mockMessage.findByPk = jest.fn().mockResolvedValue(null);
+      
 
       const response = await request(app)
         .delete('/api/messages/999')
@@ -863,6 +875,7 @@ describe('Server App - Additional Coverage Tests', () => {
       };
 
       mockMessage.findByPk = jest.fn().mockResolvedValue(mockMessageInstance);
+      
 
       const response = await request(app)
         .delete('/api/messages/1')
@@ -982,6 +995,7 @@ describe('Server App - Additional Coverage Tests', () => {
 
     test('should handle database errors gracefully', async () => {
       mockMessage.findByPk = jest.fn().mockRejectedValue(new Error('Database error'));
+      
 
       const response = await request(app)
         .put('/api/messages/1')
@@ -999,6 +1013,7 @@ describe('Server App - Additional Coverage Tests', () => {
       };
 
       mockMessage.findByPk = jest.fn().mockResolvedValue(mockMessageInstance);
+      
 
       const response = await request(app)
         .put('/api/messages/1')
@@ -1015,6 +1030,7 @@ describe('Server App - Additional Coverage Tests', () => {
 
     test('should handle database errors gracefully', async () => {
       mockMessage.findByPk = jest.fn().mockRejectedValue(new Error('Database error'));
+      
 
       const response = await request(app)
         .delete('/api/messages/1')
@@ -1031,6 +1047,7 @@ describe('Server App - Additional Coverage Tests', () => {
       };
 
       mockMessage.findByPk = jest.fn().mockResolvedValue(mockMessageInstance);
+      
 
       const response = await request(app)
         .delete('/api/messages/1')
@@ -1104,6 +1121,7 @@ describe('Server App - Additional Coverage Tests', () => {
 
     test('should handle conversation update for non-existent conversation', async () => {
       mockConversation.findOne.mockResolvedValue(null);
+      
 
       const response = await request(app)
         .put('/api/conversations/999')
