@@ -39,6 +39,28 @@ const isAnthropicModel = (model: string): boolean => {
   return anthropicIdentifiers.some(identifier => model.toLowerCase().includes(identifier));
 };
 
+const isOpenRouterModel = (model: string): boolean => {
+  // OpenRouter models typically have provider prefixes like "anthropic/claude-3-sonnet"
+  // or are from providers not directly supported by OpenAI/Anthropic
+  const openRouterPrefixes = [
+    'anthropic/', 'google/', 'meta-llama/', 'microsoft/', 'mistralai/', 
+    'cohere/', 'perplexity/', 'databricks/', 'qwen/', 'deepseek/', 
+    'nvidia/', 'liquid/', 'sao10k/', 'cognitivecomputations/', 
+    'neversleep/', 'gryphe/', 'huggingfaceh4/', 'nousresearch/',
+    'openchat/', 'teknium/', 'undi95/', 'alpindale/', 'pygmalionai/'
+  ];
+  
+  // Check if model starts with any OpenRouter provider prefix
+  const hasOpenRouterPrefix = openRouterPrefixes.some(prefix => 
+    model.toLowerCase().startsWith(prefix.toLowerCase())
+  );
+  
+  // Also check for models that contain "/" but aren't OpenAI models
+  const hasSlash = model.includes('/') && !model.startsWith('openai/');
+  
+  return hasOpenRouterPrefix || hasSlash;
+};
+
 const generateAnthropicCompletion = async (content: string, model: string, temperature: number) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -137,6 +159,64 @@ const generateOpenAIStreamingCompletion = async function* (
   }
 };
 
+const generateOpenRouterCompletion = async (content: string, model: string, temperature: number) => {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    throw new Error('OpenRouter API key is not set');
+  }
+
+  const openai = new OpenAI({
+    apiKey,
+    baseURL: 'https://openrouter.ai/api/v1',
+    defaultHeaders: {
+      'HTTP-Referer': 'https://github.com/jakethekoenig/llm-chat',
+      'X-Title': 'LLM Chat'
+    }
+  });
+  
+  const response = await openai.chat.completions.create({
+    model,
+    messages: [{ role: "user", content }],
+    temperature,
+  });
+
+  return response.choices[0].message?.content || '';
+};
+
+const generateOpenRouterStreamingCompletion = async function* (
+  content: string, 
+  model: string, 
+  temperature: number
+): AsyncIterable<string> {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    throw new Error('OpenRouter API key is not set');
+  }
+
+  const openai = new OpenAI({
+    apiKey,
+    baseURL: 'https://openrouter.ai/api/v1',
+    defaultHeaders: {
+      'HTTP-Referer': 'https://github.com/jakethekoenig/llm-chat',
+      'X-Title': 'LLM Chat'
+    }
+  });
+  
+  const stream = await openai.chat.completions.create({
+    model,
+    messages: [{ role: "user", content }],
+    temperature,
+    stream: true,
+  });
+
+  for await (const chunk of stream) {
+    const content = chunk.choices[0]?.delta?.content || '';
+    if (content) {
+      yield content;
+    }
+  }
+};
+
 export const generateCompletion = async (messageId: number, model: string, temperature: number) => {
   const parentMessage: Message | null = await Message.findByPk(messageId);
   if (!parentMessage) {
@@ -149,9 +229,15 @@ export const generateCompletion = async (messageId: number, model: string, tempe
   }
 
   try {
-    const completionContent = isAnthropicModel(model)
-      ? await generateAnthropicCompletion(content, model, temperature)
-      : await generateOpenAICompletion(content, model, temperature);
+    let completionContent: string;
+    
+    if (isOpenRouterModel(model)) {
+      completionContent = await generateOpenRouterCompletion(content, model, temperature);
+    } else if (isAnthropicModel(model)) {
+      completionContent = await generateAnthropicCompletion(content, model, temperature);
+    } else {
+      completionContent = await generateOpenAICompletion(content, model, temperature);
+    }
 
     console.log('completionContent:', completionContent);
     const completionMessage: Message = await Message.create({
@@ -201,9 +287,15 @@ export const generateStreamingCompletion = async function* (
   let fullContent = '';
 
   try {
-    const streamGenerator = isAnthropicModel(model)
-      ? generateAnthropicStreamingCompletion(content, model, temperature)
-      : generateOpenAIStreamingCompletion(content, model, temperature);
+    let streamGenerator: AsyncIterable<string>;
+    
+    if (isOpenRouterModel(model)) {
+      streamGenerator = generateOpenRouterStreamingCompletion(content, model, temperature);
+    } else if (isAnthropicModel(model)) {
+      streamGenerator = generateAnthropicStreamingCompletion(content, model, temperature);
+    } else {
+      streamGenerator = generateOpenAIStreamingCompletion(content, model, temperature);
+    }
 
     for await (const chunk of streamGenerator) {
       fullContent += chunk;
