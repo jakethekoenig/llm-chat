@@ -37,7 +37,8 @@ beforeAll(() => {
   console.error = (...args: any[]) => {
     if (
       typeof args[0] === 'string' &&
-      args[0].includes('Warning: The current testing environment is not configured to support act(...)')
+      (args[0].includes('Warning: The current testing environment is not configured to support act(...)') ||
+       args[0].includes('Warning: An update to') && args[0].includes('was not wrapped in act(...)'))
     ) {
       return;
     }
