@@ -2,7 +2,6 @@ import {
   convertMessageToApiFormat,
   convertConversationToApiFormat,
   convertUserToApiFormat,
-  convertIdToNumber,
   convertApiMessageToDbFormat
 } from '../../server/helpers/typeConverters';
 
@@ -24,10 +23,10 @@ describe('Type Converters', () => {
       const result = convertMessageToApiFormat(dbMessage);
 
       expect(result).toEqual({
-        id: '123',
-        conversationId: '456',
-        parentId: '789',
-        userId: '101',
+        id: 123,
+        conversationId: 456,
+        parentId: 789,
+        userId: 101,
         content: 'Test message',
         model: 'gpt-4o',
         temperature: 0.7,
@@ -52,10 +51,10 @@ describe('Type Converters', () => {
       const result = convertMessageToApiFormat(dbMessage);
 
       expect(result).toEqual({
-        id: '123',
-        conversationId: '456',
+        id: 123,
+        conversationId: 456,
         parentId: null,
-        userId: '101',
+        userId: 101,
         content: 'Test message',
         model: null,
         temperature: null,
@@ -76,9 +75,9 @@ describe('Type Converters', () => {
       const result = convertConversationToApiFormat(dbConversation);
 
       expect(result).toEqual({
-        id: '123',
+        id: 123,
         title: 'Test Conversation',
-        userId: '456'
+        userId: 456
       });
     });
 
@@ -103,14 +102,14 @@ describe('Type Converters', () => {
       const result = convertConversationToApiFormat(dbConversation);
 
       expect(result).toEqual({
-        id: '123',
+        id: 123,
         title: 'Test Conversation',
-        userId: '456',
+        userId: 456,
         messages: [{
-          id: '789',
-          conversationId: '123',
+          id: 789,
+          conversationId: 123,
           parentId: null,
-          userId: '456',
+          userId: 456,
           content: 'Test message',
           model: null,
           temperature: null,
@@ -132,30 +131,13 @@ describe('Type Converters', () => {
       const result = convertUserToApiFormat(dbUser);
 
       expect(result).toEqual({
-        id: '123',
+        id: 123,
         username: 'testuser',
         email: 'test@example.com'
       });
     });
   });
 
-  describe('convertIdToNumber', () => {
-    it('should convert string ID to number', () => {
-      expect(convertIdToNumber('123')).toBe(123);
-    });
-
-    it('should return number ID as-is', () => {
-      expect(convertIdToNumber(123)).toBe(123);
-    });
-
-    it('should throw error for invalid ID', () => {
-      expect(() => convertIdToNumber('invalid')).toThrow('Invalid ID format: invalid');
-    });
-
-    it('should throw error for NaN', () => {
-      expect(() => convertIdToNumber('NaN')).toThrow('Invalid ID format: NaN');
-    });
-  });
 
   describe('convertApiMessageToDbFormat', () => {
     it('should convert API message format to database format', () => {

@@ -14,8 +14,7 @@ import { body, validationResult } from 'express-validator';
 import { 
   convertMessageToApiFormat, 
   convertConversationToApiFormat, 
-  convertUserToApiFormat,
-  convertIdToNumber 
+  convertUserToApiFormat
 } from './helpers/typeConverters';
 
 const app = express();

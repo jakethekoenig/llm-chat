@@ -42,14 +42,6 @@ export function convertUserToApiFormat(user: any): User {
 }
 
 // Convert API input to database format
-export function convertIdToNumber(id: string | number): number {
-  if (typeof id === 'number') return id;
-  const num = parseInt(id, 10);
-  if (isNaN(num)) {
-    throw new Error(`Invalid ID format: ${id}`);
-  }
-  return num;
-}
 
 export function convertApiMessageToDbFormat(message: Partial<Message>): any {
   const result: any = {};
