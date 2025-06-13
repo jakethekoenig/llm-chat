@@ -14,7 +14,7 @@ const logger = createLogger({
     format.timestamp(),
     format.json()
   ),
-  transports: [
+  transports: process.env.NODE_ENV === 'test' ? [] : [
     new transports.Console()
   ]
 });
@@ -438,7 +438,10 @@ export const generateCompletion = async (messageId: number, model: string, tempe
       completion = await generateOpenAICompletion(content, model, temperature);
     }
 
-    console.log('completion:', completion);
+    // Log completion in non-test environments
+    if (process.env.NODE_ENV !== 'test') {
+      console.log('completion:', completion);
+    }
     const completionMessage: Message = await Message.create({
       content: completion.text,
       parent_id: messageId,
