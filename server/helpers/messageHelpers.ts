@@ -4,6 +4,7 @@ import 'openai/shims/node';
 import '@anthropic-ai/sdk/shims/node';
 import { OpenAI } from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createLogger, transports, format } from 'winston';
 import * as messageHelpers from './messageHelpers';
 const logger = createLogger({
@@ -34,9 +35,14 @@ export const addMessage = async (
   return message;
 };
 
-const isAnthropicModel = (model: string): boolean => {
+export const isAnthropicModel = (model: string): boolean => {
   const anthropicIdentifiers = ['claude', 'sonnet', 'haiku', 'opus'];
   return anthropicIdentifiers.some(identifier => model.toLowerCase().includes(identifier));
+};
+
+export const isGeminiModel = (model: string): boolean => {
+  const geminiIdentifiers = ['gemini', 'bison', 'palm'];
+  return geminiIdentifiers.some(identifier => model.toLowerCase().includes(identifier));
 };
 
 const generateAnthropicCompletion = async (content: string, model: string, temperature: number) => {
@@ -95,6 +101,56 @@ const generateAnthropicStreamingCompletion = async function* (
   }
 };
 
+const generateGeminiCompletion = async (content: string, model: string, temperature: number) => {
+  const apiKey = process.env.GOOGLE_API_KEY;
+  if (!apiKey) {
+    throw new Error('Google API key is not set');
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const geminiModel = genAI.getGenerativeModel({ model });
+
+  const result = await geminiModel.generateContent({
+    contents: [{ role: 'user', parts: [{ text: content }] }],
+    generationConfig: {
+      temperature,
+      maxOutputTokens: 1024,
+    },
+  });
+
+  const response = await result.response;
+  return response.text();
+};
+
+const generateGeminiStreamingCompletion = async function* (
+  content: string, 
+  model: string, 
+  temperature: number
+): AsyncIterable<string> {
+  const apiKey = process.env.GOOGLE_API_KEY;
+  if (!apiKey) {
+    throw new Error('Google API key is not set');
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const geminiModel = genAI.getGenerativeModel({ model });
+
+  const result = await geminiModel.generateContentStream({
+    contents: [{ role: 'user', parts: [{ text: content }] }],
+    generationConfig: {
+      temperature,
+      maxOutputTokens: 1024,
+    },
+  });
+
+  for await (const chunk of result.stream) {
+    const chunkText = chunk.text();
+    if (chunkText) {
+      yield chunkText;
+    }
+  }
+};
+
 const generateOpenAICompletion = async (content: string, model: string, temperature: number) => {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -149,9 +205,14 @@ export const generateCompletion = async (messageId: number, model: string, tempe
   }
 
   try {
-    const completionContent = isAnthropicModel(model)
-      ? await generateAnthropicCompletion(content, model, temperature)
-      : await generateOpenAICompletion(content, model, temperature);
+    let completionContent: string;
+    if (isAnthropicModel(model)) {
+      completionContent = await generateAnthropicCompletion(content, model, temperature);
+    } else if (isGeminiModel(model)) {
+      completionContent = await generateGeminiCompletion(content, model, temperature);
+    } else {
+      completionContent = await generateOpenAICompletion(content, model, temperature);
+    }
 
     console.log('completionContent:', completionContent);
     const completionMessage: Message = await Message.create({
@@ -201,9 +262,14 @@ export const generateStreamingCompletion = async function* (
   let fullContent = '';
 
   try {
-    const streamGenerator = isAnthropicModel(model)
-      ? generateAnthropicStreamingCompletion(content, model, temperature)
-      : generateOpenAIStreamingCompletion(content, model, temperature);
+    let streamGenerator: AsyncIterable<string>;
+    if (isAnthropicModel(model)) {
+      streamGenerator = generateAnthropicStreamingCompletion(content, model, temperature);
+    } else if (isGeminiModel(model)) {
+      streamGenerator = generateGeminiStreamingCompletion(content, model, temperature);
+    } else {
+      streamGenerator = generateOpenAIStreamingCompletion(content, model, temperature);
+    }
 
     for await (const chunk of streamGenerator) {
       fullContent += chunk;

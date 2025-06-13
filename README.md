@@ -75,6 +75,7 @@ Before running the server, you need to set up your environment variables:
 - **API Keys**: Set at least one of these for LLM completions:
   - `OPENAI_API_KEY`: For GPT models
   - `ANTHROPIC_API_KEY`: For Claude models
+  - `GOOGLE_API_KEY`: For Gemini models
 
 ### Example
 
@@ -85,6 +86,7 @@ SECRET_KEY=your-super-secure-random-string-here-32-chars-minimum
 # Add your API keys (at least one required)
 OPENAI_API_KEY=sk-your-openai-key-here
 ANTHROPIC_API_KEY=sk-ant-your-anthropic-key-here
+GOOGLE_API_KEY=your-google-api-key-here
 
 # Optional: Custom port
 PORT=3000
