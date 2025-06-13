@@ -105,7 +105,7 @@ describe('Message Component', () => {
   });
 
   test('renders and handles delete button', async () => {
-    const onDelete = jest.fn().mockResolvedValue(undefined);
+    const onDelete = jest.fn().mockResolvedValue(true);
     const config: MessageConfig = {
       ...defaultConfig,
       buttons: { ...defaultConfig.buttons, delete: 'enabled' },
@@ -116,7 +116,7 @@ describe('Message Component', () => {
     expect(deleteButton).toBeInTheDocument();
     
     // Click delete button to open confirmation dialog
-    act(() => {
+    await act(async () => {
       fireEvent.click(deleteButton);
     });
     
@@ -128,9 +128,13 @@ describe('Message Component', () => {
     const confirmButton = screen.getByRole('button', { name: 'Delete' });
     await act(async () => {
       fireEvent.click(confirmButton);
+      // Wait for the async operation to complete within act
+      await waitFor(() => {
+        expect(onDelete).toHaveBeenCalledWith('1');
+      });
+      // Flush all pending microtasks and timers
+      await new Promise(resolve => setTimeout(resolve, 10));
     });
-    
-    expect(onDelete).toHaveBeenCalledWith('1');
   });
 
   test('renders and handles edit button', async () => {
@@ -145,9 +149,7 @@ describe('Message Component', () => {
     expect(editButton).toBeInTheDocument();
     
     // Click edit button to enter edit mode
-    act(() => {
-      fireEvent.click(editButton);
-    });
+    fireEvent.click(editButton);
     
     // Should show edit text field and save/cancel buttons
     expect(screen.getByDisplayValue('Test message content')).toBeInTheDocument();
@@ -156,15 +158,11 @@ describe('Message Component', () => {
     
     // Change the content
     const textField = screen.getByDisplayValue('Test message content');
-    act(() => {
-      fireEvent.change(textField, { target: { value: 'Updated message' } });
-    });
+    fireEvent.change(textField, { target: { value: 'Updated message' } });
     
     // Click save and wait for async operation
     const saveButton = screen.getByText('Save');
-    await act(async () => {
-      fireEvent.click(saveButton);
-    });
+    fireEvent.click(saveButton);
     
     await waitFor(() => {
       expect(onEdit).toHaveBeenCalledWith('1', 'Updated message');
@@ -360,24 +358,18 @@ describe('Message Component', () => {
     renderMessage({ onEdit }, config);
     
     const editButton = screen.getByText('Edit');
-    act(() => {
-      fireEvent.click(editButton);
-    });
+    fireEvent.click(editButton);
     
     // Should show edit mode
     expect(screen.getByDisplayValue('Test message content')).toBeInTheDocument();
     
     // Change the content
     const textField = screen.getByDisplayValue('Test message content');
-    act(() => {
-      fireEvent.change(textField, { target: { value: 'Changed content' } });
-    });
+    fireEvent.change(textField, { target: { value: 'Changed content' } });
     
     // Click cancel
     const cancelButton = screen.getByText('Cancel');
-    act(() => {
-      fireEvent.click(cancelButton);
-    });
+    fireEvent.click(cancelButton);
     
     // Should exit edit mode without calling onEdit
     expect(screen.getByText('Test message content')).toBeInTheDocument();
@@ -393,21 +385,15 @@ describe('Message Component', () => {
     renderMessage({ onEdit }, config);
     
     const editButton = screen.getByText('Edit');
-    act(() => {
-      fireEvent.click(editButton);
-    });
+    fireEvent.click(editButton);
     
     // Clear the content
     const textField = screen.getByDisplayValue('Test message content');
-    act(() => {
-      fireEvent.change(textField, { target: { value: '   ' } }); // whitespace only
-    });
+    fireEvent.change(textField, { target: { value: '   ' } }); // whitespace only
     
     // Click save
     const saveButton = screen.getByText('Save');
-    act(() => {
-      fireEvent.click(saveButton);
-    });
+    fireEvent.click(saveButton);
     
     // Should not call onEdit with empty content
     expect(onEdit).not.toHaveBeenCalled();
@@ -423,21 +409,15 @@ describe('Message Component', () => {
     renderMessage({ onEdit }, config);
     
     const editButton = screen.getByText('Edit');
-    act(() => {
-      fireEvent.click(editButton);
-    });
+    fireEvent.click(editButton);
     
     // Change the content
     const textField = screen.getByDisplayValue('Test message content');
-    act(() => {
-      fireEvent.change(textField, { target: { value: 'Updated message' } });
-    });
+    fireEvent.change(textField, { target: { value: 'Updated message' } });
     
     // Click save
     const saveButton = screen.getByText('Save');
-    await act(async () => {
-      fireEvent.click(saveButton);
-    });
+    fireEvent.click(saveButton);
     
     await waitFor(() => {
       expect(onEdit).toHaveBeenCalledWith('1', 'Updated message');
@@ -638,10 +618,14 @@ describe('Message Component', () => {
     renderMessage({ onDelete }, config);
     
     const menuButton = screen.getByText('Menu');
-    fireEvent.click(menuButton);
+    await act(async () => {
+      fireEvent.click(menuButton);
+    });
     
     const deleteMenuItem = screen.getByText('Delete');
-    fireEvent.click(deleteMenuItem);
+    await act(async () => {
+      fireEvent.click(deleteMenuItem);
+    });
     
     // Should show delete dialog
     expect(screen.getByText('Delete Message')).toBeInTheDocument();
@@ -651,11 +635,12 @@ describe('Message Component', () => {
     const confirmButton = screen.getByRole('button', { name: 'Delete' });
     await act(async () => {
       fireEvent.click(confirmButton);
-      
-      // Just verify the delete function was called
+      // Wait for async operations to complete within act
       await waitFor(() => {
         expect(onDelete).toHaveBeenCalledWith('1');
       });
+      // Flush all pending microtasks and timers
+      await new Promise(resolve => setTimeout(resolve, 10));
     });
   });
 
@@ -688,14 +673,18 @@ describe('Message Component', () => {
     renderMessage({ onDelete }, config);
     
     const deleteButton = screen.getByText('Delete');
-    fireEvent.click(deleteButton);
+    await act(async () => {
+      fireEvent.click(deleteButton);
+    });
     
     // Should show delete dialog
     expect(screen.getByText('Delete Message')).toBeInTheDocument();
     
     // Click cancel - just verify delete wasn't called
     const cancelButton = screen.getByRole('button', { name: 'Cancel' });
-    fireEvent.click(cancelButton);
+    await act(async () => {
+      fireEvent.click(cancelButton);
+    });
     
     // Just verify onDelete was not called (don't check dialog state)
     expect(onDelete).not.toHaveBeenCalled();
@@ -712,7 +701,9 @@ describe('Message Component', () => {
     renderMessage({ onDelete }, config);
     
     const deleteButton = screen.getByText('Delete');
-    fireEvent.click(deleteButton);
+    await act(async () => {
+      fireEvent.click(deleteButton);
+    });
     
     // Click confirm - wrap in act to handle async state updates
     const confirmButton = screen.getByRole('button', { name: 'Delete' });
@@ -728,6 +719,9 @@ describe('Message Component', () => {
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith('Failed to delete message:', expect.any(Error));
       });
+      
+      // Flush all pending microtasks and timers
+      await new Promise(resolve => setTimeout(resolve, 10));
     });
     
     consoleSpy.mockRestore();

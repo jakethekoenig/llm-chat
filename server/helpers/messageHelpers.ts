@@ -5,6 +5,7 @@ import '@anthropic-ai/sdk/shims/node';
 import { OpenAI } from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { Mistral } from '@mistralai/mistralai';
 import { createLogger, transports, format } from 'winston';
 import * as messageHelpers from './messageHelpers';
 const logger = createLogger({
@@ -43,6 +44,11 @@ export const isAnthropicModel = (model: string): boolean => {
 export const isGeminiModel = (model: string): boolean => {
   const geminiIdentifiers = ['gemini', 'bison', 'palm'];
   return geminiIdentifiers.some(identifier => model.toLowerCase().includes(identifier));
+};
+
+const isMistralModel = (model: string): boolean => {
+  const mistralIdentifiers = ['mistral', 'mixtral', 'codestral'];
+  return mistralIdentifiers.some(identifier => model.toLowerCase().includes(identifier));
 };
 
 const isLlamaModel = (model: string): boolean => {
@@ -198,6 +204,34 @@ const generateOpenAIStreamingCompletion = async function* (
   }
 };
 
+const generateMistralCompletion = async (content: string, model: string, temperature: number) => {
+  const apiKey = process.env.MISTRAL_API_KEY;
+  if (!apiKey) {
+    throw new Error('Mistral API key is not set');
+  }
+
+  const client = new Mistral({
+    apiKey: apiKey,
+  });
+
+  const response = await client.chat.complete({
+    model,
+    messages: [{ role: 'user', content }],
+    temperature,
+  });
+
+  const messageContent = response.choices[0].message?.content;
+  if (typeof messageContent === 'string') {
+    return messageContent;
+  } else if (Array.isArray(messageContent)) {
+    // Extract text from ContentChunk array
+    return messageContent.map(chunk => 
+      typeof chunk === 'string' ? chunk : (chunk.type === 'text' && 'text' in chunk ? chunk.text : '')
+    ).join('');
+  }
+  return '';
+};
+
 const generateOpenRouterCompletion = async (content: string, model: string, temperature: number) => {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
@@ -220,6 +254,44 @@ const generateOpenRouterCompletion = async (content: string, model: string, temp
   });
 
   return response.choices[0].message?.content || '';
+};
+
+const generateMistralStreamingCompletion = async function* (
+  content: string, 
+  model: string, 
+  temperature: number
+): AsyncIterable<string> {
+  const apiKey = process.env.MISTRAL_API_KEY;
+  if (!apiKey) {
+    throw new Error('Mistral API key is not set');
+  }
+
+  const client = new Mistral({
+    apiKey: apiKey,
+  });
+
+  const stream = await client.chat.stream({
+    model,
+    messages: [{ role: 'user', content }],
+    temperature,
+  });
+
+  for await (const chunk of stream) {
+    const deltaContent = chunk.data.choices[0]?.delta?.content;
+    if (deltaContent) {
+      if (typeof deltaContent === 'string') {
+        yield deltaContent;
+      } else if (Array.isArray(deltaContent)) {
+        // Extract text from ContentChunk array
+        const textContent = deltaContent.map(chunk => 
+          typeof chunk === 'string' ? chunk : (chunk.type === 'text' && 'text' in chunk ? chunk.text : '')
+        ).join('');
+        if (textContent) {
+          yield textContent;
+        }
+      }
+    }
+  }
 };
 
 const generateOpenRouterStreamingCompletion = async function* (
@@ -273,6 +345,8 @@ export const generateCompletion = async (messageId: number, model: string, tempe
       completionContent = await generateAnthropicCompletion(content, model, temperature);
     } else if (isGeminiModel(model)) {
       completionContent = await generateGeminiCompletion(content, model, temperature);
+    } else if (isMistralModel(model)) {
+      completionContent = await generateMistralCompletion(content, model, temperature);
     } else if (isLlamaModel(model)) {
       completionContent = await generateOpenRouterCompletion(content, model, temperature);
     } else {
@@ -336,6 +410,8 @@ export const generateStreamingCompletion = async function* (
       streamGenerator = generateAnthropicStreamingCompletion(content, model, temperature);
     } else if (isGeminiModel(model)) {
       streamGenerator = generateGeminiStreamingCompletion(content, model, temperature);
+    } else if (isMistralModel(model)) {
+      streamGenerator = generateMistralStreamingCompletion(content, model, temperature);
     } else if (isLlamaModel(model)) {
       streamGenerator = generateOpenRouterStreamingCompletion(content, model, temperature);
     } else {
