@@ -72,6 +72,26 @@ jest.mock('@anthropic-ai/sdk', () => ({
   }))
 }));
 
+// Mock Mistral
+jest.mock('@mistralai/mistralai', () => ({
+  Mistral: jest.fn(() => ({
+    chat: {
+      complete: jest.fn().mockResolvedValue({
+        choices: [{
+          message: { content: 'Mocked Mistral response' }
+        }]
+      }),
+      stream: jest.fn().mockResolvedValue({
+        async *[Symbol.asyncIterator]() {
+          yield { data: { choices: [{ delta: { content: 'Hello' } }] } };
+          yield { data: { choices: [{ delta: { content: ' from' } }] } };
+          yield { data: { choices: [{ delta: { content: ' Mistral!' } }] } };
+        }
+      })
+    }
+  }))
+}));
+
 
 describe('messageHelpers - Streaming Functions', () => {
   beforeEach(() => {
@@ -80,6 +100,7 @@ describe('messageHelpers - Streaming Functions', () => {
     // Set up environment variables
     process.env.OPENAI_API_KEY = 'test-openai-key';
     process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
+    process.env.MISTRAL_API_KEY = 'test-mistral-key';
     process.env.OPENROUTER_API_KEY = 'test-openrouter-key';
     
     // Mock message structure
@@ -112,6 +133,7 @@ describe('messageHelpers - Streaming Functions', () => {
   afterEach(() => {
     delete process.env.OPENAI_API_KEY;
     delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.MISTRAL_API_KEY;
     delete process.env.OPENROUTER_API_KEY;
   });
 
@@ -133,6 +155,19 @@ describe('messageHelpers - Streaming Functions', () => {
       const chunks: any[] = [];
       
       for await (const chunk of generateStreamingCompletion(1, 'claude-3-opus', 0.7)) {
+        chunks.push(chunk);
+      }
+      
+      expect(chunks.length).toBeGreaterThan(0);
+      expect(chunks[chunks.length - 1].isComplete).toBe(true);
+      expect(Message.findByPk).toHaveBeenCalledWith(1);
+      expect(Message.create).toHaveBeenCalled();
+    });
+
+    test('should stream Mistral completion successfully', async () => {
+      const chunks: any[] = [];
+      
+      for await (const chunk of generateStreamingCompletion(1, 'mistral-large', 0.7)) {
         chunks.push(chunk);
       }
       
@@ -227,6 +262,26 @@ describe('messageHelpers - Streaming Functions', () => {
       expect(Message.create).toHaveBeenCalled();
     });
 
+    test('should generate Mistral completion successfully', async () => {
+      const mockCompletionMessage = {
+        get: jest.fn((field: string) => {
+          switch (field) {
+            case 'id': return 123;
+            case 'content': return 'Mocked Mistral response';
+            default: return null;
+          }
+        })
+      };
+      
+      (Message.create as jest.Mock).mockResolvedValue(mockCompletionMessage);
+      
+      const result = await generateCompletion(1, 'mistral-large', 0.7);
+      
+      expect(result).toBe(mockCompletionMessage);
+      expect(Message.findByPk).toHaveBeenCalledWith(1);
+      expect(Message.create).toHaveBeenCalled();
+    });
+
     test('should generate Llama completion successfully via OpenRouter', async () => {
       const mockCompletionMessage = {
         get: jest.fn((field: string) => {
@@ -310,6 +365,133 @@ describe('messageHelpers - Streaming Functions', () => {
       const chunks: any[] = [];
       
       for await (const chunk of generateStreamingCompletion(1, 'llama3-custom', 0.7)) {
+        chunks.push(chunk);
+      }
+      
+      expect(chunks.length).toBeGreaterThan(0);
+      expect(chunks[chunks.length - 1].isComplete).toBe(true);
+    });
+
+    test('should handle Mistral model variants', async () => {
+      const chunks: any[] = [];
+      
+      // Test mixtral variant
+      for await (const chunk of generateStreamingCompletion(1, 'mixtral-8x7b', 0.7)) {
+        chunks.push(chunk);
+      }
+      
+      expect(chunks.length).toBeGreaterThan(0);
+      expect(chunks[chunks.length - 1].isComplete).toBe(true);
+    });
+
+    test('should handle Codestral model', async () => {
+      const mockCompletionMessage = {
+        get: jest.fn((field: string) => {
+          switch (field) {
+            case 'id': return 123;
+            case 'content': return 'Mocked Mistral response';
+            default: return null;
+          }
+        })
+      };
+      
+      (Message.create as jest.Mock).mockResolvedValue(mockCompletionMessage);
+      
+      const result = await generateCompletion(1, 'codestral-latest', 0.7);
+      
+      expect(result).toBe(mockCompletionMessage);
+      expect(Message.findByPk).toHaveBeenCalledWith(1);
+      expect(Message.create).toHaveBeenCalled();
+    });
+
+    test('should handle API key errors gracefully', async () => {
+      delete process.env.MISTRAL_API_KEY;
+      
+      await expect(generateCompletion(1, 'mistral-large', 0.7))
+        .rejects.toThrow('Failed to generate completion');
+    });
+
+    test('should handle streaming API key errors gracefully', async () => {
+      delete process.env.ANTHROPIC_API_KEY;
+      
+      const generator = generateStreamingCompletion(1, 'claude-3-opus', 0.7);
+      const iterator = generator[Symbol.asyncIterator]();
+      
+      await expect(iterator.next()).rejects.toThrow('Failed to generate streaming completion');
+    });
+
+    test('should handle Mistral content array format', async () => {
+      // Mock Mistral to return array content format
+      const mockMistral = require('@mistralai/mistralai');
+      mockMistral.Mistral.mockImplementation(() => ({
+        chat: {
+          complete: jest.fn().mockResolvedValue({
+            choices: [{
+              message: { 
+                content: [
+                  { type: 'text', text: 'Hello ' },
+                  { type: 'text', text: 'from array!' }
+                ]
+              }
+            }]
+          })
+        }
+      }));
+
+      const mockCompletionMessage = {
+        get: jest.fn((field: string) => {
+          switch (field) {
+            case 'id': return 123;
+            case 'content': return 'Hello from array!';
+            default: return null;
+          }
+        })
+      };
+      
+      (Message.create as jest.Mock).mockResolvedValue(mockCompletionMessage);
+      
+      const result = await generateCompletion(1, 'mistral-large', 0.7);
+      
+      expect(result).toBe(mockCompletionMessage);
+    });
+
+    test('should handle Mistral streaming content array format', async () => {
+      // Mock Mistral streaming to return array content format
+      const mockMistral = require('@mistralai/mistralai');
+      mockMistral.Mistral.mockImplementation(() => ({
+        chat: {
+          stream: jest.fn().mockResolvedValue({
+            async *[Symbol.asyncIterator]() {
+              yield { 
+                data: { 
+                  choices: [{ 
+                    delta: { 
+                      content: [
+                        { type: 'text', text: 'Hello' }
+                      ]
+                    } 
+                  }] 
+                } 
+              };
+              yield { 
+                data: { 
+                  choices: [{ 
+                    delta: { 
+                      content: [
+                        { type: 'text', text: ' world' }
+                      ]
+                    } 
+                  }] 
+                } 
+              };
+            }
+          })
+        }
+      }));
+
+      const chunks: any[] = [];
+      
+      for await (const chunk of generateStreamingCompletion(1, 'mistral-large', 0.7)) {
         chunks.push(chunk);
       }
       
