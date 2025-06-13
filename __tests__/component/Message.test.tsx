@@ -104,8 +104,8 @@ describe('Message Component', () => {
     expect(onShare).toHaveBeenCalled();
   });
 
-  test('renders and handles delete button', () => {
-    const onDelete = jest.fn();
+  test('renders and handles delete button', async () => {
+    const onDelete = jest.fn().mockResolvedValue(undefined);
     const config: MessageConfig = {
       ...defaultConfig,
       buttons: { ...defaultConfig.buttons, delete: 'enabled' },
@@ -116,7 +116,9 @@ describe('Message Component', () => {
     expect(deleteButton).toBeInTheDocument();
     
     // Click delete button to open confirmation dialog
-    fireEvent.click(deleteButton);
+    act(() => {
+      fireEvent.click(deleteButton);
+    });
     
     // Should show confirmation dialog
     expect(screen.getByText('Delete Message')).toBeInTheDocument();
@@ -124,7 +126,9 @@ describe('Message Component', () => {
     
     // Click confirm in dialog
     const confirmButton = screen.getByRole('button', { name: 'Delete' });
-    fireEvent.click(confirmButton);
+    await act(async () => {
+      fireEvent.click(confirmButton);
+    });
     
     expect(onDelete).toHaveBeenCalledWith('1');
   });
@@ -141,7 +145,9 @@ describe('Message Component', () => {
     expect(editButton).toBeInTheDocument();
     
     // Click edit button to enter edit mode
-    fireEvent.click(editButton);
+    act(() => {
+      fireEvent.click(editButton);
+    });
     
     // Should show edit text field and save/cancel buttons
     expect(screen.getByDisplayValue('Test message content')).toBeInTheDocument();
@@ -150,11 +156,15 @@ describe('Message Component', () => {
     
     // Change the content
     const textField = screen.getByDisplayValue('Test message content');
-    fireEvent.change(textField, { target: { value: 'Updated message' } });
+    act(() => {
+      fireEvent.change(textField, { target: { value: 'Updated message' } });
+    });
     
     // Click save and wait for async operation
     const saveButton = screen.getByText('Save');
-    fireEvent.click(saveButton);
+    await act(async () => {
+      fireEvent.click(saveButton);
+    });
     
     await waitFor(() => {
       expect(onEdit).toHaveBeenCalledWith('1', 'Updated message');
@@ -350,18 +360,24 @@ describe('Message Component', () => {
     renderMessage({ onEdit }, config);
     
     const editButton = screen.getByText('Edit');
-    fireEvent.click(editButton);
+    act(() => {
+      fireEvent.click(editButton);
+    });
     
     // Should show edit mode
     expect(screen.getByDisplayValue('Test message content')).toBeInTheDocument();
     
     // Change the content
     const textField = screen.getByDisplayValue('Test message content');
-    fireEvent.change(textField, { target: { value: 'Changed content' } });
+    act(() => {
+      fireEvent.change(textField, { target: { value: 'Changed content' } });
+    });
     
     // Click cancel
     const cancelButton = screen.getByText('Cancel');
-    fireEvent.click(cancelButton);
+    act(() => {
+      fireEvent.click(cancelButton);
+    });
     
     // Should exit edit mode without calling onEdit
     expect(screen.getByText('Test message content')).toBeInTheDocument();
@@ -377,15 +393,21 @@ describe('Message Component', () => {
     renderMessage({ onEdit }, config);
     
     const editButton = screen.getByText('Edit');
-    fireEvent.click(editButton);
+    act(() => {
+      fireEvent.click(editButton);
+    });
     
     // Clear the content
     const textField = screen.getByDisplayValue('Test message content');
-    fireEvent.change(textField, { target: { value: '   ' } }); // whitespace only
+    act(() => {
+      fireEvent.change(textField, { target: { value: '   ' } }); // whitespace only
+    });
     
     // Click save
     const saveButton = screen.getByText('Save');
-    fireEvent.click(saveButton);
+    act(() => {
+      fireEvent.click(saveButton);
+    });
     
     // Should not call onEdit with empty content
     expect(onEdit).not.toHaveBeenCalled();
@@ -401,15 +423,21 @@ describe('Message Component', () => {
     renderMessage({ onEdit }, config);
     
     const editButton = screen.getByText('Edit');
-    fireEvent.click(editButton);
+    act(() => {
+      fireEvent.click(editButton);
+    });
     
     // Change the content
     const textField = screen.getByDisplayValue('Test message content');
-    fireEvent.change(textField, { target: { value: 'Updated message' } });
+    act(() => {
+      fireEvent.change(textField, { target: { value: 'Updated message' } });
+    });
     
     // Click save
     const saveButton = screen.getByText('Save');
-    fireEvent.click(saveButton);
+    await act(async () => {
+      fireEvent.click(saveButton);
+    });
     
     await waitFor(() => {
       expect(onEdit).toHaveBeenCalledWith('1', 'Updated message');
