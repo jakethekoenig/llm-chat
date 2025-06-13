@@ -4,8 +4,8 @@ import { Conversation as ConversationType } from './types/Conversation';
 
 interface ConversationListProps {
   conversations: ConversationType[];
-  onConversationClick: (id: string) => void;
-  onTitleUpdate?: (id: string, newTitle: string) => Promise<boolean>;
+  onConversationClick: (id: number) => void;
+  onTitleUpdate?: (id: number, newTitle: string) => Promise<boolean>;
 }
 
 const ConversationList: React.FC<ConversationListProps> = ({ 
@@ -13,7 +13,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
   onConversationClick, 
   onTitleUpdate 
 }) => {
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);

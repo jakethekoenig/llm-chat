@@ -7,20 +7,20 @@ interface ConversationProps {
   messages: MessageType[];
   onSubmit: (message: string) => AsyncIterable<string>;
   author: string;
-  onEdit?: (messageId: string, newContent: string) => Promise<void>;
-  onDelete?: (messageId: string) => Promise<void>;
+  onEdit?: (messageId: number, newContent: string) => Promise<void>;
+  onDelete?: (messageId: number) => Promise<void>;
 }
 
 const Conversation: React.FC<ConversationProps> = ({ messages, onSubmit, author, onEdit, onDelete }) => {
   // TODO: Refactor messages to be a map
-  const getChildren = (_messages: MessageType[], parentId: string | null): MessageType[] => {
+  const getChildren = (_messages: MessageType[], parentId: number | null): MessageType[] => {
     return _messages.filter(message => message.parentId === parentId);
   }
 
-  const getMessage = (_messages: MessageType[], id: string): MessageType | null => {
+  const getMessage = (_messages: MessageType[], id: number): MessageType | null => {
     return _messages.find(message => message.id === id) || null;
   }
-  const [selectedChildIndex, setSelectedChildIndex] = useState<{ [key: string]: string }>({});
+  const [selectedChildIndex, setSelectedChildIndex] = useState<{ [key: number]: number }>({});
 
 
   const setChildren = (_messages: MessageType[]) => {
@@ -42,7 +42,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages, onSubmit, author,
     setChildren(messages);
   }, [messages]);
 
-  const incrementSelectedChildIndex = (id: string | null | undefined) => {
+  const incrementSelectedChildIndex = (id: number | null | undefined) => {
       if (id != null && id != undefined)
           setSelectedChildIndex(prevState => {
             const children = getChildren(messages, id);
@@ -58,7 +58,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages, onSubmit, author,
           });
   }
 
-  const decrementSelectedChildIndex = (id: string | null | undefined) => {
+  const decrementSelectedChildIndex = (id: number | null | undefined) => {
       if (id !== null && id !== undefined)
           setSelectedChildIndex(prevState => {
             const children = getChildren(messages, id);
@@ -74,7 +74,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages, onSubmit, author,
           });
   }
 
-  const renderMessages = (_messages: MessageType[], currentId: string | null = null, parentId: string | null = null): JSX.Element => {
+  const renderMessages = (_messages: MessageType[], currentId: number | null = null, parentId: number | null = null): JSX.Element => {
     if (currentId === null) {
       return <></>;
     }
@@ -118,7 +118,7 @@ const Conversation: React.FC<ConversationProps> = ({ messages, onSubmit, author,
 
   return (
     <div>
-      {renderMessages(messages, parentMessages[0]?.id || '', null)}
+      {renderMessages(messages, parentMessages[0]?.id || null, null)}
       <div style={{ marginTop: '16px' }}>
         <NewMessage onSubmit={onSubmit} />
       </div>
