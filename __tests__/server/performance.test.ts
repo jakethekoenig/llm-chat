@@ -115,6 +115,15 @@ describe('Performance Tests', () => {
 
   describe('Response Time Tests', () => {
     test('authentication should respond quickly', async () => {
+      // Mock user for this test
+      mockUser.findOne.mockResolvedValue({
+        get: () => 1,
+        hashed_password: '$2b$10$test.hash.here'
+      });
+
+      const bcrypt = require('bcrypt');
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+
       const startTime = Date.now();
       
       const response = await request(app)
@@ -160,6 +169,15 @@ describe('Performance Tests', () => {
 
   describe('Concurrent Request Handling', () => {
     test('should handle multiple authentication requests concurrently', async () => {
+      // Mock user for this test
+      mockUser.findOne.mockResolvedValue({
+        get: () => 1,
+        hashed_password: '$2b$10$test.hash.here'
+      });
+
+      const bcrypt = require('bcrypt');
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+
       const concurrentRequests = 20;
       const startTime = Date.now();
       

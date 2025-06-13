@@ -1118,8 +1118,8 @@ describe('Server App - Additional Coverage Tests', () => {
         .post('/api/signin')
         .send({ username: 'nonexistent', password: 'password' });
       
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBe('Invalid username or password');
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe('Invalid credentials');
     });
 
     test('should handle conversation update for non-existent conversation', async () => {

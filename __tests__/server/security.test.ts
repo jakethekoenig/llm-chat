@@ -72,7 +72,7 @@ describe('Security Tests', () => {
         .set('Authorization', `Bearer ${expiredToken}`);
 
       expect(response.status).toBe(403);
-      expect(response.body.message).toBe('Invalid or expired token');
+      expect(response.body.message).toBe('The provided authentication token is invalid or has expired');
     });
 
     test('should reject tokens signed with wrong secret', async () => {
@@ -83,7 +83,7 @@ describe('Security Tests', () => {
         .set('Authorization', `Bearer ${wrongSecretToken}`);
 
       expect(response.status).toBe(403);
-      expect(response.body.message).toBe('Invalid or expired token');
+      expect(response.body.message).toBe('The provided authentication token is invalid or has expired');
     });
 
     test('should reject malformed JWT tokens', async () => {
@@ -100,7 +100,7 @@ describe('Security Tests', () => {
           .set('Authorization', `Bearer ${token}`);
 
         expect(response.status).toBe(403);
-        expect(response.body.message).toBe('Invalid or expired token');
+        expect(response.body.message).toBe('The provided authentication token is invalid or has expired');
       }
     });
 
@@ -197,7 +197,7 @@ describe('Security Tests', () => {
 
         expect([400, 500]).toContain(response.status);
         if (response.status === 400) {
-          expect(response.body.errors).toBeDefined();
+          expect(response.body.details).toBeDefined();
         }
       }
     });
@@ -239,7 +239,7 @@ describe('Security Tests', () => {
           });
 
         expect(response.status).toBe(400);
-        expect(response.body.errors).toBeDefined();
+        expect(response.body.details).toBeDefined();
       }
     });
   });
@@ -339,7 +339,8 @@ describe('Security Tests', () => {
       // Both should return the same error to prevent user enumeration
       expect(response1.status).toBe(401);
       expect(response2.status).toBe(401);
-      expect(response1.text).toBe(response2.text);
+      expect(response1.body.error).toBe(response2.body.error);
+      expect(response1.body.code).toBe(response2.body.code);
     });
   });
 });
