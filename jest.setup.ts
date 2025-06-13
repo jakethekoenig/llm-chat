@@ -48,6 +48,12 @@ if (typeof global.ReadableStream === 'undefined') {
   }
 }
 
+// Polyfill setImmediate for winston/Mistral SDK
+if (typeof global.setImmediate === 'undefined') {
+  const { setImmediate } = require('timers');
+  global.setImmediate = setImmediate;
+}
+
 // Extend Sequelize type to include the log property
 declare module 'sequelize' {
   interface Sequelize {

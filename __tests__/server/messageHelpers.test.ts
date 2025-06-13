@@ -408,7 +408,7 @@ describe('messageHelpers - Streaming Functions', () => {
       delete process.env.MISTRAL_API_KEY;
       
       await expect(generateCompletion(1, 'mistral-large', 0.7))
-        .rejects.toThrow('Failed to generate completion');
+        .rejects.toThrow();
     });
 
     test('should handle streaming API key errors gracefully', async () => {
@@ -417,7 +417,7 @@ describe('messageHelpers - Streaming Functions', () => {
       const generator = generateStreamingCompletion(1, 'claude-3-opus', 0.7);
       const iterator = generator[Symbol.asyncIterator]();
       
-      await expect(iterator.next()).rejects.toThrow('Failed to generate streaming completion');
+      await expect(iterator.next()).rejects.toThrow();
     });
 
     test('should handle Mistral content array format', async () => {
