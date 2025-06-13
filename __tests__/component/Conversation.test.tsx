@@ -148,7 +148,7 @@ test('calls onConversationClick when conversation is clicked', () => {
   const conversationElement = screen.getByText('Clickable Conversation').closest('li');
   fireEvent.click(conversationElement!);
   
-  expect(mockClick).toHaveBeenCalledWith('1');
+  expect(mockClick).toHaveBeenCalledWith(1);
 });
 
 test('handles new message input and submission', async () => {
@@ -177,9 +177,9 @@ test('submits a new message and updates the conversation', async () => {
 
 test('renders author messages with right justification and different background', () => {
   const messages = [
-    createTestMessage('1', 'Hello, world!', 'User'),
-    createTestMessage('2', 'Hi there!', 'User2', '1'),
-    createTestMessage('3', 'How are you?', 'User', '1'),
+    createTestMessage(1, 'Hello, world!', 'User'),
+    createTestMessage(2, 'Hi there!', 'User2', 1),
+    createTestMessage(3, 'How are you?', 'User', 1),
   ];
   render(<Conversation messages={messages} author="User" onSubmit={mockOnSubmit} />);
   const authorMessages = screen.getAllByText('User');
@@ -191,8 +191,8 @@ test('renders author messages with right justification and different background'
 
 test('passes isAuthor prop correctly to Message components', () => {
   const messages = [
-    createTestMessage('1', 'Hello from User', 'User'),
-    createTestMessage('2', 'Hello from User2', 'User2', '1'),
+    createTestMessage(1, 'Hello from User', 'User'),
+    createTestMessage(2, 'Hello from User2', 'User2', 1),
   ];
   render(<Conversation messages={messages} author="User" onSubmit={mockOnSubmit} />);
   const userMessage = screen.getByText('Hello from User').parentElement?.parentElement;
