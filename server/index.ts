@@ -18,10 +18,11 @@ function validateEnvironment() {
   // Check that at least one API key is set
   const hasOpenAI = !!process.env.OPENAI_API_KEY;
   const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
+  const hasMistral = !!process.env.MISTRAL_API_KEY;
   const hasOpenRouter = !!process.env.OPENROUTER_API_KEY;
   
-  if (!hasOpenAI && !hasAnthropic && !hasOpenRouter) {
-    missingVars.push('OPENAI_API_KEY, ANTHROPIC_API_KEY, or OPENROUTER_API_KEY (at least one LLM API key is required)');
+  if (!hasOpenAI && !hasAnthropic && !hasMistral && !hasOpenRouter) {
+    missingVars.push('OPENAI_API_KEY, ANTHROPIC_API_KEY, MISTRAL_API_KEY, or OPENROUTER_API_KEY (at least one LLM API key is required)');
   }
 
   if (missingVars.length > 0) {
@@ -51,5 +52,6 @@ app.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT}`);
   console.log(`📊 OpenAI API: ${process.env.OPENAI_API_KEY ? '✅ configured' : '❌ not set'}`);
   console.log(`📊 Anthropic API: ${process.env.ANTHROPIC_API_KEY ? '✅ configured' : '❌ not set'}`);
+  console.log(`📊 Mistral API: ${process.env.MISTRAL_API_KEY ? '✅ configured' : '❌ not set'}`);
   console.log(`📊 OpenRouter API: ${process.env.OPENROUTER_API_KEY ? '✅ configured' : '❌ not set'}`);
 });
