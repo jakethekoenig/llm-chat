@@ -14,8 +14,7 @@ import { body, validationResult } from 'express-validator';
 import { 
   convertMessageToApiFormat, 
   convertConversationToApiFormat, 
-  convertUserToApiFormat,
-  convertIdToNumber 
+  convertUserToApiFormat
 } from './helpers/typeConverters';
 
 const app = express();
@@ -246,15 +245,8 @@ app.post('/api/register', authLimiter, asyncHandler(async (req: express.Request,
 // Add message submission endpoint
 app.post('/api/add_message', authenticateToken, [
   body('content').notEmpty().withMessage('Content is required'),
-  body('conversationId').custom((value) => {
-    if (!value) throw new Error('Conversation ID is required');
-    if (isNaN(parseInt(value))) throw new Error('Conversation ID must be a valid number');
-    return true;
-  }),
-  body('parentId').optional().custom((value) => {
-    if (value && isNaN(parseInt(value))) throw new Error('Parent ID must be an integer');
-    return true;
-  })
+  body('conversationId').isInt().withMessage('Conversation ID must be a valid number'),
+  body('parentId').optional().isInt().withMessage('Parent ID must be a valid number')
 ], asyncHandler(async (req: express.Request, res: express.Response) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -271,8 +263,8 @@ app.post('/api/add_message', authenticateToken, [
   const { content, conversationId, parentId } = req.body;
   const userId = (req as any).user.id;
 
-  const dbConversationId = convertIdToNumber(conversationId);
-  const dbParentId = parentId ? convertIdToNumber(parentId) : null;
+  const dbConversationId = conversationId;
+  const dbParentId = parentId || null;
   const message = await addMessage(content, dbConversationId, dbParentId, userId);
   const formattedMessage = convertMessageToApiFormat(message);
   res.status(201).json(formattedMessage);
@@ -280,11 +272,7 @@ app.post('/api/add_message', authenticateToken, [
 
 // Get completion for message endpoint with validation
 app.post('/api/get_completion_for_message', authenticateToken, [
-  body('messageId').custom((value) => {
-    if (!value) throw new Error('Message ID is required');
-    if (isNaN(parseInt(value))) throw new Error('Message ID must be a valid number');
-    return true;
-  }),
+  body('messageId').isInt().withMessage('Message ID must be a valid number'),
   body('model').notEmpty().withMessage('Model is required'),
   body('temperature').isFloat().withMessage('Temperature must be a float')
 ], asyncHandler(async (req: express.Request, res: express.Response) => {
@@ -302,19 +290,15 @@ app.post('/api/get_completion_for_message', authenticateToken, [
 
   const { messageId, model, temperature } = req.body;
 
-  const dbMessageId = convertIdToNumber(messageId);
+  const dbMessageId = messageId;
   const completionMessage = await generateCompletion(dbMessageId, model, temperature);
-  res.status(201).json({ id: (completionMessage.get('id') as number).toString(), content: completionMessage.get('content') as string});
+  res.status(201).json({ id: completionMessage.get('id') as number, content: completionMessage.get('content') as string});
 }));
 
 // Streaming endpoint with validation
 app.post('/api/get_completion', authenticateToken, [
   body('model').notEmpty().withMessage('Model is required'),
-  body('parentId').custom((value) => {
-    if (!value) throw new Error('Parent ID is required');
-    if (isNaN(parseInt(value))) throw new Error('Parent ID must be a valid number');
-    return true;
-  }),
+  body('parentId').isInt().withMessage('Parent ID must be a valid number'),
   body('temperature').isFloat().withMessage('Temperature must be a float')
 ], asyncHandler(async (req: express.Request, res: express.Response) => {
   const errors = validationResult(req);
@@ -332,7 +316,7 @@ app.post('/api/get_completion', authenticateToken, [
   const { model, parentId, temperature } = req.body;
 
   try {
-    const dbParentId = convertIdToNumber(parentId);
+    const dbParentId = parentId;
     
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -345,7 +329,7 @@ app.post('/api/get_completion', authenticateToken, [
 
     for await (const chunk of generateStreamingCompletion(dbParentId, model, temperature)) {
       const data = JSON.stringify({
-        messageId: chunk.messageId.toString(),
+        messageId: chunk.messageId,
         chunk: chunk.chunk,
         isComplete: chunk.isComplete
       });
@@ -388,7 +372,7 @@ app.get('/api/conversations/:conversationId/messages', authenticateToken, asyncH
   const { conversationId } = req.params;
   const userId = (req as any).user.id;
   
-  const dbConversationId = convertIdToNumber(conversationId);
+  const dbConversationId = parseInt(conversationId, 10);
   
   // Verify user has access to this conversation
   const conversation = await Conversation.findOne({
@@ -433,7 +417,7 @@ app.put('/api/conversations/:conversationId', authenticateToken, [
   const userId = (req as any).user.id;
 
   try {
-    const dbConversationId = convertIdToNumber(conversationId);
+    const dbConversationId = parseInt(conversationId, 10);
     
     // Find the conversation and verify ownership
     const conversation = await Conversation.findOne({
@@ -490,7 +474,7 @@ app.put('/api/messages/:messageId', authenticateToken, [
   const { content } = req.body;
   const userId = (req as any).user.id;
 
-  const dbMessageId = convertIdToNumber(messageId);
+  const dbMessageId = parseInt(messageId, 10);
   const message = await Message.findByPk(dbMessageId);
   
   if (!message) {
@@ -533,7 +517,7 @@ app.delete('/api/messages/:messageId', authenticateToken, asyncHandler(async (re
   const { messageId } = req.params;
   const userId = (req as any).user.id;
 
-  const dbMessageId = convertIdToNumber(messageId);
+  const dbMessageId = parseInt(messageId, 10);
   const message = await Message.findByPk(dbMessageId);
   
   if (!message) {
@@ -563,7 +547,7 @@ app.delete('/api/messages/:messageId', authenticateToken, asyncHandler(async (re
 
   res.json({
     success: true,
-    deletedMessageId: messageId
+    deletedMessageId: dbMessageId
   });
 }));
 
@@ -627,9 +611,9 @@ app.post('/api/create_conversation', authenticateToken, [
     const message = await addMessage(initialMessage, conversation.get('id') as number, null, userId);
     const completionMessage = await generateCompletion(message.get('id') as number, model, temperature);
     res.status(201).json({ 
-      conversationId: (conversation.get('id') as number).toString(), 
-      initialMessageId: (message.get('id') as number).toString(), 
-      completionMessageId: (completionMessage.get('id') as number).toString() 
+      conversationId: conversation.get('id') as number, 
+      initialMessageId: message.get('id') as number, 
+      completionMessageId: completionMessage.get('id') as number 
     });
   } catch (error) {
     console.error('Error creating conversation:', error);

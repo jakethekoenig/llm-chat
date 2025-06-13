@@ -123,7 +123,7 @@ describe('Server Tests', () => {
     expect(envResponse.body.error).toBe('Validation failed');
     expect(envResponse.body.code).toBe('VALIDATION_ERROR');
     expect(envResponse.body.details).toBeDefined();
-    expect(envResponse.body.details[0].msg).toBe('Parent ID must be an integer');
+    expect(envResponse.body.details[0].msg).toBe('Parent ID must be a valid number');
   });
 
   it('should return 401 for unauthenticated users', async () => {

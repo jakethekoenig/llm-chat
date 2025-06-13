@@ -6,39 +6,39 @@ import '@testing-library/jest-dom';
 
 const mockConversations = [
   { 
-    id: '1', 
+    id: 1, 
     title: 'Conversation One', 
-    userId: 'user1',
+    userId: 1,
     messages: [
       {
-        id: '1',
+        id: 1,
         content: 'Hello',
         timestamp: new Date().toISOString(),
-        conversationId: '1',
-        userId: 'user1',
+        conversationId: 1,
+        userId: 1,
         parentId: null
       }
     ]
   },
   { 
-    id: '2', 
+    id: 2, 
     title: 'Conversation Two', 
-    userId: 'user2',
+    userId: 2,
     messages: [
       {
-        id: '2',
+        id: 2,
         content: 'Hi there',
         timestamp: new Date().toISOString(),
-        conversationId: '2',
-        userId: 'user2',
+        conversationId: 2,
+        userId: 2,
         parentId: null
       },
       {
-        id: '3',
+        id: 3,
         content: 'How are you?',
         timestamp: new Date().toISOString(),
-        conversationId: '2',
-        userId: 'user2',
+        conversationId: 2,
+        userId: 2,
         parentId: null
       }
     ]
@@ -58,7 +58,7 @@ test('handles conversation click', () => {
   const mockClick = jest.fn();
   render(<ConversationList conversations={mockConversations} onConversationClick={mockClick} />);
   fireEvent.click(screen.getByText('Conversation One'));
-  expect(mockClick).toHaveBeenCalledWith('1');
+  expect(mockClick).toHaveBeenCalledWith(1);
 });
 
 test('handles conversation click on li element when no title update callback', () => {
@@ -66,7 +66,7 @@ test('handles conversation click on li element when no title update callback', (
   render(<ConversationList conversations={mockConversations} onConversationClick={mockClick} />);
   const liElement = screen.getByText('Conversation One').closest('li');
   fireEvent.click(liElement!);
-  expect(mockClick).toHaveBeenCalledWith('1');
+  expect(mockClick).toHaveBeenCalledWith(1);
 });
 
 test('handles title editing when onTitleUpdate is provided', async () => {
@@ -104,7 +104,7 @@ test('handles title editing when onTitleUpdate is provided', async () => {
   });
   
   await waitFor(() => {
-    expect(mockTitleUpdate).toHaveBeenCalledWith('1', 'Updated Title');
+    expect(mockTitleUpdate).toHaveBeenCalledWith(1, 'Updated Title');
   });
 });
 
@@ -157,7 +157,7 @@ test('does not trigger conversation click when editing title', () => {
   
   // Click on meta should trigger conversation click
   fireEvent.click(screen.getByText('1 messages'));
-  expect(mockClick).toHaveBeenCalledWith('1');
+  expect(mockClick).toHaveBeenCalledWith(1);
 });
 
 test('saves title on blur', async () => {
@@ -188,7 +188,7 @@ test('saves title on blur', async () => {
   });
   
   await waitFor(() => {
-    expect(mockTitleUpdate).toHaveBeenCalledWith('1', 'Updated Title');
+    expect(mockTitleUpdate).toHaveBeenCalledWith(1, 'Updated Title');
   });
 });
 
@@ -243,7 +243,7 @@ test('handles title update failure', async () => {
   fireEvent.keyDown(input, { key: 'Enter' });
   
   await waitFor(() => {
-    expect(mockTitleUpdate).toHaveBeenCalledWith('1', 'Failed Title');
+    expect(mockTitleUpdate).toHaveBeenCalledWith(1, 'Failed Title');
   });
   
   consoleErrorSpy.mockRestore();
