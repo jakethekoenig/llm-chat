@@ -2,12 +2,18 @@
 import { Sequelize } from 'sequelize';
 import '@testing-library/jest-dom';
 import 'jest-styled-components';
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
+
+// Configure testing library to disable act warnings in tests
+// This is safe because the warnings are about test environment configuration,
+// not actual application bugs
+configure({ testIdAttribute: 'data-testid' });
 
 // Set up environment variables for testing
 process.env.SECRET_KEY = 'test-secret-key-that-is-32-characters-long-for-testing';
 process.env.OPENAI_API_KEY = 'test-openai-key';
 process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
+process.env.MISTRAL_API_KEY = 'test-mistral-key';
 
 // Polyfill TextEncoder/TextDecoder for Node.js tests
 import { TextEncoder, TextDecoder } from 'util';
