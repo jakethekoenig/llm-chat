@@ -39,6 +39,11 @@ const isAnthropicModel = (model: string): boolean => {
   return anthropicIdentifiers.some(identifier => model.toLowerCase().includes(identifier));
 };
 
+const isXAIModel = (model: string): boolean => {
+  const xaiIdentifiers = ['grok'];
+  return xaiIdentifiers.some(identifier => model.toLowerCase().includes(identifier));
+};
+
 const generateAnthropicCompletion = async (content: string, model: string, temperature: number) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -137,6 +142,54 @@ const generateOpenAIStreamingCompletion = async function* (
   }
 };
 
+const generateXAICompletion = async (content: string, model: string, temperature: number) => {
+  const apiKey = process.env.XAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('xAI API key is not set');
+  }
+
+  const xai = new OpenAI({ 
+    apiKey,
+    baseURL: 'https://api.x.ai/v1'
+  });
+  const response = await xai.chat.completions.create({
+    model,
+    messages: [{ role: "user", content }],
+    temperature,
+  });
+
+  return response.choices[0].message?.content || '';
+};
+
+const generateXAIStreamingCompletion = async function* (
+  content: string, 
+  model: string, 
+  temperature: number
+): AsyncIterable<string> {
+  const apiKey = process.env.XAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('xAI API key is not set');
+  }
+
+  const xai = new OpenAI({ 
+    apiKey,
+    baseURL: 'https://api.x.ai/v1'
+  });
+  const stream = await xai.chat.completions.create({
+    model,
+    messages: [{ role: "user", content }],
+    temperature,
+    stream: true,
+  });
+
+  for await (const chunk of stream) {
+    const content = chunk.choices[0]?.delta?.content || '';
+    if (content) {
+      yield content;
+    }
+  }
+};
+
 export const generateCompletion = async (messageId: number, model: string, temperature: number) => {
   const parentMessage: Message | null = await Message.findByPk(messageId);
   if (!parentMessage) {
@@ -149,9 +202,14 @@ export const generateCompletion = async (messageId: number, model: string, tempe
   }
 
   try {
-    const completionContent = isAnthropicModel(model)
-      ? await generateAnthropicCompletion(content, model, temperature)
-      : await generateOpenAICompletion(content, model, temperature);
+    let completionContent: string;
+    if (isAnthropicModel(model)) {
+      completionContent = await generateAnthropicCompletion(content, model, temperature);
+    } else if (isXAIModel(model)) {
+      completionContent = await generateXAICompletion(content, model, temperature);
+    } else {
+      completionContent = await generateOpenAICompletion(content, model, temperature);
+    }
 
     console.log('completionContent:', completionContent);
     const completionMessage: Message = await Message.create({
@@ -201,9 +259,14 @@ export const generateStreamingCompletion = async function* (
   let fullContent = '';
 
   try {
-    const streamGenerator = isAnthropicModel(model)
-      ? generateAnthropicStreamingCompletion(content, model, temperature)
-      : generateOpenAIStreamingCompletion(content, model, temperature);
+    let streamGenerator: AsyncIterable<string>;
+    if (isAnthropicModel(model)) {
+      streamGenerator = generateAnthropicStreamingCompletion(content, model, temperature);
+    } else if (isXAIModel(model)) {
+      streamGenerator = generateXAIStreamingCompletion(content, model, temperature);
+    } else {
+      streamGenerator = generateOpenAIStreamingCompletion(content, model, temperature);
+    }
 
     for await (const chunk of streamGenerator) {
       fullContent += chunk;
