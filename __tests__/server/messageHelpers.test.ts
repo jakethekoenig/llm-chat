@@ -477,7 +477,7 @@ describe('messageHelpers - Streaming Functions', () => {
       delete process.env.GOOGLE_API_KEY;
       
       await expect(generateCompletion(1, 'gemini-pro', 0.7))
-        .rejects.toThrow('Failed to generate completion');
+        .rejects.toThrow('Google API key is not set');
     });
 
     test('should generate streaming completion for Gemini model', async () => {
@@ -642,10 +642,10 @@ describe('messageHelpers - Streaming Functions', () => {
       delete process.env.GOOGLE_API_KEY;
       delete process.env.OPENROUTER_API_KEY;
       
-      await expect(generateCompletion(1, 'gpt-4', 0.7)).rejects.toThrow('Failed to generate completion');
-      await expect(generateCompletion(1, 'claude-3', 0.7)).rejects.toThrow('Failed to generate completion');
-      await expect(generateCompletion(1, 'gemini-pro', 0.7)).rejects.toThrow('Failed to generate completion');
-      await expect(generateCompletion(1, 'llama-3', 0.7)).rejects.toThrow('Failed to generate completion');
+      await expect(generateCompletion(1, 'gpt-4', 0.7)).rejects.toThrow('OpenAI API key is not set');
+      await expect(generateCompletion(1, 'claude-3', 0.7)).rejects.toThrow('Anthropic API key is not set');
+      await expect(generateCompletion(1, 'gemini-pro', 0.7)).rejects.toThrow('Google API key is not set');
+      await expect(generateCompletion(1, 'llama-3', 0.7)).rejects.toThrow('OpenRouter API key is not set');
     });
 
     test('should handle streaming errors and cleanup', async () => {
@@ -723,6 +723,19 @@ describe('messageHelpers - Streaming Functions', () => {
       process.env.GOOGLE_API_KEY = 'test-google-key';
       process.env.OPENROUTER_API_KEY = 'test-openrouter-key';
       
+      // Reset message mocks to ensure proper message creation/update
+      const mockCompletionMessage = {
+        get: jest.fn((field: string) => {
+          switch (field) {
+            case 'id': return 123;
+            default: return null;
+          }
+        }),
+        update: jest.fn().mockResolvedValue(undefined),
+        destroy: jest.fn()
+      };
+      (Message.create as jest.Mock).mockResolvedValue(mockCompletionMessage);
+      
       // Set up Gemini mocks properly
       mockGetGenerativeModel.mockReturnValue({
         generateContent: mockGenerateContent,
@@ -753,12 +766,17 @@ describe('messageHelpers - Streaming Functions', () => {
       expect(chunks.length).toBeGreaterThan(0);
 
       // Test Gemini streaming
-      chunks = [];
-      for await (const chunk of generateStreamingCompletion(1, 'gemini-pro', 0.7)) {
-        chunks.push(chunk);
-        if (chunk.isComplete) break;
+      try {
+        chunks = [];
+        for await (const chunk of generateStreamingCompletion(1, 'gemini-pro', 0.7)) {
+          chunks.push(chunk);
+          if (chunk.isComplete) break;
+        }
+        expect(chunks.length).toBeGreaterThan(0);
+      } catch (error) {
+        console.log('Gemini streaming error:', error);
+        throw error;
       }
-      expect(chunks.length).toBeGreaterThan(0);
 
       // Test OpenRouter streaming
       chunks = [];
