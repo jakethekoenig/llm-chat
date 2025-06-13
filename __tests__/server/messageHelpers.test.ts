@@ -9,7 +9,7 @@ jest.mock('../../server/database/models/Message', () => ({
   }
 }));
 
-import { generateStreamingCompletion, generateCompletion } from '../../server/helpers/messageHelpers';
+import { generateStreamingCompletion, generateCompletion, addMessage } from '../../server/helpers/messageHelpers';
 import { Message } from '../../server/database/models/Message';
 
 // Mock OpenAI
@@ -304,6 +304,64 @@ describe('messageHelpers - Streaming Functions', () => {
       expect(chunks[chunks.length - 1].isComplete).toBe(true);
       expect(Message.findByPk).toHaveBeenCalledWith(1);
       expect(Message.create).toHaveBeenCalled();
+    });
+
+    test('should handle edge case with different Llama model naming', async () => {
+      const chunks: any[] = [];
+      
+      for await (const chunk of generateStreamingCompletion(1, 'llama3-custom', 0.7)) {
+        chunks.push(chunk);
+      }
+      
+      expect(chunks.length).toBeGreaterThan(0);
+      expect(chunks[chunks.length - 1].isComplete).toBe(true);
+    });
+
+  });
+
+  describe('addMessage', () => {
+    test('should create message with all parameters', async () => {
+      const mockMessage = {
+        get: jest.fn(() => 'test message'),
+        content: 'Test content',
+        conversation_id: 1,
+        parent_id: null,
+        user_id: 1
+      };
+      
+      (Message.create as jest.Mock).mockResolvedValue(mockMessage);
+      
+      const result = await addMessage('Test content', 1, null, 1);
+      
+      expect(Message.create).toHaveBeenCalledWith({
+        content: 'Test content',
+        conversation_id: 1,
+        parent_id: null,
+        user_id: 1
+      });
+      expect(result).toBe(mockMessage);
+    });
+
+    test('should create message with parent ID', async () => {
+      const mockMessage = {
+        get: jest.fn(() => 'test message'),
+        content: 'Reply content',
+        conversation_id: 1,
+        parent_id: 5,
+        user_id: 2
+      };
+      
+      (Message.create as jest.Mock).mockResolvedValue(mockMessage);
+      
+      const result = await addMessage('Reply content', 1, 5, 2);
+      
+      expect(Message.create).toHaveBeenCalledWith({
+        content: 'Reply content',
+        conversation_id: 1,
+        parent_id: 5,
+        user_id: 2
+      });
+      expect(result).toBe(mockMessage);
     });
   });
 
