@@ -220,6 +220,56 @@ const generateGeminiStreamingCompletion = async function* (
   yield { text: '', cost: 0, isComplete: true };
 };
 
+const generateGeminiCompletion = async (content: string, model: string, temperature: number) => {
+  const apiKey = process.env.GOOGLE_API_KEY;
+  if (!apiKey) {
+    throw new Error('Google API key is not set');
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const geminiModel = genAI.getGenerativeModel({ model });
+
+  const result = await geminiModel.generateContent({
+    contents: [{ role: 'user', parts: [{ text: content }] }],
+    generationConfig: {
+      temperature,
+      maxOutputTokens: 1024,
+    },
+  });
+
+  const response = await result.response;
+  return response.text();
+};
+
+const generateGeminiStreamingCompletion = async function* (
+  content: string, 
+  model: string, 
+  temperature: number
+): AsyncIterable<string> {
+  const apiKey = process.env.GOOGLE_API_KEY;
+  if (!apiKey) {
+    throw new Error('Google API key is not set');
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const geminiModel = genAI.getGenerativeModel({ model });
+
+  const result = await geminiModel.generateContentStream({
+    contents: [{ role: 'user', parts: [{ text: content }] }],
+    generationConfig: {
+      temperature,
+      maxOutputTokens: 1024,
+    },
+  });
+
+  for await (const chunk of result.stream) {
+    const chunkText = chunk.text();
+    if (chunkText) {
+      yield chunkText;
+    }
+  }
+};
+
 const generateOpenAICompletion = async (content: string, model: string, temperature: number) => {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
