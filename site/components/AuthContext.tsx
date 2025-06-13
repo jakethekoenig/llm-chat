@@ -25,10 +25,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthChecked, setIsAuthChecked] = useState<boolean>(false);
   const navigate = useNavigate();
 
-  const login = (newToken: string) => {
+  const login = async (newToken: string) => {
     localStorage.setItem('token', newToken);
     setToken(newToken);
     setIsAuthenticated(true);
+    
+    // Immediately update API auth instance to prevent race conditions
+    try {
+      const { setAuthInstance } = await import('../utils/api');
+      setAuthInstance({ 
+        token: newToken, 
+        isAuthenticated: true, 
+        isAuthChecked: true, 
+        login, 
+        logout 
+      });
+    } catch (error) {
+      console.error('Failed to update API auth instance:', error);
+    }
   };
 
   const logout = () => {

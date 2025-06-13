@@ -20,11 +20,9 @@ const SignIn: React.FC = () => {
     
     // Prevent multiple simultaneous submissions
     if (isLoading) {
-      console.log('SignIn: Blocked duplicate submission attempt');
       return;
     }
     
-    console.log('SignIn: Starting login attempt');
     setIsLoading(true);
     setError('');
     
@@ -43,7 +41,6 @@ const SignIn: React.FC = () => {
       const data = await response.json();
       
       if (!response.ok) {
-        console.log('SignIn: Response not OK', response.status, data);
         // Create an ApiError-like object with server response details
         const apiError = new Error(data.message || data.error || 'Sign in failed') as ApiError;
         apiError.status = response.status;
@@ -52,18 +49,15 @@ const SignIn: React.FC = () => {
         throw apiError;
       }
       
-      console.log('SignIn: Success, calling login and navigate');
-      login(data.token);
+      await login(data.token);
       showSuccess('Welcome back!');
       navigate('/');
     } catch (err) {
-      console.log('SignIn: Error caught', err);
       const formattedError = ErrorHandlers.auth(err);
       setError(formattedError.message);
       
       // Show toast only for severe errors, inline message is sufficient for validation issues
       if (formattedError.severity === 'error') {
-        console.log('SignIn: Showing error toast', formattedError.message);
         showError(formattedError.message);
       }
     } finally {

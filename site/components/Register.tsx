@@ -49,7 +49,7 @@ const Register: React.FC = () => {
       }
       
       // Auto-login the user with the returned token
-      login(data.token);
+      await login(data.token);
       showSuccess('Account created successfully! Welcome to L2 Chat.');
       navigate('/');
     } catch (err) {
