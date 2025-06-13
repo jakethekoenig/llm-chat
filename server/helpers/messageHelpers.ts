@@ -45,6 +45,11 @@ const isMistralModel = (model: string): boolean => {
   return mistralIdentifiers.some(identifier => model.toLowerCase().includes(identifier));
 };
 
+const isLlamaModel = (model: string): boolean => {
+  const llamaIdentifiers = ['llama', 'meta-llama'];
+  return llamaIdentifiers.some(identifier => model.toLowerCase().includes(identifier));
+};
+
 const generateAnthropicCompletion = async (content: string, model: string, temperature: number) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -171,6 +176,30 @@ const generateMistralCompletion = async (content: string, model: string, tempera
   return '';
 };
 
+const generateOpenRouterCompletion = async (content: string, model: string, temperature: number) => {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    throw new Error('OpenRouter API key is not set');
+  }
+
+  const openai = new OpenAI({
+    apiKey,
+    baseURL: 'https://openrouter.ai/api/v1',
+    defaultHeaders: {
+      'HTTP-Referer': 'https://github.com/jakethekoenig/llm-chat',
+      'X-Title': 'LLM Chat',
+    },
+  });
+
+  const response = await openai.chat.completions.create({
+    model,
+    messages: [{ role: "user", content }],
+    temperature,
+  });
+
+  return response.choices[0].message?.content || '';
+};
+
 const generateMistralStreamingCompletion = async function* (
   content: string, 
   model: string, 
@@ -209,6 +238,40 @@ const generateMistralStreamingCompletion = async function* (
   }
 };
 
+const generateOpenRouterStreamingCompletion = async function* (
+  content: string, 
+  model: string, 
+  temperature: number
+): AsyncIterable<string> {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    throw new Error('OpenRouter API key is not set');
+  }
+
+  const openai = new OpenAI({
+    apiKey,
+    baseURL: 'https://openrouter.ai/api/v1',
+    defaultHeaders: {
+      'HTTP-Referer': 'https://github.com/jakethekoenig/llm-chat',
+      'X-Title': 'LLM Chat',
+    },
+  });
+
+  const stream = await openai.chat.completions.create({
+    model,
+    messages: [{ role: "user", content }],
+    temperature,
+    stream: true,
+  });
+
+  for await (const chunk of stream) {
+    const content = chunk.choices[0]?.delta?.content || '';
+    if (content) {
+      yield content;
+    }
+  }
+};
+
 export const generateCompletion = async (messageId: number, model: string, temperature: number) => {
   const parentMessage: Message | null = await Message.findByPk(messageId);
   if (!parentMessage) {
@@ -226,6 +289,8 @@ export const generateCompletion = async (messageId: number, model: string, tempe
       completionContent = await generateAnthropicCompletion(content, model, temperature);
     } else if (isMistralModel(model)) {
       completionContent = await generateMistralCompletion(content, model, temperature);
+    } else if (isLlamaModel(model)) {
+      completionContent = await generateOpenRouterCompletion(content, model, temperature);
     } else {
       completionContent = await generateOpenAICompletion(content, model, temperature);
     }
@@ -243,6 +308,10 @@ export const generateCompletion = async (messageId: number, model: string, tempe
   } catch (error) {
     if (error instanceof Error) {
       logger.error('Error generating completion:', { message: error.message });
+      // Preserve API key errors for better user experience
+      if (error.message.includes('API key is not set')) {
+        throw error;
+      }
     } else {
       logger.error('Error generating completion:', { error });
     }
@@ -283,6 +352,8 @@ export const generateStreamingCompletion = async function* (
       streamGenerator = generateAnthropicStreamingCompletion(content, model, temperature);
     } else if (isMistralModel(model)) {
       streamGenerator = generateMistralStreamingCompletion(content, model, temperature);
+    } else if (isLlamaModel(model)) {
+      streamGenerator = generateOpenRouterStreamingCompletion(content, model, temperature);
     } else {
       streamGenerator = generateOpenAIStreamingCompletion(content, model, temperature);
     }
