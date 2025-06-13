@@ -81,7 +81,7 @@ describe('Server Index - Environment Validation', () => {
 
     expect(() => require('../../server/index')).toThrow('process.exit called');
     expect(mockConsoleError).toHaveBeenCalledWith('❌ Missing required environment variables:');
-    expect(mockConsoleError).toHaveBeenCalledWith('  - OPENAI_API_KEY or ANTHROPIC_API_KEY (at least one LLM API key is required)');
+    expect(mockConsoleError).toHaveBeenCalledWith('  - OPENAI_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_API_KEY (at least one LLM API key is required)');
     expect(mockExit).toHaveBeenCalledWith(1);
   });
 
