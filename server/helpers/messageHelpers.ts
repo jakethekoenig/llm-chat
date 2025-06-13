@@ -81,6 +81,11 @@ const isAnthropicModel = (model: string): boolean => {
   return anthropicIdentifiers.some(identifier => model.toLowerCase().includes(identifier));
 };
 
+const isLlamaModel = (model: string): boolean => {
+  const llamaIdentifiers = ['llama', 'meta-llama'];
+  return llamaIdentifiers.some(identifier => model.toLowerCase().includes(identifier));
+};
+
 const generateAnthropicCompletion = async (content: string, model: string, temperature: number) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -201,6 +206,70 @@ const generateOpenAIStreamingCompletion = async function* (
   yield { text: '', cost, isComplete: true };
 };
 
+const generateOpenRouterCompletion = async (content: string, model: string, temperature: number) => {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    throw new Error('OpenRouter API key is not set');
+  }
+
+  const openai = new OpenAI({
+    apiKey,
+    baseURL: 'https://openrouter.ai/api/v1',
+    defaultHeaders: {
+      'HTTP-Referer': 'https://github.com/jakethekoenig/llm-chat',
+      'X-Title': 'LLM Chat',
+    },
+  });
+
+  const response = await openai.chat.completions.create({
+    model,
+    messages: [{ role: "user", content }],
+    temperature,
+  });
+
+  const text = response.choices[0].message?.content || '';
+  // OpenRouter may not provide usage data, so cost defaults to 0
+  const cost = 0; // TODO: Add OpenRouter cost calculation when usage data is available
+  return { text, cost };
+};
+
+const generateOpenRouterStreamingCompletion = async function* (
+  content: string, 
+  model: string, 
+  temperature: number
+): AsyncIterable<{ text: string; cost?: number; isComplete: boolean }> {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    throw new Error('OpenRouter API key is not set');
+  }
+
+  const openai = new OpenAI({
+    apiKey,
+    baseURL: 'https://openrouter.ai/api/v1',
+    defaultHeaders: {
+      'HTTP-Referer': 'https://github.com/jakethekoenig/llm-chat',
+      'X-Title': 'LLM Chat',
+    },
+  });
+
+  const stream = await openai.chat.completions.create({
+    model,
+    messages: [{ role: "user", content }],
+    temperature,
+    stream: true,
+  });
+
+  for await (const chunk of stream) {
+    const textContent = chunk.choices[0]?.delta?.content || '';
+    if (textContent) {
+      yield { text: textContent, isComplete: false };
+    }
+  }
+
+  // OpenRouter may not provide usage data, so cost defaults to 0
+  yield { text: '', cost: 0, isComplete: true };
+};
+
 export const generateCompletion = async (messageId: number, model: string, temperature: number) => {
   const parentMessage: Message | null = await Message.findByPk(messageId);
   if (!parentMessage) {
@@ -213,9 +282,14 @@ export const generateCompletion = async (messageId: number, model: string, tempe
   }
 
   try {
-    const completion = isAnthropicModel(model)
-      ? await generateAnthropicCompletion(content, model, temperature)
-      : await generateOpenAICompletion(content, model, temperature);
+    let completion: { text: string; cost: number };
+    if (isAnthropicModel(model)) {
+      completion = await generateAnthropicCompletion(content, model, temperature);
+    } else if (isLlamaModel(model)) {
+      completion = await generateOpenRouterCompletion(content, model, temperature);
+    } else {
+      completion = await generateOpenAICompletion(content, model, temperature);
+    }
 
     console.log('completion:', completion);
     const completionMessage: Message = await Message.create({
@@ -231,6 +305,10 @@ export const generateCompletion = async (messageId: number, model: string, tempe
   } catch (error) {
     if (error instanceof Error) {
       logger.error('Error generating completion:', { message: error.message });
+      // Preserve API key errors for better user experience
+      if (error.message.includes('API key is not set')) {
+        throw error;
+      }
     } else {
       logger.error('Error generating completion:', { error });
     }
@@ -266,9 +344,14 @@ export const generateStreamingCompletion = async function* (
   let fullContent = '';
 
   try {
-    const streamGenerator = isAnthropicModel(model)
-      ? generateAnthropicStreamingCompletion(content, model, temperature)
-      : generateOpenAIStreamingCompletion(content, model, temperature);
+    let streamGenerator: AsyncIterable<{ text: string; cost?: number; isComplete: boolean }>;
+    if (isAnthropicModel(model)) {
+      streamGenerator = generateAnthropicStreamingCompletion(content, model, temperature);
+    } else if (isLlamaModel(model)) {
+      streamGenerator = generateOpenRouterStreamingCompletion(content, model, temperature);
+    } else {
+      streamGenerator = generateOpenAIStreamingCompletion(content, model, temperature);
+    }
 
     for await (const chunk of streamGenerator) {
       if (!chunk.isComplete) {

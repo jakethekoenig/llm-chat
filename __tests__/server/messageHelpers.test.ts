@@ -9,38 +9,47 @@ jest.mock('../../server/database/models/Message', () => ({
   }
 }));
 
-import { generateStreamingCompletion, generateCompletion } from '../../server/helpers/messageHelpers';
+import { generateStreamingCompletion, generateCompletion, addMessage } from '../../server/helpers/messageHelpers';
 import { Message } from '../../server/database/models/Message';
 
 // Mock OpenAI
 jest.mock('openai', () => ({
-  OpenAI: jest.fn(() => ({
-    chat: {
-      completions: {
-        create: jest.fn().mockImplementation(({ stream }) => {
-          if (stream) {
-            // Mock streaming response
-            const mockStream = {
-              async *[Symbol.asyncIterator]() {
-                yield { choices: [{ delta: { content: 'Hello' } }] };
-                yield { choices: [{ delta: { content: ' world' } }] };
-                yield { choices: [{ delta: { content: '!' } }] };
-                yield { choices: [{ delta: { content: '' } }], usage: { prompt_tokens: 100, completion_tokens: 50 } };
-              }
-            };
-            return Promise.resolve(mockStream);
-          } else {
-            return Promise.resolve({
-              choices: [{
-                message: { role: "assistant", content: 'Mocked OpenAI response' }
-              }],
-              usage: { prompt_tokens: 100, completion_tokens: 50 }
-            });
-          }
-        })
+  OpenAI: jest.fn().mockImplementation((config) => {
+    const isOpenRouter = config?.baseURL === 'https://openrouter.ai/api/v1';
+    const responseContent = isOpenRouter ? 'Mocked OpenRouter response' : 'Mocked OpenAI response';
+    
+    return {
+      chat: {
+        completions: {
+          create: jest.fn().mockImplementation(({ stream }) => {
+            if (stream) {
+              // Mock streaming response
+              const mockStream = {
+                async *[Symbol.asyncIterator]() {
+                  yield { choices: [{ delta: { content: 'Hello' } }] };
+                  yield { choices: [{ delta: { content: ' world' } }] };
+                  yield { choices: [{ delta: { content: '!' } }] };
+                  // Only OpenAI (not OpenRouter) provides usage data
+                  if (!isOpenRouter) {
+                    yield { choices: [{ delta: { content: '' } }], usage: { prompt_tokens: 100, completion_tokens: 50 } };
+                  }
+                }
+              };
+              return Promise.resolve(mockStream);
+            } else {
+              return Promise.resolve({
+                choices: [{
+                  message: { role: "assistant", content: responseContent }
+                }],
+                // Only OpenAI (not OpenRouter) provides usage data
+                usage: isOpenRouter ? undefined : { prompt_tokens: 100, completion_tokens: 50 }
+              });
+            }
+          })
+        }
       }
-    }
-  }))
+    };
+  })
 }));
 
 // Mock Anthropic
@@ -79,6 +88,7 @@ describe('messageHelpers - Streaming Functions', () => {
     // Set up environment variables
     process.env.OPENAI_API_KEY = 'test-openai-key';
     process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
+    process.env.OPENROUTER_API_KEY = 'test-openrouter-key';
     
     // Mock message structure
     const mockParentMessage = {
@@ -110,6 +120,7 @@ describe('messageHelpers - Streaming Functions', () => {
   afterEach(() => {
     delete process.env.OPENAI_API_KEY;
     delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.OPENROUTER_API_KEY;
   });
 
   describe('generateStreamingCompletion', () => {
@@ -130,6 +141,19 @@ describe('messageHelpers - Streaming Functions', () => {
       const chunks: any[] = [];
       
       for await (const chunk of generateStreamingCompletion(1, 'claude-3-opus', 0.7)) {
+        chunks.push(chunk);
+      }
+      
+      expect(chunks.length).toBeGreaterThan(0);
+      expect(chunks[chunks.length - 1].isComplete).toBe(true);
+      expect(Message.findByPk).toHaveBeenCalledWith(1);
+      expect(Message.create).toHaveBeenCalled();
+    });
+
+    test('should stream Llama completion successfully via OpenRouter', async () => {
+      const chunks: any[] = [];
+      
+      for await (const chunk of generateStreamingCompletion(1, 'meta-llama/llama-3.1-70b-instruct', 0.7)) {
         chunks.push(chunk);
       }
       
@@ -172,8 +196,21 @@ describe('messageHelpers - Streaming Functions', () => {
 
   describe('generateCompletion', () => {
     test('should generate OpenAI completion with cost', async () => {
+      const mockCompletionMessage = {
+        get: jest.fn((field: string) => {
+          switch (field) {
+            case 'id': return 123;
+            case 'content': return 'Mocked OpenAI response';
+            default: return null;
+          }
+        })
+      };
+      
+      (Message.create as jest.Mock).mockResolvedValue(mockCompletionMessage);
+      
       const result = await generateCompletion(1, 'gpt-4', 0.7);
       
+      expect(result).toBe(mockCompletionMessage);
       expect(Message.findByPk).toHaveBeenCalledWith(1);
       expect(Message.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -186,8 +223,21 @@ describe('messageHelpers - Streaming Functions', () => {
     });
 
     test('should generate Anthropic completion with cost', async () => {
+      const mockCompletionMessage = {
+        get: jest.fn((field: string) => {
+          switch (field) {
+            case 'id': return 123;
+            case 'content': return 'Mocked Anthropic response';
+            default: return null;
+          }
+        })
+      };
+      
+      (Message.create as jest.Mock).mockResolvedValue(mockCompletionMessage);
+      
       const result = await generateCompletion(1, 'claude-3-opus', 0.7);
       
+      expect(result).toBe(mockCompletionMessage);
       expect(Message.findByPk).toHaveBeenCalledWith(1);
       expect(Message.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -195,6 +245,33 @@ describe('messageHelpers - Streaming Functions', () => {
           model: 'claude-3-opus',
           temperature: 0.7,
           cost: expect.any(Number)
+        })
+      );
+    });
+
+    test('should generate Llama completion via OpenRouter with cost', async () => {
+      const mockCompletionMessage = {
+        get: jest.fn((field: string) => {
+          switch (field) {
+            case 'id': return 123;
+            case 'content': return 'Mocked OpenRouter response';
+            default: return null;
+          }
+        })
+      };
+      
+      (Message.create as jest.Mock).mockResolvedValue(mockCompletionMessage);
+      
+      const result = await generateCompletion(1, 'meta-llama/llama-3.1-70b-instruct', 0.7);
+      
+      expect(result).toBe(mockCompletionMessage);
+      expect(Message.findByPk).toHaveBeenCalledWith(1);
+      expect(Message.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: 'Mocked OpenRouter response',
+          model: 'meta-llama/llama-3.1-70b-instruct',
+          temperature: 0.7,
+          cost: 0 // OpenRouter defaults to 0 cost for now
         })
       );
     });
@@ -220,6 +297,32 @@ describe('messageHelpers - Streaming Functions', () => {
       (Message.findByPk as jest.Mock).mockResolvedValue(mockParentMessage);
       
       await expect(generateCompletion(1, 'gpt-4', 0.7)).rejects.toThrow('Parent message has no content');
+    });
+  });
+
+  describe('addMessage', () => {
+    test('should create a new message successfully', async () => {
+      const mockMessage = {
+        get: jest.fn((field: string) => {
+          switch (field) {
+            case 'id': return 456;
+            case 'content': return 'Test content';
+            default: return null;
+          }
+        })
+      };
+      
+      (Message.create as jest.Mock).mockResolvedValue(mockMessage);
+      
+      const result = await addMessage('Test content', 1, null, 1);
+      
+      expect(result).toBe(mockMessage);
+      expect(Message.create).toHaveBeenCalledWith({
+        content: 'Test content',
+        conversation_id: 1,
+        parent_id: null,
+        user_id: 1
+      });
     });
   });
 
@@ -276,6 +379,99 @@ describe('messageHelpers - Streaming Functions', () => {
           cost: 0 // Should default to 0 when no usage data
         })
       );
+    });
+  });
+
+  describe('Model Detection', () => {
+    test('should use OpenAI for unknown model types', async () => {
+      const mockCompletionMessage = {
+        get: jest.fn((field: string) => {
+          switch (field) {
+            case 'id': return 123;
+            case 'content': return 'Mocked OpenAI response';
+            default: return null;
+          }
+        })
+      };
+      
+      (Message.create as jest.Mock).mockResolvedValue(mockCompletionMessage);
+      
+      const result = await generateCompletion(1, 'unknown-model', 0.7);
+      
+      expect(result).toBe(mockCompletionMessage);
+      expect(Message.findByPk).toHaveBeenCalledWith(1);
+      expect(Message.create).toHaveBeenCalled();
+    });
+
+    test('should use OpenAI for streaming unknown model types', async () => {
+      const chunks: any[] = [];
+      
+      for await (const chunk of generateStreamingCompletion(1, 'unknown-model', 0.7)) {
+        chunks.push(chunk);
+      }
+      
+      expect(chunks.length).toBeGreaterThan(0);
+      expect(chunks[chunks.length - 1].isComplete).toBe(true);
+      expect(Message.findByPk).toHaveBeenCalledWith(1);
+      expect(Message.create).toHaveBeenCalled();
+    });
+
+    test('should handle edge case with different Llama model naming', async () => {
+      const chunks: any[] = [];
+      
+      for await (const chunk of generateStreamingCompletion(1, 'llama3-custom', 0.7)) {
+        chunks.push(chunk);
+      }
+      
+      expect(chunks.length).toBeGreaterThan(0);
+      expect(chunks[chunks.length - 1].isComplete).toBe(true);
+    });
+
+  });
+
+  describe('addMessage', () => {
+    test('should create message with all parameters', async () => {
+      const mockMessage = {
+        get: jest.fn(() => 'test message'),
+        content: 'Test content',
+        conversation_id: 1,
+        parent_id: null,
+        user_id: 1
+      };
+      
+      (Message.create as jest.Mock).mockResolvedValue(mockMessage);
+      
+      const result = await addMessage('Test content', 1, null, 1);
+      
+      expect(Message.create).toHaveBeenCalledWith({
+        content: 'Test content',
+        conversation_id: 1,
+        parent_id: null,
+        user_id: 1
+      });
+      expect(result).toBe(mockMessage);
+    });
+
+    test('should create message with parent ID', async () => {
+      const mockMessage = {
+        get: jest.fn(() => 'test message'),
+        content: 'Reply content',
+        conversation_id: 1,
+        parent_id: 5,
+        user_id: 2
+      };
+      
+      (Message.create as jest.Mock).mockResolvedValue(mockMessage);
+      
+      const result = await addMessage('Reply content', 1, 5, 2);
+      
+      expect(Message.create).toHaveBeenCalledWith({
+        content: 'Reply content',
+        conversation_id: 1,
+        parent_id: 5,
+        user_id: 2
+      });
+      expect(result).toBe(mockMessage);
     });
   });
 });

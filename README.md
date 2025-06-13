@@ -66,8 +66,31 @@ Before running the server, you need to set up your environment variables:
 1. Copy the example environment file: `cp .env.example .env`
 2. Edit `.env` and set the required values:
    - `SECRET_KEY`: A strong random secret (minimum 32 characters) for JWT tokens
-   - `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`: At least one LLM API key is required
+   - `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `OPENROUTER_API_KEY`: At least one LLM API key is required
    - `PORT`: Optional, defaults to 3000
+
+## Supported Models
+
+This application supports models from multiple providers:
+
+- **OpenAI**: GPT-4, GPT-3.5-turbo, and other OpenAI models
+- **Anthropic**: Claude 3.5 Sonnet, Claude 3 Haiku, Claude 3 Opus, and other Claude models
+- **Meta Llama**: Llama 3.1, Llama 3.2, and other Llama models via OpenRouter
+
+### Using Llama Models
+
+To use Meta's Llama models, you'll need an OpenRouter API key:
+
+1. Sign up at [OpenRouter.ai](https://openrouter.ai)
+2. Get your API key from the dashboard
+3. Set `OPENROUTER_API_KEY` in your `.env` file
+
+Popular Llama model names include:
+- `meta-llama/llama-3.1-70b-instruct`
+- `meta-llama/llama-3.1-8b-instruct`
+- `meta-llama/llama-3.2-90b-vision-instruct`
+
+For a complete list of available models, visit [OpenRouter's model list](https://openrouter.ai/models).
 
 ### Required Environment Variables
 
@@ -75,6 +98,7 @@ Before running the server, you need to set up your environment variables:
 - **API Keys**: Set at least one of these for LLM completions:
   - `OPENAI_API_KEY`: For GPT models
   - `ANTHROPIC_API_KEY`: For Claude models
+  - `OPENROUTER_API_KEY`: For Meta's Llama models and other providers
 
 ### Example
 
@@ -85,6 +109,7 @@ SECRET_KEY=your-super-secure-random-string-here-32-chars-minimum
 # Add your API keys (at least one required)
 OPENAI_API_KEY=sk-your-openai-key-here
 ANTHROPIC_API_KEY=sk-ant-your-anthropic-key-here
+OPENROUTER_API_KEY=sk-or-your-openrouter-key-here
 
 # Optional: Custom port
 PORT=3000
