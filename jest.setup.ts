@@ -71,7 +71,11 @@ beforeAll(() => {
     if (
       typeof args[0] === 'string' &&
       (args[0].includes('Warning: The current testing environment is not configured to support act(...)') ||
-       args[0].includes('Warning: An update to') && args[0].includes('was not wrapped in act(...)'))
+       args[0].includes('Warning: An update to') && args[0].includes('was not wrapped in act(...)') ||
+       args[0].includes('JsonWebTokenError') ||
+       args[0].includes('jwt') ||
+       args[0].includes('TOKEN_INVALID') ||
+       args[0].includes('Invalid or expired token'))
     ) {
       return;
     }
