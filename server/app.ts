@@ -402,7 +402,14 @@ app.put('/api/conversations/:conversationId', authenticateToken, [
 ], async (req: express.Request, res: express.Response) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
+    return res.status(400).json(
+      createErrorResponse(
+        'Validation failed',
+        'Please check your input and try again',
+        'VALIDATION_ERROR',
+        errors.array()
+      )
+    );
   }
 
   const { conversationId } = req.params;
@@ -421,7 +428,13 @@ app.put('/api/conversations/:conversationId', authenticateToken, [
     });
 
     if (!conversation) {
-      return res.status(404).json({ error: 'Conversation not found or you do not have permission to edit it' });
+      return res.status(404).json(
+        createErrorResponse(
+          'Conversation not found',
+          'The requested conversation does not exist or you do not have permission to edit it',
+          'CONVERSATION_NOT_FOUND'
+        )
+      );
     }
 
     // Update the title
@@ -431,7 +444,13 @@ app.put('/api/conversations/:conversationId', authenticateToken, [
     res.json(updatedConversation);
   } catch (error) {
     console.error('Error updating conversation:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json(
+      createErrorResponse(
+        'Internal server error',
+        'An error occurred while updating the conversation',
+        'INTERNAL_ERROR'
+      )
+    );
   }
 });
 
@@ -597,7 +616,14 @@ app.post('/api/create_conversation', authenticateToken, [
       completionMessageId: completionMessage.get('id') as number 
     });
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error creating conversation:', error);
+    res.status(500).json(
+      createErrorResponse(
+        'Internal server error',
+        'An error occurred while creating the conversation',
+        'INTERNAL_ERROR'
+      )
+    );
   }
 }));
 
