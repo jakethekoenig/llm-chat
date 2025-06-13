@@ -36,6 +36,9 @@ jest.mock('@anthropic-ai/sdk', () => ({
   }))
 }));
 
+// Set SECRET_KEY before any imports that might need it
+process.env.SECRET_KEY = 'test-secret-key-that-is-32-characters-long-for-testing';
+
 import { 
   addMessage, 
   generateCompletion, 

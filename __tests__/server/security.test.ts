@@ -1,7 +1,6 @@
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 
-const SECRET_KEY = process.env.SECRET_KEY || 'test-secret-key-that-is-32-characters-long-for-testing';
 
 // Mock database models - must be defined before jest.mock calls
 const mockUser = {
@@ -31,6 +30,10 @@ jest.mock('../../server/database/models/Message', () => ({
   Message: mockMessage,
 }));
 
+// Set SECRET_KEY before importing app to avoid module load errors
+const SECRET_KEY = 'test-secret-key-that-is-32-characters-long-for-testing';
+process.env.SECRET_KEY = SECRET_KEY;
+
 import app from '../../server/app';
 
 describe('Security Tests', () => {
@@ -50,12 +53,10 @@ describe('Security Tests', () => {
     mockMessage.findByPk = jest.fn().mockResolvedValue(null);
   });
   beforeAll(() => {
-    process.env.SECRET_KEY = SECRET_KEY;
     process.env.NODE_ENV = 'production'; // Test rate limiting in production mode
   });
 
   afterAll(() => {
-    delete process.env.SECRET_KEY;
     delete process.env.NODE_ENV;
   });
 

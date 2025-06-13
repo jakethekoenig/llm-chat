@@ -43,11 +43,13 @@ jest.mock('../../server/helpers/typeConverters', () => ({
   convertIdToNumber: jest.fn(),
 }));
 
-// Import after mocking
+// Set SECRET_KEY before importing app to avoid module load errors
+const SECRET_KEY = 'test-secret-key-that-is-32-characters-long-for-testing';
+process.env.SECRET_KEY = SECRET_KEY;
+
+// Import after mocking and setting environment
 import app from '../../server/app';
 import { convertMessageToApiFormat, convertIdToNumber } from '../../server/helpers/typeConverters';
-
-const SECRET_KEY = process.env.SECRET_KEY || 'fallback-secret-key';
 
 describe('Server App - Additional Coverage Tests', () => {
 

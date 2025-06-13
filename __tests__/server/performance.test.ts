@@ -45,6 +45,10 @@ jest.mock('@anthropic-ai/sdk', () => ({
   }))
 }));
 
+// Set SECRET_KEY before importing app to avoid module load errors
+const SECRET_KEY = 'test-secret-key-that-is-32-characters-long-for-testing';
+process.env.SECRET_KEY = SECRET_KEY;
+
 import app from '../../server/app';
 
 jest.mock('../../server/helpers/messageHelpers', () => ({
@@ -76,11 +80,9 @@ describe('Performance Tests', () => {
     mockMessage.findByPk = jest.fn().mockResolvedValue(null);
     mockMessage.create = jest.fn().mockResolvedValue({ get: jest.fn() });
   });
-  const SECRET_KEY = 'test-secret-key-that-is-32-characters-long-for-testing';
   let authToken: string;
 
   beforeAll(async () => {
-    process.env.SECRET_KEY = SECRET_KEY;
     process.env.OPENAI_API_KEY = 'test-key';
     
     // Mock successful user authentication
@@ -100,7 +102,6 @@ describe('Performance Tests', () => {
   });
 
   afterAll(() => {
-    delete process.env.SECRET_KEY;
     delete process.env.OPENAI_API_KEY;
   });
 
