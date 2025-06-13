@@ -938,7 +938,8 @@ describe('messageHelpers - Streaming Functions', () => {
         conversation_id: 1,
         user_id: 1,
         model: 'gemini-pro',
-        temperature: 0.7
+        temperature: 0.7,
+        cost: 0
       });
       expect(completion).toBeDefined();
     });
@@ -1256,7 +1257,6 @@ describe('messageHelpers - Streaming Functions', () => {
       }
       expect(chunks.length).toBeGreaterThan(0);
     });
->>>>>>> origin/main
   });
 
   describe('Model Detection', () => {
