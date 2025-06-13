@@ -104,8 +104,8 @@ describe('Message Component', () => {
     expect(onShare).toHaveBeenCalled();
   });
 
-  test('renders and handles delete button', () => {
-    const onDelete = jest.fn();
+  test('renders and handles delete button', async () => {
+    const onDelete = jest.fn().mockResolvedValue(true);
     const config: MessageConfig = {
       ...defaultConfig,
       buttons: { ...defaultConfig.buttons, delete: 'enabled' },
@@ -122,11 +122,15 @@ describe('Message Component', () => {
     expect(screen.getByText('Delete Message')).toBeInTheDocument();
     expect(screen.getByText('Are you sure you want to delete this message? This action cannot be undone.')).toBeInTheDocument();
     
-    // Click confirm in dialog
+    // Click confirm in dialog - wrap in act to handle async state updates
     const confirmButton = screen.getByRole('button', { name: 'Delete' });
-    fireEvent.click(confirmButton);
-    
-    expect(onDelete).toHaveBeenCalledWith('1');
+    await act(async () => {
+      fireEvent.click(confirmButton);
+      
+      await waitFor(() => {
+        expect(onDelete).toHaveBeenCalledWith('1');
+      });
+    });
   });
 
   test('renders and handles edit button', async () => {
