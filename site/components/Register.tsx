@@ -50,10 +50,8 @@ const Register: React.FC = () => {
       const formattedError = ErrorHandlers.auth(err);
       setError(formattedError.message);
       
-      // Also show toast for better visibility
+      // Show toast only for severe errors, inline message is sufficient for validation issues
       if (formattedError.severity === 'error') {
-        showError(formattedError.message);
-      } else {
         showError(formattedError.message);
       }
     } finally {

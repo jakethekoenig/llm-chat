@@ -133,6 +133,14 @@ export const formatApiError = (error: unknown): FormattedError => {
 
   // Handle rate limiting
   if (apiError.status === 429) {
+    if (apiError.code === 'AUTH_RATE_LIMIT_EXCEEDED') {
+      return {
+        message: 'Too many login attempts. Please wait 15 minutes before trying again.',
+        severity: 'warning',
+        code: apiError.code,
+        isRetryable: true,
+      };
+    }
     return {
       message: 'Too many requests. Please wait a moment before trying again.',
       severity: 'warning',
