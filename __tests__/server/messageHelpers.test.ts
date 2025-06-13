@@ -228,5 +228,52 @@ describe('messageHelpers - Streaming Functions', () => {
       
       await expect(generateCompletion(1, 'gpt-4', 0.7)).rejects.toThrow('Parent message has no content');
     });
+
+    test('should throw error when OpenAI API key is missing', async () => {
+      delete process.env.OPENAI_API_KEY;
+      
+      await expect(generateCompletion(1, 'gpt-4', 0.7)).rejects.toThrow('Failed to generate completion');
+    });
+
+    test('should throw error when Anthropic API key is missing', async () => {
+      delete process.env.ANTHROPIC_API_KEY;
+      
+      await expect(generateCompletion(1, 'claude-3-opus', 0.7)).rejects.toThrow('Failed to generate completion');
+    });
+
+    test('should throw error when OpenRouter API key is missing', async () => {
+      delete process.env.OPENROUTER_API_KEY;
+      
+      await expect(generateCompletion(1, 'google/gemini-pro', 0.7)).rejects.toThrow('Failed to generate completion');
+    });
+  });
+
+  describe('generateStreamingCompletion error cases', () => {
+    test('should throw error when OpenAI API key is missing for streaming', async () => {
+      delete process.env.OPENAI_API_KEY;
+      
+      const generator = generateStreamingCompletion(1, 'gpt-4', 0.7);
+      const iterator = generator[Symbol.asyncIterator]();
+      
+      await expect(iterator.next()).rejects.toThrow('Failed to generate streaming completion');
+    });
+
+    test('should throw error when Anthropic API key is missing for streaming', async () => {
+      delete process.env.ANTHROPIC_API_KEY;
+      
+      const generator = generateStreamingCompletion(1, 'claude-3-opus', 0.7);
+      const iterator = generator[Symbol.asyncIterator]();
+      
+      await expect(iterator.next()).rejects.toThrow('Failed to generate streaming completion');
+    });
+
+    test('should throw error when OpenRouter API key is missing for streaming', async () => {
+      delete process.env.OPENROUTER_API_KEY;
+      
+      const generator = generateStreamingCompletion(1, 'anthropic/claude-3-sonnet', 0.7);
+      const iterator = generator[Symbol.asyncIterator]();
+      
+      await expect(iterator.next()).rejects.toThrow('Failed to generate streaming completion');
+    });
   });
 });
