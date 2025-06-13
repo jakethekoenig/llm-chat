@@ -53,7 +53,7 @@ const AppContent = () => {
       }
     };
     initAuth();
-  }, [auth, auth.isAuthChecked]);
+  }, [auth, auth.isAuthChecked, auth.token, auth.isAuthenticated]);
 
   if (!isAuthInitialized || !auth.isAuthChecked) {
     return <div>Initializing...</div>;
