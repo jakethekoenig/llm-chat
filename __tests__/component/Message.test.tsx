@@ -116,7 +116,9 @@ describe('Message Component', () => {
     expect(deleteButton).toBeInTheDocument();
     
     // Click delete button to open confirmation dialog
-    fireEvent.click(deleteButton);
+    await act(async () => {
+      fireEvent.click(deleteButton);
+    });
     
     // Should show confirmation dialog
     expect(screen.getByText('Delete Message')).toBeInTheDocument();
@@ -126,10 +128,12 @@ describe('Message Component', () => {
     const confirmButton = screen.getByRole('button', { name: 'Delete' });
     await act(async () => {
       fireEvent.click(confirmButton);
-      
+      // Wait for the async operation to complete within act
       await waitFor(() => {
         expect(onDelete).toHaveBeenCalledWith('1');
       });
+      // Flush all pending microtasks and timers
+      await new Promise(resolve => setTimeout(resolve, 10));
     });
   });
 
@@ -616,10 +620,14 @@ describe('Message Component', () => {
     renderMessage({ onDelete }, config);
     
     const menuButton = screen.getByText('Menu');
-    fireEvent.click(menuButton);
+    await act(async () => {
+      fireEvent.click(menuButton);
+    });
     
     const deleteMenuItem = screen.getByText('Delete');
-    fireEvent.click(deleteMenuItem);
+    await act(async () => {
+      fireEvent.click(deleteMenuItem);
+    });
     
     // Should show delete dialog
     expect(screen.getByText('Delete Message')).toBeInTheDocument();
@@ -629,11 +637,12 @@ describe('Message Component', () => {
     const confirmButton = screen.getByRole('button', { name: 'Delete' });
     await act(async () => {
       fireEvent.click(confirmButton);
-      
-      // Just verify the delete function was called
+      // Wait for async operations to complete within act
       await waitFor(() => {
         expect(onDelete).toHaveBeenCalledWith('1');
       });
+      // Flush all pending microtasks and timers
+      await new Promise(resolve => setTimeout(resolve, 10));
     });
   });
 
@@ -666,14 +675,18 @@ describe('Message Component', () => {
     renderMessage({ onDelete }, config);
     
     const deleteButton = screen.getByText('Delete');
-    fireEvent.click(deleteButton);
+    await act(async () => {
+      fireEvent.click(deleteButton);
+    });
     
     // Should show delete dialog
     expect(screen.getByText('Delete Message')).toBeInTheDocument();
     
     // Click cancel - just verify delete wasn't called
     const cancelButton = screen.getByRole('button', { name: 'Cancel' });
-    fireEvent.click(cancelButton);
+    await act(async () => {
+      fireEvent.click(cancelButton);
+    });
     
     // Just verify onDelete was not called (don't check dialog state)
     expect(onDelete).not.toHaveBeenCalled();
@@ -690,7 +703,9 @@ describe('Message Component', () => {
     renderMessage({ onDelete }, config);
     
     const deleteButton = screen.getByText('Delete');
-    fireEvent.click(deleteButton);
+    await act(async () => {
+      fireEvent.click(deleteButton);
+    });
     
     // Click confirm - wrap in act to handle async state updates
     const confirmButton = screen.getByRole('button', { name: 'Delete' });
@@ -706,6 +721,9 @@ describe('Message Component', () => {
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith('Failed to delete message:', expect.any(Error));
       });
+      
+      // Flush all pending microtasks and timers
+      await new Promise(resolve => setTimeout(resolve, 10));
     });
     
     consoleSpy.mockRestore();
