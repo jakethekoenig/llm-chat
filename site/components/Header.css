@@ -5,21 +5,39 @@
   border-bottom: 1px solid #e0e0e0;
 }
 
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
 .site-header nav ul {
   list-style: none;
   display: flex;
-  justify-content: flex-end;
   margin: 0;
   padding: 0;
-}
-
-.site-header nav ul li {
-  margin-left: 20px;
+  gap: 20px;
 }
 
 .site-header nav ul li a {
   text-decoration: none;
   color: #007bff;
+}
+
+.site-header nav ul li a:hover {
+  text-decoration: underline;
 }
 
 .toggle-button {
@@ -34,6 +52,38 @@
   color: #0056b3;
 }
 
-.site-header nav ul li a:hover {
-  text-decoration: underline;
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-logo {
+  width: 32px;
+  height: 32px;
+}
+
+.logo-text {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #007bff;
+}
+
+@media (max-width: 768px) {
+  .header-right {
+    gap: 15px;
+  }
+  
+  .site-header nav ul {
+    gap: 15px;
+  }
+  
+  .logo-text {
+    font-size: 1rem;
+  }
+  
+  .header-logo {
+    width: 28px;
+    height: 28px;
+  }
 }

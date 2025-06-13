@@ -67,7 +67,7 @@ const AppContent = () => {
             </ProtectedRoute>
           </aside>
           <main className="page-content">
-            <h1>LLM Chat Component Showcase</h1>
+            <h1>Welcome to L2 Chat</h1>
             <Routes>
               <Route path="/signin" element={<SignIn />} />
               <Route path="/register" element={<Register />} />
