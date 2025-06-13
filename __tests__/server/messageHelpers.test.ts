@@ -9,7 +9,7 @@ jest.mock('../../server/database/models/Message', () => ({
   }
 }));
 
-import { generateStreamingCompletion } from '../../server/helpers/messageHelpers';
+import { generateStreamingCompletion, generateCompletion } from '../../server/helpers/messageHelpers';
 import { Message } from '../../server/database/models/Message';
 
 // Mock OpenAI
@@ -75,6 +75,7 @@ describe('messageHelpers - Streaming Functions', () => {
     // Set up environment variables
     process.env.OPENAI_API_KEY = 'test-openai-key';
     process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
+    process.env.OPENROUTER_API_KEY = 'test-openrouter-key';
     
     // Mock message structure
     const mockParentMessage = {
@@ -106,6 +107,7 @@ describe('messageHelpers - Streaming Functions', () => {
   afterEach(() => {
     delete process.env.OPENAI_API_KEY;
     delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.OPENROUTER_API_KEY;
   });
 
   describe('generateStreamingCompletion', () => {
@@ -164,5 +166,67 @@ describe('messageHelpers - Streaming Functions', () => {
       await expect(iterator.next()).rejects.toThrow('Parent message has no content');
     });
 
+    test('should stream OpenRouter completion successfully', async () => {
+      const chunks: any[] = [];
+      
+      for await (const chunk of generateStreamingCompletion(1, 'anthropic/claude-3-sonnet', 0.7)) {
+        chunks.push(chunk);
+      }
+      
+      expect(chunks.length).toBeGreaterThan(0);
+      expect(chunks[chunks.length - 1].isComplete).toBe(true);
+      expect(Message.findByPk).toHaveBeenCalledWith(1);
+      expect(Message.create).toHaveBeenCalled();
+    });
+
+  });
+
+  describe('generateCompletion', () => {
+    test('should generate OpenAI completion successfully', async () => {
+      const result = await generateCompletion(1, 'gpt-4', 0.7);
+      
+      expect(Message.findByPk).toHaveBeenCalledWith(1);
+      expect(Message.create).toHaveBeenCalled();
+      expect(result).toBeDefined();
+    });
+
+    test('should generate Anthropic completion successfully', async () => {
+      const result = await generateCompletion(1, 'claude-3-opus', 0.7);
+      
+      expect(Message.findByPk).toHaveBeenCalledWith(1);
+      expect(Message.create).toHaveBeenCalled();
+      expect(result).toBeDefined();
+    });
+
+    test('should generate OpenRouter completion successfully', async () => {
+      const result = await generateCompletion(1, 'google/gemini-pro', 0.7);
+      
+      expect(Message.findByPk).toHaveBeenCalledWith(1);
+      expect(Message.create).toHaveBeenCalled();
+      expect(result).toBeDefined();
+    });
+
+    test('should throw error when parent message not found', async () => {
+      (Message.findByPk as jest.Mock).mockResolvedValue(null);
+      
+      await expect(generateCompletion(999, 'gpt-4', 0.7)).rejects.toThrow('Parent message with ID 999 not found');
+    });
+
+    test('should throw error when message has no content', async () => {
+      const mockParentMessage = {
+        get: jest.fn((field: string) => {
+          switch (field) {
+            case 'content': return '';
+            case 'conversation_id': return 1;
+            case 'user_id': return 1;
+            default: return null;
+          }
+        })
+      };
+      
+      (Message.findByPk as jest.Mock).mockResolvedValue(mockParentMessage);
+      
+      await expect(generateCompletion(1, 'gpt-4', 0.7)).rejects.toThrow('Parent message has no content');
+    });
   });
 });
