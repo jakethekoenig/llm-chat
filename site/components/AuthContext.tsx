@@ -40,6 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const validateToken = async (tokenToValidate: string): Promise<boolean> => {
     try {
+      // Use a simple fetch without the auto-logout logic to avoid recursive logout calls
       const response = await fetch('/api/conversations', {
         method: 'GET',
         headers: {
@@ -55,6 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const checkAuth = async () => {
       const storedToken = localStorage.getItem('token');
+      
       if (storedToken) {
         const isValid = await validateToken(storedToken);
         if (isValid) {
@@ -65,7 +67,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setToken(null);
           setIsAuthenticated(false);
         }
+      } else {
+        setIsAuthenticated(false);
       }
+      
       setIsAuthChecked(true);
     };
     

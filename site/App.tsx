@@ -45,12 +45,15 @@ const AppContent = () => {
 
   React.useEffect(() => {
     const initAuth = async () => {
-      const { setAuthInstance } = await import('./utils/api');
-      setAuthInstance(auth);
-      setIsAuthInitialized(true);
+      // Only set up auth instance after auth check is complete
+      if (auth.isAuthChecked) {
+        const { setAuthInstance } = await import('./utils/api');
+        setAuthInstance(auth);
+        setIsAuthInitialized(true);
+      }
     };
     initAuth();
-  }, [auth]);
+  }, [auth, auth.isAuthChecked]);
 
   if (!isAuthInitialized || !auth.isAuthChecked) {
     return <div>Initializing...</div>;
@@ -62,9 +65,9 @@ const AppContent = () => {
         <Header onToggleSidePane={toggleSidePane} />
         <div className="main-content">
           <aside className={`side-pane ${isSidePaneOpen ? 'open' : 'closed'}`}>
-            <ProtectedRoute>
+            {auth.isAuthenticated && (
               <ConversationListPage />
-            </ProtectedRoute>
+            )}
           </aside>
           <main className="page-content">
             <h1>Welcome to L2 Chat</h1>

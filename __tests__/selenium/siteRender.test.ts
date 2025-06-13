@@ -145,6 +145,74 @@ describe('Comprehensive Site Tests', () => {
       await driver.wait(until.urlContains('/signin'), 10000);
       expect(await driver.getCurrentUrl()).toContain('/signin');
     }, testTimeout);
+
+    test('should handle registration page access without flicker', async () => {
+      // Test 1: Clean state, should show register page
+      await clearLocalStorageAndNavigate(`${baseUrl}/register`);
+      
+      // Wait for the app to initialize and check console logs
+      await driver.sleep(3000);
+      
+      const logs = await driver.manage().logs().get('browser');
+      console.log('Browser console logs:');
+      logs.forEach((log: any) => {
+        console.log(`[${log.level}] ${log.message}`);
+      });
+      
+      const currentUrl1 = await driver.getCurrentUrl();
+      console.log('URL after clean navigation to /register:', currentUrl1);
+      
+      // If it redirected to signin, let's debug why
+      if (currentUrl1.includes('/signin')) {
+        const pageTitle = await driver.getTitle();
+        console.log('Page title:', pageTitle);
+        
+        const bodyText = await driver.findElement(By.css('body')).getText();
+        console.log('Page content:', bodyText.substring(0, 500));
+        
+        throw new Error(`Registration page redirected to signin unexpectedly. URL: ${currentUrl1}`);
+      }
+      
+      expect(currentUrl1).toContain('/register');
+      
+      await driver.wait(until.elementLocated(By.css('form')), 10000);
+      const registerForm = await driver.findElement(By.css('form'));
+      expect(await registerForm.isDisplayed()).toBe(true);
+      
+      const heading = await driver.findElement(By.css('h2'));
+      expect(await heading.getText()).toBe('Register');
+    }, testTimeout);
+
+    test('should handle registration page with invalid token', async () => {
+      // Test 2: Invalid token, should clean up and show register page (not redirect to signin)
+      await driver.get(`${baseUrl}/register`);
+      await driver.executeScript('localStorage.setItem("token", "invalid-expired-token");');
+      await driver.get(`${baseUrl}/register`);
+      
+      // Wait a bit for token validation to complete
+      await driver.sleep(2000);
+      
+      const currentUrl2 = await driver.getCurrentUrl();
+      console.log('URL after navigation to /register with invalid token:', currentUrl2);
+      
+      // Should NOT redirect to signin, should stay on register or go to home
+      expect(currentUrl2).not.toContain('/signin');
+      
+      // If auth check determined token is invalid, it should either:
+      // 1. Show register page (token was cleaned up, user is now unauthenticated)
+      // 2. Redirect to home page (if token validation is still in progress)
+      
+      if (currentUrl2.includes('/register')) {
+        // Good - showing register page after cleaning invalid token
+        const registerForm = await driver.findElement(By.css('form'));
+        expect(await registerForm.isDisplayed()).toBe(true);
+      } else if (currentUrl2.includes('localhost:5173/') && !currentUrl2.includes('/signin')) {
+        // Acceptable - redirected to home or other non-signin page
+        console.log('Redirected to non-signin page, which is acceptable');
+      } else {
+        fail(`Unexpected redirect to: ${currentUrl2}`);
+      }
+    }, testTimeout);
   });
 
   describe('Protected Route Behavior', () => {
