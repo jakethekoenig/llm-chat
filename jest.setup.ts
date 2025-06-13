@@ -9,10 +9,30 @@ import { cleanup, configure } from '@testing-library/react';
 // not actual application bugs
 configure({ testIdAttribute: 'data-testid' });
 
+// Suppress React act() warnings in tests since they're environment-specific
+// and don't indicate actual application bugs
+const originalError = console.error;
+beforeAll(() => {
+  console.error = (...args: any[]) => {
+    if (
+      typeof args[0] === 'string' &&
+      args[0].includes('Warning: The current testing environment is not configured to support act')
+    ) {
+      return;
+    }
+    originalError.call(console, ...args);
+  };
+});
+
+afterAll(() => {
+  console.error = originalError;
+});
+
 // Set up environment variables for testing
 process.env.SECRET_KEY = 'test-secret-key-that-is-32-characters-long-for-testing';
 process.env.OPENAI_API_KEY = 'test-openai-key';
 process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
+process.env.OPENROUTER_API_KEY = 'test-openrouter-key';
 process.env.MISTRAL_API_KEY = 'test-mistral-key';
 
 // Polyfill TextEncoder/TextDecoder for Node.js tests

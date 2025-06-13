@@ -104,8 +104,8 @@ describe('Message Component', () => {
     expect(onShare).toHaveBeenCalled();
   });
 
-  test('renders and handles delete button', () => {
-    const onDelete = jest.fn();
+  test('renders and handles delete button', async () => {
+    const onDelete = jest.fn().mockResolvedValue(true);
     const config: MessageConfig = {
       ...defaultConfig,
       buttons: { ...defaultConfig.buttons, delete: 'enabled' },
@@ -116,7 +116,9 @@ describe('Message Component', () => {
     expect(deleteButton).toBeInTheDocument();
     
     // Click delete button to open confirmation dialog
-    fireEvent.click(deleteButton);
+    await act(async () => {
+      fireEvent.click(deleteButton);
+    });
     
     // Should show confirmation dialog
     expect(screen.getByText('Delete Message')).toBeInTheDocument();
@@ -124,9 +126,13 @@ describe('Message Component', () => {
     
     // Click confirm in dialog
     const confirmButton = screen.getByRole('button', { name: 'Delete' });
-    fireEvent.click(confirmButton);
+    await act(async () => {
+      fireEvent.click(confirmButton);
+    });
     
-    expect(onDelete).toHaveBeenCalledWith('1');
+    await waitFor(() => {
+      expect(onDelete).toHaveBeenCalledWith('1');
+    });
   });
 
   test('renders and handles edit button', async () => {
