@@ -45,14 +45,17 @@ const AppContent = () => {
 
   React.useEffect(() => {
     const initAuth = async () => {
-      const { setAuthInstance } = await import('./utils/api');
-      setAuthInstance(auth);
-      setIsAuthInitialized(true);
+      // Only set up auth instance after auth check is complete
+      if (auth.isAuthChecked) {
+        const { setAuthInstance } = await import('./utils/api');
+        setAuthInstance(auth);
+        setIsAuthInitialized(true);
+      }
     };
     initAuth();
-  }, [auth]);
+  }, [auth, auth.isAuthChecked]);
 
-  if (!isAuthInitialized) {
+  if (!isAuthInitialized || !auth.isAuthChecked) {
     return <div>Initializing...</div>;
   }
 
@@ -62,15 +65,36 @@ const AppContent = () => {
         <Header onToggleSidePane={toggleSidePane} />
         <div className="main-content">
           <aside className={`side-pane ${isSidePaneOpen ? 'open' : 'closed'}`}>
-            <ProtectedRoute>
+            {auth.isAuthenticated && (
               <ConversationListPage />
-            </ProtectedRoute>
+            )}
           </aside>
           <main className="page-content">
             <h1>Welcome to L2 Chat</h1>
             <Routes>
-              <Route path="/signin" element={<SignIn />} />
-              <Route path="/register" element={<Register />} />
+              <Route path="/" element={
+                auth.isAuthenticated ? (
+                  <div>
+                    <p>Welcome to L2 Chat! Select a conversation from the sidebar to get started, or create a new one.</p>
+                  </div>
+                ) : (
+                  <Navigate to="/signin" replace />
+                )
+              } />
+              <Route path="/signin" element={
+                auth.isAuthenticated ? (
+                  <Navigate to="/" replace />
+                ) : (
+                  <SignIn />
+                )
+              } />
+              <Route path="/register" element={
+                auth.isAuthenticated ? (
+                  <Navigate to="/" replace />
+                ) : (
+                  <Register />
+                )
+              } />
               <Route path="/showcase" element={<MessageDemo />} />
               <Route 
                 path="/conversations/:conversationId" 

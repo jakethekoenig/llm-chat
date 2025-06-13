@@ -1,5 +1,7 @@
 // site/components/Register.tsx
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from './AuthContext';
 import '../App.css'; // Ensure the CSS file is imported
 
 const Register: React.FC = () => {
@@ -7,6 +9,8 @@ const Register: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,8 +26,10 @@ const Register: React.FC = () => {
       if (!response.ok) {
         throw new Error(data.message || 'Error creating user');
       }
+      // Auto-login the user with the returned token
+      login(data.token);
       setError('');
-      window.location.href = '/';
+      navigate('/');
     } catch (err) {
       setError('Error creating user');
     }
