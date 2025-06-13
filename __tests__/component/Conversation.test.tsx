@@ -23,20 +23,20 @@ const mockOnSubmit = jest.fn(async function* (message: string) {
 });
 
 // Helper function to create test messages with all required fields
-const createTestMessage = (id: string, content: string, author: string, parentId: string | null = null) => ({
+const createTestMessage = (id: number, content: string, author: string, parentId: number | null = null) => ({
   id,
   content,
   author,
   timestamp: new Date().toISOString(),
   parentId,
-  conversationId: '1',
-  userId: author === 'User' ? '1' : '2'
+  conversationId: 1,
+  userId: author === 'User' ? 1 : 2
 });
 
 const messages = [
-  createTestMessage('1', 'Hello, world!', 'User'),
-  createTestMessage('2', 'Hi there!', 'User2', '1'),
-  createTestMessage('3', 'How are you?', 'User', '1'),
+  createTestMessage(1, 'Hello, world!', 'User'),
+  createTestMessage(2, 'Hi there!', 'User2', 1),
+  createTestMessage(3, 'How are you?', 'User', 1),
 ];
 
 test('renders conversation messages', () => {
@@ -51,9 +51,9 @@ test('renders author messages with correct styles', async () => {
 });
 test('renders conversation with navigation and selection', async () => {
   const messages = [
-    createTestMessage('1', 'Hello, world!', 'User'),
-    createTestMessage('2', 'Hi there!', 'User2', '1'),
-    createTestMessage('3', 'How are you?', 'User', '1'),
+    createTestMessage(1, 'Hello, world!', 'User'),
+    createTestMessage(2, 'Hi there!', 'User2', 1),
+    createTestMessage(3, 'How are you?', 'User', 1),
   ];
   render(<Conversation messages={messages} onSubmit={mockOnSubmit} author="TestUser" />);
   expect(screen.getByText('Hello, world!')).toBeInTheDocument();
@@ -74,9 +74,9 @@ test('renders conversation with navigation and selection', async () => {
 
 test('selects the first child by default', () => {
   const messages = [
-    createTestMessage('1', 'Hello, world!', 'User'),
-    createTestMessage('2', 'Hi there!', 'User2', '1'),
-    createTestMessage('3', 'How are you?', 'User', '1'),
+    createTestMessage(1, 'Hello, world!', 'User'),
+    createTestMessage(2, 'Hi there!', 'User2', 1),
+    createTestMessage(3, 'How are you?', 'User', 1),
   ];
   render(<Conversation messages={messages} author="User" onSubmit={mockOnSubmit} />);
   expect(screen.getByText('Hi there!')).toBeInTheDocument();
@@ -84,12 +84,12 @@ test('selects the first child by default', () => {
 
 test('renders conversation with recursive navigation and selection', () => {
   const messages = [
-    createTestMessage('1', 'Hello, world!', 'User'),
-    createTestMessage('2', 'Hi there!', 'User2', '1'),
-    createTestMessage('3', 'How are you?', 'User', '1'),
-    createTestMessage('4', 'I am good, thanks!', 'User2', '2'),
-    createTestMessage('5', 'What about you?', 'User2', '2'),
-    createTestMessage('6', 'I am doing well!', 'User', '3'),
+    createTestMessage(1, 'Hello, world!', 'User'),
+    createTestMessage(2, 'Hi there!', 'User2', 1),
+    createTestMessage(3, 'How are you?', 'User', 1),
+    createTestMessage(4, 'I am good, thanks!', 'User2', 2),
+    createTestMessage(5, 'What about you?', 'User2', 2),
+    createTestMessage(6, 'I am doing well!', 'User', 3),
   ];
   render(<Conversation messages={messages} author="User" onSubmit={mockOnSubmit} />);
   expect(screen.getByText('Hello, world!')).toBeInTheDocument();
@@ -108,8 +108,8 @@ test('renders conversation with recursive navigation and selection', () => {
 
 test('renders conversation list', () => {
   const conversations = [
-    { id: '1', title: 'Conversation 1', userId: '1', messages: [createTestMessage('1', 'Hello', 'User1')] },
-    { id: '2', title: 'Conversation 2', userId: '2', messages: [createTestMessage('2', 'Hi', 'User2'), createTestMessage('3', 'How are you?', 'User2')] },
+    { id: 1, title: 'Conversation 1', userId: 1, messages: [createTestMessage(1, 'Hello', 'User1')] },
+    { id: 2, title: 'Conversation 2', userId: 2, messages: [createTestMessage(2, 'Hi', 'User2'), createTestMessage(3, 'How are you?', 'User2')] },
   ];
   render(<ConversationList conversations={conversations} onConversationClick={() => {}} />);
   const conversation1 = screen.getByText('Conversation 1');

@@ -2,16 +2,16 @@
 // These ensure consistency across the full stack
 
 export interface User {
-  id: string;
+  id: number;
   username: string;
   email: string;
 }
 
 export interface Message {
-  id: string;
-  conversationId: string;
-  parentId?: string | null;
-  userId: string;
+  id: number;
+  conversationId: number;
+  parentId?: number | null;
+  userId: number;
   content: string;
   model?: string | null;
   temperature?: number | null;
@@ -20,9 +20,9 @@ export interface Message {
 }
 
 export interface Conversation {
-  id: string;
+  id: number;
   title: string;
-  userId: string;
+  userId: number;
   messages?: Message[];
 }
 
@@ -34,29 +34,29 @@ export interface CreateConversationRequest {
 }
 
 export interface CreateConversationResponse {
-  conversationId: string;
-  initialMessageId: string;
-  completionMessageId: string;
+  conversationId: number;
+  initialMessageId: number;
+  completionMessageId: number;
 }
 
 export interface AddMessageRequest {
   content: string;
-  conversationId: string;
-  parentId?: string | null;
+  conversationId: number;
+  parentId?: number | null;
 }
 
 export interface AddMessageResponse {
-  id: string;
+  id: number;
 }
 
 export interface GetCompletionRequest {
-  messageId: string;
+  messageId: number;
   model: string;
   temperature: number;
 }
 
 export interface GetCompletionResponse {
-  id: string;
+  id: number;
   content: string;
 }
 
@@ -65,14 +65,14 @@ export interface EditMessageRequest {
 }
 
 export interface EditMessageResponse {
-  id: string;
+  id: number;
   content: string;
   timestamp: string;
 }
 
 export interface DeleteMessageResponse {
   success: boolean;
-  deletedMessageId: string;
+  deletedMessageId: number;
 }
 
 export interface AuthResponse {
@@ -95,8 +95,8 @@ export interface UpdateConversationRequest {
 }
 
 export interface UpdateConversationResponse {
-  id: string;
+  id: number;
   title: string;
-  userId: string;
+  userId: number;
   messages?: Message[];
 }

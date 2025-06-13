@@ -12,10 +12,10 @@ Object.assign(navigator, {
 });
 
 const defaultProps = {
-  id: '1',
+  id: 1,
   content: 'Test message content',
-  conversationId: '1',
-  userId: '1',
+  conversationId: 1,
+  userId: 1,
   timestamp: '2023-01-01T00:00:00Z',
   parentId: null,
 };

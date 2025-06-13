@@ -4,7 +4,7 @@ import { Alert, Box } from '@mui/material';
 import Conversation from '../../chat-components/Conversation';
 import { Message as MessageType } from '../../chat-components/types/Message';
 import { Conversation as ConversationType } from '../../chat-components/types/Conversation';
-import { apiGet, apiPost, apiPut, apiDelete, ApiError } from '../utils/api';
+import { apiGet, apiPost, apiPut, apiDelete, ApiError, fetchWithAuth } from '../utils/api';
 import { useToast } from './ToastProvider';
 import ErrorBoundary from './ErrorBoundary';
 import { ConversationSkeleton, LoadingOverlay } from './SkeletonLoaders';
@@ -35,7 +35,7 @@ const ConversationPage: React.FC = () => {
         ]);
         
         // Find the current conversation
-        const currentConversation = conversations.find((conv: ConversationType) => conv.id === conversationId);
+        const currentConversation = conversations.find((conv: ConversationType) => conv.id === parseInt(conversationId!, 10));
         if (!currentConversation) {
           throw new Error('Conversation not found');
         }
@@ -136,7 +136,7 @@ const ConversationPage: React.FC = () => {
       
       const data = await apiPost('/api/add_message', {
         content: message,
-        conversationId: conversationId,
+        conversationId: parseInt(conversationId!, 10),
         parentId: mostRecentMessageId
       });
 
@@ -169,7 +169,7 @@ const ConversationPage: React.FC = () => {
 
       const reader = streamResponse.body?.getReader();
       const decoder = new TextDecoder();
-      let aiMessageId: string | null = null;
+      let aiMessageId: number | null = null;
       let fullAiContent = '';
 
       if (reader) {
@@ -248,7 +248,7 @@ const ConversationPage: React.FC = () => {
     }
   };
 
-  const handleEditMessage = async (messageId: string, newContent: string) => {
+  const handleEditMessage = async (messageId: number, newContent: string) => {
     // Store original message for rollback
     const originalMessage = messages.find(msg => msg.id === messageId);
     if (!originalMessage) {
@@ -308,7 +308,7 @@ const ConversationPage: React.FC = () => {
     }
   };
 
-  const handleDeleteMessage = async (messageId: string) => {
+  const handleDeleteMessage = async (messageId: number) => {
     // Store original messages for rollback
     const originalMessages = [...messages];
 
