@@ -45,6 +45,10 @@ Message.init({
     type: DataTypes.FLOAT,
     allowNull: true,
   },
+  cost: {
+    type: DataTypes.DECIMAL(10, 6),
+    allowNull: true,
+  },
   timestamp: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,

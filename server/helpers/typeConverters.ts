@@ -13,6 +13,7 @@ export function convertMessageToApiFormat(message: any): Message {
     content: message.content,
     model: message.model || null,
     temperature: message.temperature || null,
+    cost: message.cost ? parseFloat(message.cost) : null,
     timestamp: message.timestamp.toISOString(),
   };
 }

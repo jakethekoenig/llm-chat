@@ -19,6 +19,48 @@ const logger = createLogger({
 
 export { logger };
 
+// Cost calculation utilities
+const calculateOpenAICost = (model: string, usage: any): number => {
+  if (!usage || !usage.prompt_tokens || !usage.completion_tokens) {
+    return 0;
+  }
+
+  // OpenAI pricing as of 2024 (per 1K tokens)
+  const pricing: { [key: string]: { input: number; output: number } } = {
+    'gpt-4': { input: 0.03, output: 0.06 },
+    'gpt-4-turbo': { input: 0.01, output: 0.03 },
+    'gpt-4-turbo-preview': { input: 0.01, output: 0.03 },
+    'gpt-3.5-turbo': { input: 0.0015, output: 0.002 },
+    'gpt-3.5-turbo-0125': { input: 0.0005, output: 0.0015 },
+  };
+
+  const modelPricing = pricing[model] || pricing['gpt-3.5-turbo']; // fallback
+  const inputCost = (usage.prompt_tokens / 1000) * modelPricing.input;
+  const outputCost = (usage.completion_tokens / 1000) * modelPricing.output;
+  
+  return inputCost + outputCost;
+};
+
+const calculateAnthropicCost = (model: string, usage: any): number => {
+  if (!usage || !usage.input_tokens || !usage.output_tokens) {
+    return 0;
+  }
+
+  // Anthropic pricing as of 2024 (per 1K tokens)
+  const pricing: { [key: string]: { input: number; output: number } } = {
+    'claude-3-opus-20240229': { input: 0.015, output: 0.075 },
+    'claude-3-sonnet-20240229': { input: 0.003, output: 0.015 },
+    'claude-3-haiku-20240307': { input: 0.00025, output: 0.00125 },
+    'claude-3-5-sonnet-20241022': { input: 0.003, output: 0.015 },
+  };
+
+  const modelPricing = pricing[model] || pricing['claude-3-haiku-20240307']; // fallback to cheapest
+  const inputCost = (usage.input_tokens / 1000) * modelPricing.input;
+  const outputCost = (usage.output_tokens / 1000) * modelPricing.output;
+  
+  return inputCost + outputCost;
+};
+
 export const addMessage = async (
   content: string,
   conversationId: number,
@@ -59,7 +101,8 @@ const generateAnthropicCompletion = async (content: string, model: string, tempe
   // Handle different content block types
   const contentBlock = response.content[0];
   if ('text' in contentBlock) {
-    return contentBlock.text;
+    const cost = calculateAnthropicCost(model, response.usage);
+    return { text: contentBlock.text, cost };
   } else {
     logger.error('Unexpected content block type from Anthropic API');
     throw new Error('Unexpected response format from Anthropic API');
@@ -70,7 +113,7 @@ const generateAnthropicStreamingCompletion = async function* (
   content: string, 
   model: string, 
   temperature: number
-): AsyncIterable<string> {
+): AsyncIterable<{ text: string; cost?: number; isComplete: boolean }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new Error('Anthropic API key is not set');
@@ -88,11 +131,19 @@ const generateAnthropicStreamingCompletion = async function* (
     stream: true,
   });
 
+  let usage: any = null;
+
   for await (const chunk of stream) {
     if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-      yield chunk.delta.text;
+      yield { text: chunk.delta.text, isComplete: false };
+    } else if (chunk.type === 'message_delta' && chunk.usage) {
+      usage = chunk.usage;
     }
   }
+
+  // Calculate final cost when stream is complete
+  const cost = usage ? calculateAnthropicCost(model, usage) : 0;
+  yield { text: '', cost, isComplete: true };
 };
 
 const generateOpenAICompletion = async (content: string, model: string, temperature: number) => {
@@ -108,14 +159,16 @@ const generateOpenAICompletion = async (content: string, model: string, temperat
     temperature,
   });
 
-  return response.choices[0].message?.content || '';
+  const text = response.choices[0].message?.content || '';
+  const cost = calculateOpenAICost(model, response.usage);
+  return { text, cost };
 };
 
 const generateOpenAIStreamingCompletion = async function* (
   content: string, 
   model: string, 
   temperature: number
-): AsyncIterable<string> {
+): AsyncIterable<{ text: string; cost?: number; isComplete: boolean }> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error('OpenAI API key is not set');
@@ -129,12 +182,23 @@ const generateOpenAIStreamingCompletion = async function* (
     stream: true,
   });
 
+  let usage: any = null;
+
   for await (const chunk of stream) {
-    const content = chunk.choices[0]?.delta?.content || '';
-    if (content) {
-      yield content;
+    const textContent = chunk.choices[0]?.delta?.content || '';
+    if (textContent) {
+      yield { text: textContent, isComplete: false };
+    }
+    
+    // OpenAI sends usage in the final chunk
+    if (chunk.usage) {
+      usage = chunk.usage;
     }
   }
+
+  // Calculate final cost when stream is complete
+  const cost = usage ? calculateOpenAICost(model, usage) : 0;
+  yield { text: '', cost, isComplete: true };
 };
 
 export const generateCompletion = async (messageId: number, model: string, temperature: number) => {
@@ -149,18 +213,19 @@ export const generateCompletion = async (messageId: number, model: string, tempe
   }
 
   try {
-    const completionContent = isAnthropicModel(model)
+    const completion = isAnthropicModel(model)
       ? await generateAnthropicCompletion(content, model, temperature)
       : await generateOpenAICompletion(content, model, temperature);
 
-    console.log('completionContent:', completionContent);
+    console.log('completion:', completion);
     const completionMessage: Message = await Message.create({
-      content: completionContent,
+      content: completion.text,
       parent_id: messageId,
       conversation_id: parentMessage.get('conversation_id') as number,
       user_id: parentMessage.get('user_id') as number,
       model,
       temperature,
+      cost: completion.cost,
     });
     return completionMessage;
   } catch (error) {
@@ -206,12 +271,19 @@ export const generateStreamingCompletion = async function* (
       : generateOpenAIStreamingCompletion(content, model, temperature);
 
     for await (const chunk of streamGenerator) {
-      fullContent += chunk;
-      await completionMessage.update({ content: fullContent });
-      yield { messageId: completionMessageId, chunk, isComplete: false };
+      if (!chunk.isComplete) {
+        fullContent += chunk.text;
+        await completionMessage.update({ content: fullContent });
+        yield { messageId: completionMessageId, chunk: chunk.text, isComplete: false };
+      } else {
+        // Final chunk with cost information
+        await completionMessage.update({ 
+          content: fullContent,
+          cost: chunk.cost || 0
+        });
+        yield { messageId: completionMessageId, chunk: '', isComplete: true };
+      }
     }
-
-    yield { messageId: completionMessageId, chunk: '', isComplete: true };
   } catch (error) {
     if (error instanceof Error) {
       logger.error('Error generating streaming completion:', { message: error.message });
