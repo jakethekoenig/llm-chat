@@ -69,6 +69,15 @@ const AppContent = () => {
           <main className="page-content">
             <h1>Welcome to L2 Chat</h1>
             <Routes>
+              <Route path="/" element={
+                auth.isAuthenticated ? (
+                  <div>
+                    <p>Welcome to L2 Chat! Select a conversation from the sidebar to get started, or create a new one.</p>
+                  </div>
+                ) : (
+                  <Navigate to="/signin" replace />
+                )
+              } />
               <Route path="/signin" element={<SignIn />} />
               <Route path="/register" element={<Register />} />
               <Route path="/showcase" element={<MessageDemo />} />

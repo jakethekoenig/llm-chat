@@ -235,10 +235,14 @@ app.post('/api/register', authLimiter, asyncHandler(async (req: express.Request,
   const hashedPassword = await bcrypt.hash(password, 10);
   const newUser = await User.create({ username, email, hashed_password: hashedPassword });
   
+  // Auto-login the user by generating a token
+  const token = jwt.sign({ id: (newUser as any).get('id') }, SECRET_KEY as jwt.Secret, { expiresIn: '1h' });
+  
   res.status(201).json({ 
     id: (newUser as any).get('id'), 
     username: (newUser as any).username, 
-    email: (newUser as any).email 
+    email: (newUser as any).email,
+    token
   });
 }));
 
