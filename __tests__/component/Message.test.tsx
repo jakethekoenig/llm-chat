@@ -12,10 +12,10 @@ Object.assign(navigator, {
 });
 
 const defaultProps = {
-  id: '1',
+  id: 1,
   content: 'Test message content',
-  conversationId: '1',
-  userId: '1',
+  conversationId: 1,
+  userId: 1,
   timestamp: '2023-01-01T00:00:00Z',
   parentId: null,
 };
@@ -130,7 +130,7 @@ describe('Message Component', () => {
       fireEvent.click(confirmButton);
       // Wait for the async operation to complete within act
       await waitFor(() => {
-        expect(onDelete).toHaveBeenCalledWith('1');
+        expect(onDelete).toHaveBeenCalledWith(1);
       });
       // Flush all pending microtasks and timers
       await new Promise(resolve => setTimeout(resolve, 10));
@@ -165,7 +165,7 @@ describe('Message Component', () => {
     fireEvent.click(saveButton);
     
     await waitFor(() => {
-      expect(onEdit).toHaveBeenCalledWith('1', 'Updated message');
+      expect(onEdit).toHaveBeenCalledWith(1, 'Updated message');
     });
   });
 
@@ -421,7 +421,7 @@ describe('Message Component', () => {
       fireEvent.click(saveButton);
       
       await waitFor(() => {
-        expect(onEdit).toHaveBeenCalledWith('1', 'Updated message');
+        expect(onEdit).toHaveBeenCalledWith(1, 'Updated message');
       });
 
       // Should still be in edit mode on error
@@ -639,7 +639,7 @@ describe('Message Component', () => {
       fireEvent.click(confirmButton);
       // Wait for async operations to complete within act
       await waitFor(() => {
-        expect(onDelete).toHaveBeenCalledWith('1');
+        expect(onDelete).toHaveBeenCalledWith(1);
       });
       // Flush all pending microtasks and timers
       await new Promise(resolve => setTimeout(resolve, 10));
@@ -714,7 +714,7 @@ describe('Message Component', () => {
       
       // Wait for the delete operation to be called (it will fail)
       await waitFor(() => {
-        expect(onDelete).toHaveBeenCalledWith('1');
+        expect(onDelete).toHaveBeenCalledWith(1);
       });
       
       // Verify error was logged
