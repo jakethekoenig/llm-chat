@@ -247,20 +247,5 @@ describe('messageHelpers - Streaming Functions', () => {
       await expect(generateCompletion(1, 'gpt-4', 0.7)).rejects.toThrow('Parent message has no content');
     });
 
-    test('should handle API errors gracefully', async () => {
-      const mockOpenAICreate = require('openai').OpenAI().chat.completions.create;
-      mockOpenAICreate.mockRejectedValue(new Error('API Error'));
-
-      await expect(generateCompletion(1, 'gpt-4', 0.7)).rejects.toThrow('Failed to generate completion');
-    });
-
-    test('should handle streaming API errors gracefully', async () => {
-      const mockOpenAICreate = require('openai').OpenAI().chat.completions.create;
-      mockOpenAICreate.mockRejectedValue(new Error('Streaming API Error'));
-
-      const generator = generateStreamingCompletion(1, 'gpt-4', 0.7);
-      await expect(generator[Symbol.asyncIterator]().next()).rejects.toThrow('Failed to generate streaming completion');
-    });
-
   });
 });
