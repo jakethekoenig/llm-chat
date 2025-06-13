@@ -68,6 +68,7 @@ Sequelize.prototype.log = () => {};
 // These warnings are about test environment configuration, not application bugs
 beforeAll(() => {
   console.error = (...args: any[]) => {
+    // Check for React warnings
     if (
       typeof args[0] === 'string' &&
       (args[0].includes('Warning: The current testing environment is not configured to support act(...)') ||
@@ -75,6 +76,23 @@ beforeAll(() => {
     ) {
       return;
     }
+
+    // Check for JWT/authentication errors and winston warnings (expected during testing)
+    const errorString = args.join(' ');
+    if (
+      errorString.includes('JsonWebTokenError') ||
+      errorString.includes('jwt') ||
+      errorString.includes('TOKEN_INVALID') ||
+      errorString.includes('Invalid or expired token') ||
+      errorString.includes('Error occurred:') ||
+      errorString.includes('invalid token') ||
+      errorString.includes('malformed') ||
+      errorString.includes('[winston]') ||
+      errorString.includes('Attempt to write logs with no transports')
+    ) {
+      return;
+    }
+
     originalError.call(console, ...args);
   };
 });

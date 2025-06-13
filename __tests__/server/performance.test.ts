@@ -45,6 +45,10 @@ jest.mock('@anthropic-ai/sdk', () => ({
   }))
 }));
 
+// Set SECRET_KEY before importing app to avoid module load errors
+const SECRET_KEY = 'test-secret-key-that-is-32-characters-long-for-testing';
+process.env.SECRET_KEY = SECRET_KEY;
+
 import app from '../../server/app';
 
 jest.mock('../../server/helpers/messageHelpers', () => ({
@@ -76,11 +80,9 @@ describe('Performance Tests', () => {
     mockMessage.findByPk = jest.fn().mockResolvedValue(null);
     mockMessage.create = jest.fn().mockResolvedValue({ get: jest.fn() });
   });
-  const SECRET_KEY = 'test-secret-key-that-is-32-characters-long-for-testing';
   let authToken: string;
 
   beforeAll(async () => {
-    process.env.SECRET_KEY = SECRET_KEY;
     process.env.OPENAI_API_KEY = 'test-key';
     
     // Mock successful user authentication
@@ -100,7 +102,6 @@ describe('Performance Tests', () => {
   });
 
   afterAll(() => {
-    delete process.env.SECRET_KEY;
     delete process.env.OPENAI_API_KEY;
   });
 
@@ -115,6 +116,15 @@ describe('Performance Tests', () => {
 
   describe('Response Time Tests', () => {
     test('authentication should respond quickly', async () => {
+      // Mock user for this test
+      mockUser.findOne.mockResolvedValue({
+        get: () => 1,
+        hashed_password: '$2b$10$test.hash.here'
+      });
+
+      const bcrypt = require('bcrypt');
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+
       const startTime = Date.now();
       
       const response = await request(app)
@@ -160,6 +170,15 @@ describe('Performance Tests', () => {
 
   describe('Concurrent Request Handling', () => {
     test('should handle multiple authentication requests concurrently', async () => {
+      // Mock user for this test
+      mockUser.findOne.mockResolvedValue({
+        get: () => 1,
+        hashed_password: '$2b$10$test.hash.here'
+      });
+
+      const bcrypt = require('bcrypt');
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+
       const concurrentRequests = 20;
       const startTime = Date.now();
       

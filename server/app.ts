@@ -92,7 +92,10 @@ const errorHandler = (
   res: express.Response,
   next: express.NextFunction
 ) => {
-  console.error('Error occurred:', err);
+  // Don't log expected authentication errors in test environment
+  if (process.env.NODE_ENV !== 'test' || (err.name !== 'JsonWebTokenError' && !err.message?.includes('jwt'))) {
+    console.error('Error occurred:', err);
+  }
 
   // Handle validation errors
   if (err.name === 'ValidationError') {
